@@ -1,5 +1,19 @@
 
 export type OnboardingStatus = 'pendente' | 'em_revisao' | 'concluida';
+export type UserStatus = 'pending' | 'approved' | 'rejected';
+export type UserRole = 'admin' | 'client';
+
+export interface UserProfile {
+  id?: string;
+  email: string;
+  role: UserRole;
+  displayName: string;
+  cnpj?: string;
+  status: UserStatus;
+  clientCode?: string;
+  activeProduct?: string;
+  createdAt: string;
+}
 
 export interface OnboardingStage {
   id: string;
@@ -18,8 +32,6 @@ export interface OnboardingStage {
     submittedAt: string;
   }[];
 }
-
-export type UserRole = 'admin' | 'client';
 
 export interface ClientProgress {
   clientId: string;

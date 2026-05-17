@@ -29,7 +29,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useUser, useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
-import { Button } from "@/components/ui/button";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -127,8 +126,8 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
           <header className="flex h-16 items-center border-b px-6 bg-white/50 backdrop-blur-md sticky top-0 z-10">
             <SidebarTrigger className="-ml-1 mr-4" />
             <div className="flex-1">
-              <h2 className="text-sm font-medium text-muted-foreground">
-                {pathname.split('/').map(p => p.charAt(0).toUpperCase() + p.slice(1)).filter(p => p !== 'Dashboard').join(' / ')}
+              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-widest">
+                OnFlow RTM / {pathname.split('/').pop()?.replace('-', ' ')}
               </h2>
             </div>
           </header>
