@@ -260,6 +260,6 @@ export default function ClientsAdminPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </DashboardLayout>
   );
 }
