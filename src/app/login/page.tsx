@@ -18,10 +18,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Chrome, Mail, Lock, Loader2, User, Building2 } from 'lucide-react';
+import { Chrome, Mail, Lock, Loader2, User, Building2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -31,6 +32,7 @@ export default function LoginPage() {
   const { user: currentUser, loading: authLoading } = useUser();
   const [loading, setLoading] = useState(false);
   const [cnpj, setCnpj] = useState('');
+  const [connectionError, setConnectionError] = useState(false);
 
   // Redireciona automaticamente se o usuário já estiver logado
   useEffect(() => {
@@ -68,6 +70,8 @@ export default function LoginPage() {
         return 'Senha incorreta.';
       case 'auth/popup-closed-by-user':
         return 'A janela de login foi fechada antes de completar a autenticação.';
+      case 'unavailable':
+        return 'O serviço está temporariamente indisponível. Verifique sua conexão.';
       default:
         return 'Ocorreu um erro inesperado. Tente novamente em instantes.';
     }
@@ -75,6 +79,7 @@ export default function LoginPage() {
 
   async function handleSocialLogin() {
     setLoading(true);
+    setConnectionError(false);
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
@@ -92,6 +97,7 @@ export default function LoginPage() {
   async function handleEmailLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
+    setConnectionError(false);
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
@@ -112,6 +118,7 @@ export default function LoginPage() {
   async function handleSignUp(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
+    setConnectionError(false);
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
@@ -167,6 +174,7 @@ export default function LoginPage() {
 
   async function checkUserAndRedirect(user: FirebaseUser) {
     try {
+      setConnectionError(false);
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
       
@@ -197,8 +205,16 @@ export default function LoginPage() {
           });
         router.push('/dashboard/client');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao verificar usuário:", error);
+      if (error.code === 'unavailable' || error.message?.includes('offline')) {
+        setConnectionError(true);
+        toast({
+          variant: "destructive",
+          title: "Conexão perdida",
+          description: "Não foi possível verificar seu perfil. Verifique sua internet."
+        });
+      }
       setLoading(false);
     }
   }
@@ -218,6 +234,16 @@ export default function LoginPage() {
           <h1 className="text-4xl font-bold font-headline text-primary">OnFlow</h1>
           <p className="text-muted-foreground">O Hub Integrador do Mercado Financeiro</p>
         </div>
+
+        {connectionError && (
+          <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erro de Conexão</AlertTitle>
+            <AlertDescription>
+              Parece que você está offline. Tente atualizar a página quando recuperar a conexão.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Card className="border-2 shadow-xl">
           <Tabs defaultValue="login" className="w-full">
@@ -246,7 +272,8 @@ export default function LoginPage() {
                     </div>
                   </div>
                   <Button type="submit" className="w-full font-bold h-12" disabled={loading}>
-                    {loading ? <Loader2 className="animate-spin" /> : "Acessar Portal"}
+                    {loading ? <Loader2 className="animate-spin mr-2" /> : null}
+                    {loading ? "Processando..." : "Acessar Portal"}
                   </Button>
                 </CardContent>
               </form>
@@ -301,7 +328,8 @@ export default function LoginPage() {
                     </div>
                   </div>
                   <Button type="submit" className="w-full font-bold h-12" disabled={loading}>
-                    {loading ? <Loader2 className="animate-spin" /> : "Criar Conta"}
+                    {loading ? <Loader2 className="animate-spin mr-2" /> : null}
+                    {loading ? "Criando Conta..." : "Criar Conta"}
                   </Button>
                 </CardContent>
               </form>
@@ -315,7 +343,7 @@ export default function LoginPage() {
                 </div>
               </div>
               <Button variant="outline" className="w-full gap-2 h-11" onClick={handleSocialLogin} disabled={loading}>
-                <Chrome className="size-4" /> Entrar com Google
+                <Chrome className="size-4" /> {loading ? "Entrando..." : "Entrar com Google"}
               </Button>
             </CardFooter>
           </Tabs>
