@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -122,7 +123,11 @@ export default function LoginPage() {
         createdAt: new Date().toISOString()
       });
 
-      router.push(`/dashboard/${role}`);
+      if (role === 'admin') {
+        router.push('/dashboard/admin/select-profile');
+      } else {
+        router.push('/dashboard/client');
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -137,7 +142,11 @@ export default function LoginPage() {
     const userDoc = await getDoc(doc(db, 'users', uid));
     if (userDoc.exists()) {
       const role = userDoc.data().role;
-      router.push(`/dashboard/${role}`);
+      if (role === 'admin') {
+        router.push('/dashboard/admin/select-profile');
+      } else {
+        router.push(`/dashboard/${role}`);
+      }
     } else {
       await setDoc(doc(db, 'users', uid), { 
         email, 

@@ -9,7 +9,9 @@ import {
   Clock, 
   AlertCircle,
   TrendingUp,
-  MoreHorizontal
+  MoreHorizontal,
+  Headset,
+  Briefcase
 } from "lucide-react";
 import { 
   BarChart, 
@@ -23,6 +25,9 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useSearchParams, useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 const data = [
   { name: 'Jan', value: 12 },
@@ -33,28 +38,46 @@ const data = [
   { name: 'Jun', value: 42 },
 ];
 
-const COLORS = ['#D32F2F', '#757575', '#E5E5E5'];
-
 export default function AdminPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const currentView = searchParams.get('view') || 'suporte';
+
+  const handleTabChange = (value: string) => {
+    router.push(`/dashboard/admin?view=${value}`);
+  };
+
   return (
     <DashboardLayout role="admin">
       <div className="space-y-8">
-        <div className="flex justify-between items-end">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold font-headline">Painel de Controle</h1>
             <p className="text-muted-foreground">Monitore o progresso global de onboarding dos seus clientes.</p>
           </div>
-          <Button>Novo Onboarding</Button>
+          
+          <Tabs value={currentView} onValueChange={handleTabChange} className="w-full md:w-auto">
+            <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1">
+              <TabsTrigger value="suporte" className="gap-2">
+                <Headset className="size-4" /> Suporte
+              </TabsTrigger>
+              <TabsTrigger value="comercial" className="gap-2">
+                <Briefcase className="size-4" /> Comercial
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card className="border-l-4 border-l-primary shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total de Clientes</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {currentView === 'suporte' ? 'Chamados Ativos' : 'Novas Leads'}
+              </CardTitle>
               <Users className="size-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">128</div>
+              <div className="text-2xl font-bold">{currentView === 'suporte' ? '128' : '45'}</div>
               <p className="text-xs text-emerald-600 flex items-center mt-1">
                 <TrendingUp className="size-3 mr-1" /> +12% desde o mês passado
               </p>
@@ -95,8 +118,10 @@ export default function AdminPage() {
         <div className="grid gap-8 md:grid-cols-7">
           <Card className="md:col-span-4">
             <CardHeader>
-              <CardTitle className="text-lg">Novos Onboardings por Mês</CardTitle>
-              <CardDescription>Fluxo de entrada de novos clientes nos últimos 6 meses.</CardDescription>
+              <CardTitle className="text-lg">
+                {currentView === 'suporte' ? 'Fluxo de Atendimento' : 'Conversão Comercial'}
+              </CardTitle>
+              <CardDescription>Métricas dos últimos 6 meses para a equipe {currentView}.</CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -127,9 +152,9 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               {[
-                { name: "Empresa ABC", task: "Enviou Contrato Social", time: "Há 10 min", status: "em_revisao" },
+                { name: "Empresa ABC", task: currentView === 'suporte' ? "Enviou Contrato Social" : "Nova Proposta Enviada", time: "Há 10 min", status: "em_revisao" },
                 { name: "João Pereira", task: "Concluiu etapa de Boas Vindas", time: "Há 45 min", status: "concluida" },
-                { name: "Tech Solutions", task: "Aguardando upload de Logo", time: "Há 2 horas", status: "pendente" },
+                { name: "Tech Solutions", task: currentView === 'suporte' ? "Aguardando upload de Logo" : "Lead em Negociação", time: "Há 2 horas", status: "pendente" },
                 { name: "Maria Clara", task: "Enviou comprovante de residência", time: "Há 4 horas", status: "em_revisao" },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-4">
