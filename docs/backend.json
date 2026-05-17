@@ -1,8 +1,9 @@
+
 {
   "entities": {
     "UserProfile": {
       "title": "Perfil do Usuário",
-      "description": "Informações do usuário incluindo papel (admin/client) e dados institucionais.",
+      "description": "Dados do usuário incluindo papel administrativo ou institucional.",
       "type": "object",
       "properties": {
         "email": { "type": "string", "format": "email" },
@@ -14,18 +15,20 @@
         "cnpj": { "type": "string" },
         "clientCode": { "type": "string" },
         "activeProduct": { "type": "string" },
-        "updatedAt": { "type": "string" }
+        "updatedAt": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "approvedAt": { "type": "string" }
       },
       "required": ["email", "role", "displayName", "status"]
     }
   },
   "auth": {
-    "providers": ["google.com", "password"]
+    "providers": ["password", "google.com"]
   },
   "firestore": {
     "/users/{userId}": {
-      "schema": "UserProfile",
-      "description": "Dados de perfil do usuário indexados pelo UID."
+      "schema": { "$ref": "#/backend/entities/UserProfile" },
+      "description": "Perfis de usuários administradores e clientes institucionais."
     }
   }
 }

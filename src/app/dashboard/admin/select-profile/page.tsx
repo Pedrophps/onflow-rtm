@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -23,7 +24,7 @@ export default function SelectProfilePage() {
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
   useEffect(() => {
-    // Só redireciona se já houver um adminType salvo e não estivermos no processo de atualização
+    // Redireciona apenas se o perfil já estiver definido no Firestore
     if (!profileLoading && profile?.adminType && !isUpdating) {
       router.replace(`/dashboard/admin?view=${profile.adminType}`);
     }
@@ -43,32 +44,31 @@ export default function SelectProfilePage() {
       updatedAt: serverTimestamp()
     };
     
-    try {
-      // Usamos await para garantir que o Firestore recebeu os dados antes de mudar a rota
-      await setDoc(userDocRef, updateData, { merge: true });
-      
-      toast({
-        title: "Perfil Configurado",
-        description: `Ambiente de ${adminType} ativado com sucesso.`,
+    // Tentativa de gravação direta no Firestore
+    setDoc(userDocRef, updateData, { merge: true })
+      .then(() => {
+        toast({
+          title: "Perfil Configurado",
+          description: `Ambiente de ${adminType} ativado.`,
+        });
+        // Forçamos o redirecionamento com o parâmetro de visão
+        window.location.href = `/dashboard/admin?view=${adminType}`;
+      })
+      .catch(async (error) => {
+        setIsUpdating(false);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: 'write',
+          requestResourceData: updateData
+        }));
       });
-      
-      // O router.push ocorre apenas após a confirmação do Firestore
-      router.push(`/dashboard/admin?view=${adminType}`);
-    } catch (error: any) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: userDocRef.path,
-        operation: 'write',
-        requestResourceData: updateData
-      }));
-      setIsUpdating(false);
-    }
   };
 
   if (profileLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="size-10 animate-spin text-primary" />
-        <p className="text-muted-foreground font-medium">Sincronizando portal RTM...</p>
+        <p className="text-muted-foreground font-medium">Autenticando na Rede RTM...</p>
       </div>
     );
   }
@@ -77,9 +77,9 @@ export default function SelectProfilePage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="max-w-4xl w-full space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="space-y-4 text-center">
-          <h1 className="text-4xl font-bold font-headline text-slate-900">Portal OnFlow RTM</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Seja bem-vindo, <span className="text-primary font-bold">{user?.displayName?.split(' ')[0] || 'Admin'}</span>. <br/>Para continuar, identifique sua equipe de atuação.
+          <h1 className="text-4xl font-bold font-headline text-slate-900 tracking-tight">OnFlow RTM</h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Bem-vindo ao Hub Integrador. <br/>Para prosseguir, selecione sua equipe de atuação.
           </p>
         </div>
 
@@ -93,11 +93,11 @@ export default function SelectProfilePage() {
                 <Headset className="size-10" />
               </div>
               <CardTitle>Equipe de Suporte</CardTitle>
-              <CardDescription>Acompanhamento de infraestrutura e validação técnica.</CardDescription>
+              <CardDescription>Monitoramento técnico e gestão de infraestrutura.</CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">
-              <Button className="rounded-full font-bold gap-2" disabled={isUpdating}>
-                {isUpdating ? <Loader2 className="size-4 animate-spin" /> : "Selecionar Suporte"} <ArrowRight className="size-4" />
+              <Button className="rounded-full font-bold gap-2 px-8" disabled={isUpdating}>
+                {isUpdating ? <Loader2 className="size-4 animate-spin" /> : "Acessar Suporte"} <ArrowRight className="size-4" />
               </Button>
             </CardContent>
           </Card>
@@ -111,11 +111,11 @@ export default function SelectProfilePage() {
                 <Briefcase className="size-10" />
               </div>
               <CardTitle>Equipe Comercial</CardTitle>
-              <CardDescription>Aprovação institucional e configuração de produtos RTM.</CardDescription>
+              <CardDescription>Aprovação de clientes e configuração de produtos.</CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">
-              <Button variant="secondary" className="rounded-full font-bold gap-2" disabled={isUpdating}>
-                {isUpdating ? <Loader2 className="size-4 animate-spin" /> : "Selecionar Comercial"} <ArrowRight className="size-4" />
+              <Button variant="secondary" className="rounded-full font-bold gap-2 px-8" disabled={isUpdating}>
+                {isUpdating ? <Loader2 className="size-4 animate-spin" /> : "Acessar Comercial"} <ArrowRight className="size-4" />
               </Button>
             </CardContent>
           </Card>
