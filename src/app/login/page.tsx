@@ -34,7 +34,7 @@ export default function LoginPage() {
   const [cnpj, setCnpj] = useState('');
   const [connectionError, setConnectionError] = useState(false);
 
-  // Redireciona automaticamente se o usuário já estiver logado
+  // Redireciona automaticamente se o usuário já estiver logado ao carregar a página
   useEffect(() => {
     if (currentUser && !loading) {
       checkUserAndRedirect(currentUser);
@@ -78,6 +78,7 @@ export default function LoginPage() {
   };
 
   async function handleSocialLogin() {
+    if (loading) return;
     setLoading(true);
     setConnectionError(false);
     const provider = new GoogleAuthProvider();
@@ -85,6 +86,7 @@ export default function LoginPage() {
       const result = await signInWithPopup(auth, provider);
       await checkUserAndRedirect(result.user);
     } catch (error: any) {
+      console.error("Erro no login social:", error);
       toast({
         variant: "destructive",
         title: "Erro ao entrar",
@@ -96,6 +98,7 @@ export default function LoginPage() {
 
   async function handleEmailLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     setConnectionError(false);
     const formData = new FormData(e.currentTarget);
@@ -106,6 +109,7 @@ export default function LoginPage() {
       const result = await signInWithEmailAndPassword(auth, email, password);
       await checkUserAndRedirect(result.user);
     } catch (error: any) {
+      console.error("Erro no login por e-mail:", error);
       toast({
         variant: "destructive",
         title: "Falha no acesso",
@@ -117,6 +121,7 @@ export default function LoginPage() {
 
   async function handleSignUp(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     setConnectionError(false);
     const formData = new FormData(e.currentTarget);
@@ -142,6 +147,7 @@ export default function LoginPage() {
         createdAt: new Date().toISOString()
       };
 
+      // Gravação otimista (não aguarda o firestore para liberar a UI)
       setDoc(userRef, userData, { merge: true })
         .catch(async (error) => {
           const permissionError = new FirestorePermissionError({
@@ -157,12 +163,14 @@ export default function LoginPage() {
         description: "Seja bem-vindo ao OnFlow."
       });
 
+      // Redirecionamento imediato baseado na role selecionada no form
       if (role === 'admin') {
         router.push('/dashboard/admin/select-profile');
       } else {
         router.push('/dashboard/client');
       }
     } catch (error: any) {
+      console.error("Erro no cadastro:", error);
       toast({
         variant: "destructive",
         title: "Erro no cadastro",
@@ -186,7 +194,7 @@ export default function LoginPage() {
           router.push('/dashboard/client');
         }
       } else {
-        // Primeiro login social, cria perfil padrão
+        // Usuário novo via login social sem perfil no banco
         const userData = { 
           email: user.email, 
           role: 'client',
@@ -194,6 +202,7 @@ export default function LoginPage() {
           createdAt: new Date().toISOString()
         };
 
+        // Gravação otimista
         setDoc(userDocRef, userData)
           .catch(async () => {
             const permissionError = new FirestorePermissionError({
@@ -203,10 +212,13 @@ export default function LoginPage() {
             });
             errorEmitter.emit('permission-error', permissionError);
           });
+          
         router.push('/dashboard/client');
       }
     } catch (error: any) {
       console.error("Erro ao verificar usuário:", error);
+      setLoading(false); // Libera a UI se houver erro na busca do perfil
+      
       if (error.code === 'unavailable' || error.message?.includes('offline')) {
         setConnectionError(true);
         toast({
@@ -215,7 +227,6 @@ export default function LoginPage() {
           description: "Não foi possível verificar seu perfil. Verifique sua internet."
         });
       }
-      setLoading(false);
     }
   }
 
@@ -272,7 +283,7 @@ export default function LoginPage() {
                     </div>
                   </div>
                   <Button type="submit" className="w-full font-bold h-12" disabled={loading}>
-                    {loading ? <Loader2 className="animate-spin mr-2" /> : null}
+                    {loading ? <Loader2 className="animate-spin mr-2 size-4" /> : null}
                     {loading ? "Processando..." : "Acessar Portal"}
                   </Button>
                 </CardContent>
@@ -328,7 +339,7 @@ export default function LoginPage() {
                     </div>
                   </div>
                   <Button type="submit" className="w-full font-bold h-12" disabled={loading}>
-                    {loading ? <Loader2 className="animate-spin mr-2" /> : null}
+                    {loading ? <Loader2 className="animate-spin mr-2 size-4" /> : null}
                     {loading ? "Criando Conta..." : "Criar Conta"}
                   </Button>
                 </CardContent>
