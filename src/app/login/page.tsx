@@ -8,7 +8,7 @@ import {
   createUserWithEmailAndPassword,
   updateProfile
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,6 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Mail, Lock, Loader2, Headset, Briefcase, User, Wifi } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { UserProfile } from '@/lib/types';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -38,40 +37,21 @@ export default function LoginPage() {
     return lowerEmail.endsWith('@rtm.net.br') || lowerEmail.includes('admin');
   }, []);
 
-  const redirectBasedOnRole = useCallback((role: string, adminType?: string) => {
-    if (role === 'admin') {
-      if (adminType) {
-        router.push(`/dashboard/admin?view=${adminType}`);
-      } else {
-        router.push('/dashboard/admin/select-profile');
-      }
+  const fastRedirect = useCallback((userEmail: string | null) => {
+    if (isAdminEmail(userEmail)) {
+      // Mandamos para o dashboard admin. Se faltar o adminType, a própria página de lá redireciona para a seleção.
+      router.push('/dashboard/admin');
     } else {
       router.push('/dashboard/client');
     }
-  }, [router]);
+  }, [router, isAdminEmail]);
 
+  // Redirecionamento instantâneo assim que o estado de Auth muda
   useEffect(() => {
     if (currentUser && !authLoading) {
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      
-      // Tentativa resiliente de buscar o perfil com fallback imediato para erro de rede
-      getDoc(userDocRef)
-        .then((userDoc) => {
-          if (userDoc.exists()) {
-            const profile = userDoc.data() as UserProfile;
-            redirectBasedOnRole(profile.role, profile.adminType);
-          } else {
-            const role = isAdminEmail(currentUser.email) ? 'admin' : 'client';
-            redirectBasedOnRole(role);
-          }
-        })
-        .catch(() => {
-          // Se falhar (ex: offline ou timeout), usa o fallback do e-mail para não travar o usuário
-          const role = isAdminEmail(currentUser.email) ? 'admin' : 'client';
-          redirectBasedOnRole(role);
-        });
+      fastRedirect(currentUser.email);
     }
-  }, [currentUser, authLoading, isAdminEmail, redirectBasedOnRole, db]);
+  }, [currentUser, authLoading, fastRedirect]);
 
   const handleSignUp = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -85,18 +65,17 @@ export default function LoginPage() {
       const role = isAdminEmail(email) ? 'admin' : 'client';
       const userRef = doc(db, 'users', result.user.uid);
 
-      const userData = {
+      // Gravação em background TOTALMENTE não-bloqueante
+      setDoc(userRef, {
         email,
         role,
         status: role === 'admin' ? 'approved' : 'pending',
         displayName: name,
         cnpj: role === 'client' ? cnpj : '',
         createdAt: new Date().toISOString()
-      };
+      }, { merge: true }).catch(() => {});
 
-      // Gravação em background sem await para agilizar a navegação
-      setDoc(userRef, userData, { merge: true }).catch(() => {});
-      redirectBasedOnRole(role);
+      fastRedirect(email);
     } catch (error: any) {
       setLoading(false);
       toast({
@@ -117,14 +96,18 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, targetEmail, targetPassword);
-      // O useEffect acima cuidará do redirecionamento de forma resiliente
+      // O useEffect cuidará do redirecionamento instantâneo
     } catch (error: any) {
       setLoading(false);
-      toast({ variant: "destructive", title: "Falha no acesso", description: "Verifique suas credenciais ou conexão." });
+      toast({ 
+        variant: "destructive", 
+        title: "Falha no acesso", 
+        description: "Verifique suas credenciais ou conexão." 
+      });
     }
   };
 
-  const quickAccess = async (type: 'suporte' | 'comercial' | 'client') => {
+  const quickAccess = (type: 'suporte' | 'comercial' | 'client') => {
     let qEmail = '';
     let qPass = '123456';
     if (type === 'suporte') qEmail = 'suporte.rtm@rtm.net.br';
@@ -134,7 +117,13 @@ export default function LoginPage() {
     handleEmailLogin(undefined, qEmail, qPass);
   };
 
-  if (authLoading && !currentUser) return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary size-8" /></div>;
+  if (authLoading && !currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="animate-spin text-primary size-8" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6">

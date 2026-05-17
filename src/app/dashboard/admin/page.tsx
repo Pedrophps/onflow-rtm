@@ -51,12 +51,11 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Determina a visão atual com base na URL ou no perfil salvo
+  // Determina a visão atual: 1. URL (maior prioridade) | 2. Banco de Dados | 3. Default
   const currentView = searchParams.get('view') || profile?.adminType || 'suporte';
 
-  // Trava de segurança: Se o admin não selecionou o tipo de acesso, manda para a seleção
+  // Se o carregamento terminou e REALMENTE não temos adminType gravado no banco nem na URL, vai para seleção
   useEffect(() => {
-    // Só redirecionamos se o carregamento do perfil terminou e REALMENTE não temos o dado nem na URL nem no banco
     if (!profileLoading && profile && profile.role === 'admin' && !profile.adminType && !searchParams.get('view')) {
       router.replace('/dashboard/admin/select-profile');
     }
