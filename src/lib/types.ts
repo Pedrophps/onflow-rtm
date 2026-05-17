@@ -10,6 +10,7 @@ export interface UserProfile {
   role: UserRole;
   adminType?: AdminType;
   displayName: string;
+  institutionName?: string;
   cnpj?: string;
   status: UserStatus;
   clientCode?: string;

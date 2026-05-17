@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mail, Lock, Loader2, Headset, Briefcase, User, Wifi } from 'lucide-react';
+import { Mail, Lock, Loader2, Headset, Briefcase, User, Wifi, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 
@@ -30,6 +30,7 @@ export default function LoginPage() {
   
   // Form states
   const [cnpj, setCnpj] = useState('');
+  const [institutionName, setInstitutionName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -66,11 +67,13 @@ export default function LoginPage() {
       const role = isAdminEmail(email) ? 'admin' : 'client';
       const userRef = doc(db, 'users', result.user.uid);
 
+      // Gravação do perfil no Firestore sem await para não bloquear o redirecionamento
       setDoc(userRef, {
         email,
         role,
         status: role === 'admin' ? 'approved' : 'pending',
         displayName: name || 'Usuário RTM',
+        institutionName: role === 'client' ? institutionName : 'RTM',
         cnpj: role === 'client' ? cnpj : '',
         createdAt: new Date().toISOString()
       }, { merge: true }).catch((err) => {
@@ -95,6 +98,7 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      // O useEffect lidará com o redirecionamento assim que o estado do user mudar
     } catch (error: any) {
       setLoading(false);
       toast({ 
@@ -110,23 +114,26 @@ export default function LoginPage() {
     if (type === 'suporte') {
       setEmail('suporte.rtm@rtm.net.br');
       setPassword(pass);
-      setName('Membro RTM (Suporte)');
+      setName('João Silva (Suporte)');
       setCnpj('');
+      setInstitutionName('RTM');
     } else if (type === 'comercial') {
       setEmail('comercial.rtm@rtm.net.br');
       setPassword(pass);
-      setName('Membro RTM (Comercial)');
+      setName('Maria Souza (Comercial)');
       setCnpj('');
+      setInstitutionName('RTM');
     } else {
       setEmail('cliente.teste@instituicao.com.br');
       setPassword(pass);
-      setName('Instituição Financeira Beta');
+      setName('Roberto Pereira');
       setCnpj('12.345.678/0001-99');
+      setInstitutionName('Banco Digital Beta S.A.');
     }
     
     toast({
       title: "Campos Preenchidos",
-      description: `O formulário foi preenchido para o perfil de ${type}. Clique em entrar para acessar.`,
+      description: `O formulário foi preenchido para o perfil de ${type}.`,
     });
   };
 
@@ -181,40 +188,57 @@ export default function LoginPage() {
               <form onSubmit={handleSignUp}>
                 <CardContent className="space-y-4 pt-4">
                   <div className="space-y-2">
-                    <Label>Nome Completo</Label>
-                    <Input placeholder="Seu nome" required value={name} onChange={e => setName(e.target.value)} />
+                    <Label>Nome Completo (Colaborador)</Label>
+                    <Input placeholder="Seu nome completo" required value={name} onChange={e => setName(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label>E-mail Corporativo</Label>
                     <Input type="email" placeholder="seu@rtm.net.br" required value={email} onChange={e => setEmail(e.target.value)} />
                   </div>
+                  
                   {!isAdminEmail(email) && (
-                    <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                      <Label>CNPJ da Instituição</Label>
-                      <Input placeholder="00.000.000/0000-00" value={cnpj} onChange={e => setCnpj(e.target.value)} required />
+                    <div className="space-y-4 animate-in fade-in slide-in-from-top-1">
+                      <div className="space-y-2">
+                        <Label>Nome da Instituição / Razão Social</Label>
+                        <div className="relative">
+                          <Building2 className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                          <Input 
+                            placeholder="Ex: Banco Investimento S.A." 
+                            className="pl-10"
+                            value={institutionName} 
+                            onChange={e => setInstitutionName(e.target.value)} 
+                            required 
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>CNPJ da Instituição</Label>
+                        <Input placeholder="00.000.000/0000-00" value={cnpj} onChange={e => setCnpj(e.target.value)} required />
+                      </div>
                     </div>
                   )}
+
                   <div className="space-y-2">
-                    <Label>Senha</Label>
+                    <Label>Senha de Acesso</Label>
                     <Input type="password" placeholder="Mínimo 6 caracteres" required value={password} onChange={e => setPassword(e.target.value)} />
                   </div>
-                  <Button type="submit" className="w-full font-bold h-12" disabled={loading}>Criar Conta</Button>
+                  <Button type="submit" className="w-full font-bold h-12" disabled={loading}>Criar Minha Conta</Button>
                 </CardContent>
               </form>
             </TabsContent>
             <CardFooter className="flex flex-col gap-4 border-t pt-6 bg-muted/20">
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest text-center w-full">Preencher para Teste</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest text-center w-full">Atalhos de Preenchimento (Teste)</p>
               <div className="grid grid-cols-1 gap-2 w-full">
                 <div className="grid grid-cols-2 gap-2">
                   <Button variant="outline" size="sm" className="gap-2 bg-white h-10" onClick={() => fillQuickAccess('suporte')} disabled={loading}>
-                    <Headset className="size-3.5" /> Admin Suporte
+                    <Headset className="size-3.5" /> Perfil Suporte
                   </Button>
                   <Button variant="outline" size="sm" className="gap-2 bg-white h-10" onClick={() => fillQuickAccess('comercial')} disabled={loading}>
-                    <Briefcase className="size-3.5" /> Admin Comercial
+                    <Briefcase className="size-3.5" /> Perfil Comercial
                   </Button>
                 </div>
                 <Button variant="outline" size="sm" className="gap-2 bg-white h-10" onClick={() => fillQuickAccess('client')} disabled={loading}>
-                  <User className="size-3.5" /> Cliente Financeiro
+                  <User className="size-3.5" /> Cliente Institucional
                 </Button>
                 <Link href="/debug" className="flex items-center justify-center gap-2 text-[10px] text-amber-600 hover:text-amber-700 font-bold uppercase tracking-tighter mt-2">
                   <Wifi className="size-3" /> Ver Diagnóstico de Conexão
