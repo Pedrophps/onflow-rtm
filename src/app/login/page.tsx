@@ -67,6 +67,10 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
+      toast({
+        title: "Login realizado com sucesso!",
+        description: `Bem-vindo de volta, ${result.user.displayName || result.user.email}`
+      });
       await checkUserAndRedirect(result.user.uid, result.user.email!);
     } catch (error: any) {
       toast({
@@ -87,6 +91,10 @@ export default function LoginPage() {
 
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
+      toast({
+        title: "Login realizado com sucesso!",
+        description: "Acessando seu portal corporativo..."
+      });
       await checkUserAndRedirect(result.user.uid, email);
     } catch (error: any) {
       toast({
@@ -121,6 +129,11 @@ export default function LoginPage() {
         displayName: name,
         cnpj: cnpjValue,
         createdAt: new Date().toISOString()
+      });
+
+      toast({
+        title: "Conta criada com sucesso!",
+        description: "Seja bem-vindo ao OnFlow by RTM."
       });
 
       if (role === 'admin') {
