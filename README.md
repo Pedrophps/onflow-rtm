@@ -1,3 +1,4 @@
+
 # OnFlow RTM - Memória Operacional de Longo Prazo
 
 Este documento é a fonte única de verdade (Single Source of Truth) para o projeto OnFlow RTM. Ele segue uma **Política de Versionamento Aditivo**: nenhuma informação é apagada, apenas acrescentada ou corrigida visualmente através de notações específicas.
@@ -28,7 +29,7 @@ A arquitetura é dividida em:
 ### ✅ # DECISÕES JÁ TOMADAS
 - **Auth**: Firebase Auth como provedor de identidade. Domínios `@rtm.net.br` são promovidos a candidatos administrativos automaticamente.
 - **Database**: Firestore como única fonte de persistência. Coleções principais: `users`, `onboardingFlows`, `submissions`.
-- **UI/UX**: Estética "Modern Corporate" usando ShadCN. Cores: RTM Red (#D32F2F) e Soft Beige (#F5F5DC).
+- **UI/UX**: Estética "Modern Corporate" usando ShadCN. ~~Cores: RTM Red (#D32F2F) e Soft Beige (#F5F5DC).~~ Cores: RTM Red (#D32F2F) e Cinza Claro (#FAFAFA).
 - **Security**: Regras de segurança do Firestore aplicadas **manualmente** para contornar falhas de provisionamento automático da API.
 
 ### 🛠️ # CONTEXTO TÉCNICO
@@ -68,6 +69,13 @@ A arquitetura é dividida em:
 
 ### 🚀 # RESUMO EXECUTIVO PARA CONTINUIDADE
 O sistema está com a infraestrutura de dados **validada**. As regras de segurança protegem as coleções críticas. O foco agora deve ser a **Lógica de Negócio**: transformar as submissões estáticas em um fluxo dinâmico onde o Admin possa aprovar/rejeitar documentos com feedback em tempo real.
+
+---
+
+## [UPDATE - V1.3 - AJUSTE ESTÉTICO E POLÍTICA DE CORES]
+- **Mudança Visual**: O fundo bege foi removido para dar lugar a um cinza neutro e profissional (#FAFAFA).
+- **Motivo**: Alinhamento com a identidade visual sóbria do mercado financeiro e melhoria na legibilidade.
+- **Ação**: Atualizado `src/app/globals.css`.
 
 ---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*
