@@ -23,7 +23,7 @@ export default function SelectProfilePage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Redirecionamento automático agressivo se já possuir perfil salvo no banco
+  // Redirecionamento automático se já possuir perfil salvo no banco
   useEffect(() => {
     if (!profileLoading && profile?.adminType && !isUpdating) {
       router.replace(`/dashboard/admin?view=${profile.adminType}`);
@@ -43,7 +43,7 @@ export default function SelectProfilePage() {
       displayName: user.displayName || 'Administrador'
     };
     
-    // Navegação imediata para melhor UX
+    // Navegação imediata para melhor UX e parâmetro de URL para fallback
     router.push(`/dashboard/admin?view=${adminType}`);
 
     // Persistência no Firestore
@@ -76,9 +76,9 @@ export default function SelectProfilePage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="max-w-4xl w-full space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="space-y-4 text-center">
-          <h1 className="text-4xl font-bold font-headline">Seja bem-vindo, <span className="text-primary">{user?.displayName?.split(' ')[0] || 'Administrador'}</span>!</h1>
+          <h1 className="text-4xl font-bold font-headline text-slate-900">Seja bem-vindo, <span className="text-primary">{user?.displayName?.split(' ')[0] || 'Administrador'}</span>!</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Para configurar sua conta, selecione sua equipe de atuação na RTM.
+            Para configurar sua conta OnFlow, selecione sua equipe de atuação na RTM.
             <span className="block mt-2 text-sm font-semibold text-amber-600">Esta escolha será salva permanentemente no seu perfil.</span>
           </p>
         </div>
@@ -114,7 +114,7 @@ export default function SelectProfilePage() {
               </div>
               <CardTitle className="text-2xl font-headline">Equipe Comercial</CardTitle>
               <CardDescription className="text-base px-6 mt-2">
-                Visualize métricas de vendas, novos leads e o funil de conversão de negócios.
+                Aprove novos clientes, atribua IDs RTM e selecione os produtos contratados.
               </CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">

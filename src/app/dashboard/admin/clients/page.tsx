@@ -32,7 +32,7 @@ export default function ClientsAdminPage() {
   // Define a visão: prioriza banco, depois URL.
   const currentView = profile?.adminType || searchParams.get('view');
   
-  // Query para buscar todos os clientes
+  // Query para buscar todos os usuários com papel de cliente
   const clientsQuery = useMemo(() => query(collection(db, "users"), where("role", "==", "client")), [db]);
   const { data: clients, loading: clientsLoading } = useCollection<UserProfile>(clientsQuery);
 
@@ -62,7 +62,6 @@ export default function ClientsAdminPage() {
       approvedAt: new Date().toISOString()
     };
 
-    // Atualiza no Firestore sem await para interface rápida
     updateDoc(clientRef, updateData)
       .catch(async (error) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
