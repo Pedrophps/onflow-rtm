@@ -29,7 +29,7 @@ export default function ClientsAdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
   
-  // Define a visão: prioriza banco, depois URL.
+  // Define a visão atual baseada no banco ou URL
   const currentView = profile?.adminType || searchParams.get('view');
   
   // Query para buscar todos os usuários com papel de cliente
@@ -108,7 +108,7 @@ export default function ClientsAdminPage() {
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
-            <h1 className="text-3xl font-bold font-headline">Gestão de Clientes</h1>
+            <h1 className="text-3xl font-bold font-headline text-slate-900">Gestão de Clientes</h1>
             <p className="text-muted-foreground">Administração de instituições e controle de acessos corporativos.</p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">

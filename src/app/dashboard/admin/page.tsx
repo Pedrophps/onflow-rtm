@@ -51,13 +51,14 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Lógica de visualização: Prioriza o que está no banco, depois URL, depois nada.
+  // Lógica de visualização: Prioriza o que está no banco, depois URL.
   const currentView = profile?.adminType || searchParams.get('view');
   const isAdminByEmail = user?.email?.endsWith('@rtm.net.br') || user?.email?.includes('admin');
 
   useEffect(() => {
-    // Só redireciona se o carregamento terminou e realmente não temos um adminType definido no banco
-    if (!userLoading && user && !profileLoading) {
+    // Só redireciona se o carregamento do usuário e do perfil terminarem
+    // E se realmente não houver adminType e nem parâmetro na URL
+    if (!userLoading && !profileLoading && user) {
       if (isAdminByEmail && !profile?.adminType && !searchParams.get('view')) {
         router.replace('/dashboard/admin/select-profile');
       }
@@ -75,9 +76,16 @@ export default function AdminPage() {
     );
   }
 
-  // Se for admin mas não tiver visão escolhida nem na URL nem no banco, redireciona
+  // Se for admin mas não tiver visão escolhida nem na URL nem no banco, aguarda o useEffect
   if (isAdminByEmail && !currentView) {
-    return null;
+    return (
+      <DashboardLayout role="admin">
+        <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+          <Loader2 className="size-8 animate-spin text-primary" />
+          <p className="text-muted-foreground font-medium text-center">Verificando permissões...</p>
+        </div>
+      </DashboardLayout>
+    );
   }
 
   return (
@@ -85,7 +93,7 @@ export default function AdminPage() {
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 border-b pb-6">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold font-headline">Painel OnFlow</h1>
+            <h1 className="text-3xl font-bold font-headline text-slate-900">Painel OnFlow</h1>
             <div className="flex items-center gap-2 text-primary font-medium animate-in fade-in duration-500">
               {currentView === 'suporte' ? (
                 <>
@@ -154,7 +162,7 @@ export default function AdminPage() {
         </div>
 
         <div className="grid gap-8 md:grid-cols-7">
-          <Card className="md:col-span-4">
+          <Card className="md:col-span-4 bg-white">
             <CardHeader>
               <CardTitle className="text-lg">Fluxo Operacional</CardTitle>
             </CardHeader>
@@ -178,7 +186,7 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
-          <Card className="md:col-span-3">
+          <Card className="md:col-span-3 bg-white">
             <CardHeader>
               <CardTitle className="text-lg">Atividade Recente</CardTitle>
             </CardHeader>

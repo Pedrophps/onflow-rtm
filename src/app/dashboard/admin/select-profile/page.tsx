@@ -23,8 +23,8 @@ export default function SelectProfilePage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Redirecionamento automático se já possuir perfil salvo no banco
   useEffect(() => {
+    // Se já carregou e tem perfil, vai para o dashboard
     if (!profileLoading && profile?.adminType && !isUpdating) {
       router.replace(`/dashboard/admin?view=${profile.adminType}`);
     }
@@ -43,11 +43,12 @@ export default function SelectProfilePage() {
       displayName: user.displayName || 'Administrador'
     };
     
-    // Navegação imediata para melhor UX e parâmetro de URL para fallback
-    router.push(`/dashboard/admin?view=${adminType}`);
-
-    // Persistência no Firestore
+    // Gravamos primeiro, garantindo a persistência
     setDoc(userDocRef, updateData, { merge: true })
+      .then(() => {
+        // Só navegamos após o sucesso da gravação para evitar loops
+        router.push(`/dashboard/admin?view=${adminType}`);
+      })
       .catch(async (error) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: userDocRef.path,
@@ -63,7 +64,7 @@ export default function SelectProfilePage() {
     router.push('/login');
   };
 
-  if (profileLoading || (profile?.adminType && !isUpdating)) {
+  if (profileLoading || (profile?.adminType && !isUpdating) || isUpdating) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="size-10 animate-spin text-primary" />
