@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/status-badge";
 import { OnboardingStage, UserProfile } from "@/lib/types";
-import { CheckCircle2, ChevronDown, ChevronUp, FileUp, MessageSquare, Send, Clock, ShieldAlert, Loader2, Zap } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronUp, FileUp, Send, Clock, ShieldAlert, Loader2, Zap } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,8 +57,14 @@ export default function ClientPage() {
     );
   }
 
-  // Bloqueio de Segurança: Se o cliente ainda não foi aprovado
-  if (profile?.status === 'pending') {
+  // Lógica Rigorosa de Validação: 
+  // O usuário só é considerado "validado" se:
+  // 1. Status for 'approved'
+  // 2. Tiver um Código de Identificação (clientCode)
+  // 3. Tiver um Produto Ativo (activeProduct)
+  const isFullyValidated = profile?.status === 'approved' && profile?.clientCode && profile?.activeProduct;
+
+  if (!isFullyValidated && profile?.status !== 'rejected') {
     return (
       <DashboardLayout role="client">
         <div className="max-w-2xl mx-auto mt-10 md:mt-20 text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -68,32 +74,36 @@ export default function ClientPage() {
           <div className="space-y-4">
             <h1 className="text-3xl font-bold font-headline">Acesso em Análise</h1>
             <p className="text-muted-foreground text-lg leading-relaxed">
-              Olá, <span className="font-bold text-foreground">{profile.displayName}</span>. 
-              Sua solicitação para a instituição <span className="font-semibold text-primary">{profile.institutionName}</span> está sendo processada.
+              Olá, <span className="font-bold text-foreground">{profile?.displayName}</span>. 
+              Sua solicitação para a instituição <span className="font-semibold text-primary">{profile?.institutionName}</span> está sendo processada.
             </p>
           </div>
           
           <Card className="bg-white border-2 border-amber-100 shadow-sm overflow-hidden">
             <div className="bg-amber-50 px-6 py-3 border-b border-amber-100 flex items-center gap-2">
               <ShieldAlert className="size-4 text-amber-600" />
-              <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">Aguardando Validação Comercial</span>
+              <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">Aguardando Validação e Ativação</span>
             </div>
             <CardContent className="p-6 text-left space-y-4">
               <p className="text-sm text-muted-foreground">
-                Para garantir a segurança do Hub RTM, cada nova conta passa por uma verificação manual de CNPJ e conformidade técnica.
+                Para liberar as ferramentas do Hub RTM, seu cadastro precisa ser validado pelo comercial e o produto configurado pelo suporte.
               </p>
               <div className="grid gap-3">
                 <div className="flex items-center gap-3 text-sm">
-                  <div className="size-1.5 rounded-full bg-emerald-500" />
-                  <span className="font-medium text-emerald-700">Cadastro de Instituição Recebido</span>
+                  <div className={cn("size-1.5 rounded-full", profile?.status ? "bg-emerald-500" : "bg-slate-300")} />
+                  <span className={cn("font-medium", profile?.status ? "text-emerald-700" : "text-muted-foreground")}>Cadastro Recebido</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
-                  <div className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  <span className="font-medium">Análise Comercial e Atribuição de Código RTM</span>
+                  <div className={cn("size-1.5 rounded-full", (profile?.status === 'approved' && profile?.clientCode) ? "bg-emerald-500" : "bg-amber-500 animate-pulse")} />
+                  <span className={cn("font-medium", (profile?.status === 'approved' && profile?.clientCode) ? "text-emerald-700" : "text-foreground")}>
+                    Atribuição de Código RTM (Comercial)
+                  </span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
-                  <div className="size-1.5 rounded-full bg-slate-300" />
-                  <span className="text-muted-foreground">Liberação das Etapas de Implantação</span>
+                  <div className={cn("size-1.5 rounded-full", profile?.activeProduct ? "bg-emerald-500" : "bg-slate-300")} />
+                  <span className={cn("font-medium", profile?.activeProduct ? "text-emerald-700" : "text-muted-foreground")}>
+                    Ativação do Produto e Onboarding
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -110,7 +120,6 @@ export default function ClientPage() {
     );
   }
 
-  // Caso o usuário seja rejeitado
   if (profile?.status === 'rejected') {
     return (
       <DashboardLayout role="client">
@@ -119,7 +128,7 @@ export default function ClientPage() {
             <ShieldAlert className="size-10" />
           </div>
           <h1 className="text-2xl font-bold">Acesso não autorizado</h1>
-          <p className="text-muted-foreground">Sua solicitação foi recusada por nossa equipe comercial. Entre em contato com seu gerente de contas RTM para verificar a conformidade do seu cadastro.</p>
+          <p className="text-muted-foreground">Sua solicitação foi recusada. Entre em contato com seu gerente de contas RTM para verificar a conformidade do seu cadastro.</p>
         </div>
       </DashboardLayout>
     );
@@ -136,7 +145,7 @@ export default function ClientPage() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1 px-3">
-                  <CheckCircle2 className="size-3" /> Acesso Ativo
+                  <CheckCircle2 className="size-3" /> Acesso Validado e Ativo
                 </Badge>
               </div>
               <h1 className="text-2xl font-bold font-headline">Olá, {profile?.displayName?.split(' ')[0]}! 👋</h1>
