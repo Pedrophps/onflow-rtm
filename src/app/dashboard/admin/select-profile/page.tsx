@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -22,6 +23,7 @@ export default function SelectProfilePage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
+  // Redireciona se o perfil já estiver configurado
   useEffect(() => {
     if (!profileLoading && profile?.adminType && !isUpdating) {
       router.replace(`/dashboard/admin?view=${profile.adminType}`);
@@ -42,30 +44,30 @@ export default function SelectProfilePage() {
       updatedAt: serverTimestamp()
     };
     
-    setDoc(userDocRef, updateData, { merge: true })
-      .then(() => {
-        toast({
-          title: "Perfil Configurado",
-          description: `Ambiente de ${adminType} ativado.`,
-        });
-        // Usamos window.location para forçar um refresh total e garantir o estado
-        window.location.href = `/dashboard/admin?view=${adminType}`;
-      })
-      .catch(async (error) => {
-        setIsUpdating(false);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: 'write',
-          requestResourceData: updateData
-        }));
+    // Await explícito para garantir a persistência antes do redirecionamento
+    try {
+      await setDoc(userDocRef, updateData, { merge: true });
+      toast({
+        title: "Perfil Configurado",
+        description: `Ambiente de ${adminType} ativado com sucesso no Firestore.`,
       });
+      // Forçamos o redirecionamento via URL para resetar estados de cache
+      window.location.href = `/dashboard/admin?view=${adminType}`;
+    } catch (error: any) {
+      setIsUpdating(false);
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: userDocRef.path,
+        operation: 'write',
+        requestResourceData: updateData
+      }));
+    }
   };
 
   if (profileLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="size-10 animate-spin text-primary" />
-        <p className="text-muted-foreground font-medium">Autenticando na Rede RTM...</p>
+        <p className="text-muted-foreground font-medium">Validando credenciais RTM...</p>
       </div>
     );
   }
@@ -76,7 +78,7 @@ export default function SelectProfilePage() {
         <div className="space-y-4 text-center">
           <h1 className="text-4xl font-bold font-headline text-primary tracking-tight">OnFlow RTM</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Selecione seu ambiente de trabalho para continuar.
+            Selecione seu ambiente de trabalho para continuar o atendimento.
           </p>
         </div>
 
@@ -90,7 +92,7 @@ export default function SelectProfilePage() {
                 <Headset className="size-10" />
               </div>
               <CardTitle>Suporte Técnico</CardTitle>
-              <CardDescription>Monitoramento e infraestrutura.</CardDescription>
+              <CardDescription>Infraestrutura e redes críticas.</CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">
               <Button className="rounded-full font-bold gap-2 px-8" disabled={isUpdating}>
@@ -108,7 +110,7 @@ export default function SelectProfilePage() {
                 <Briefcase className="size-10" />
               </div>
               <CardTitle>Gestão Comercial</CardTitle>
-              <CardDescription>Aprovação e onboarding.</CardDescription>
+              <CardDescription>Onboarding e ativação de clientes.</CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">
               <Button variant="secondary" className="rounded-full font-bold gap-2 px-8" disabled={isUpdating}>
