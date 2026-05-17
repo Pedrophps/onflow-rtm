@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%; /* Light Gray / White #FAFAFA */
+    --background: 0 0% 96%; /* Cinza Claro Refinado #F5F5F5 */
     --foreground: 0 0% 15%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 15%;
@@ -21,7 +21,7 @@
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 80%;
+    --border: 0 0% 88%;
     --input: 0 0% 89.8%;
     --ring: 0 64% 50%;
     --radius: 0.75rem;
@@ -29,7 +29,7 @@
     --sidebar-foreground: 0 0% 20%;
     --sidebar-primary: 0 64% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent: 0 0% 94%;
     --sidebar-accent-foreground: 0 64% 50%;
     --sidebar-border: 0 0% 90%;
     --sidebar-ring: 0 64% 50%;
