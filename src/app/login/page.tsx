@@ -15,9 +15,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mail, Lock, Loader2, Headset, Briefcase, User } from 'lucide-react';
+import { Mail, Lock, Loader2, Headset, Briefcase, User, Wifi } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserProfile } from '@/lib/types';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -115,11 +116,11 @@ export default function LoginPage() {
     const targetPassword = customPassword || password;
 
     try {
-      const result = await signInWithEmailAndPassword(auth, targetEmail, targetPassword);
+      await signInWithEmailAndPassword(auth, targetEmail, targetPassword);
       // O useEffect acima cuidará do redirecionamento de forma resiliente
     } catch (error: any) {
       setLoading(false);
-      toast({ variant: "destructive", title: "Falha no acesso", description: "Verifique suas credenciais." });
+      toast({ variant: "destructive", title: "Falha no acesso", description: "Verifique suas credenciais ou conexão." });
     }
   };
 
@@ -207,6 +208,9 @@ export default function LoginPage() {
                 <Button variant="outline" size="sm" className="gap-2 bg-white" onClick={() => quickAccess('client')} disabled={loading}>
                   <User className="size-3.5" /> Cliente
                 </Button>
+                <Link href="/debug" className="flex items-center justify-center gap-2 text-[10px] text-amber-600 hover:text-amber-700 font-bold uppercase tracking-tighter mt-2">
+                  <Wifi className="size-3" /> Problemas de Conexão? Ver Diagnóstico
+                </Link>
               </div>
             </CardFooter>
           </Tabs>
