@@ -5,8 +5,8 @@ Este documento consolida toda a arquitetura e progresso do projeto para continui
 
 ---
 
-## ⚡ ESTADO ATUAL: CONFIGURADO
-As regras do Firestore e o banco de dados foram provisionados manualmente via Console do Firebase. O sistema agora possui persistência total.
+## ⚡ ESTADO ATUAL: CONFIGURAÇÃO DE SEGURANÇA CONCLUÍDA
+As regras do Firestore e o banco de dados foram provisionados. O sistema agora possui persistência total e proteção por RBAC.
 
 ### 🏗 ESTRUTURA TÉCNICA
 - **Auth**: E-mail/Senha + RBAC (Role-Based Access Control).
@@ -14,6 +14,12 @@ As regras do Firestore e o banco de dados foram provisionados manualmente via Co
 - **RBAC**: 
   - `admin`: Pode gerenciar fluxos e usuários.
   - `client`: Acompanha sua própria jornada e envia evidências.
+
+---
+
+## 🧪 VALIDAÇÃO
+Para testar se sua configuração manual do Firebase funcionou, acesse:
+`http://localhost:9002/debug/integration-test`
 
 ---
 
