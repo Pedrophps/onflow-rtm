@@ -22,7 +22,8 @@ import {
   PhoneCall,
   CreditCard,
   ExternalLink,
-  Menu
+  Menu,
+  Wifi
 } from 'lucide-react';
 import {
   Sheet,
@@ -329,9 +330,17 @@ export default function Home() {
       </section>
 
       <footer className="py-12 border-t bg-white">
-        <div className="container mx-auto px-6 text-center">
-          <p className="font-bold text-primary text-xl mb-4">OnFlow by RTM</p>
+        <div className="container mx-auto px-6 text-center space-y-6">
+          <p className="font-bold text-primary text-xl">OnFlow by RTM</p>
           <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} RTM - Hub Integrador do Mercado Financeiro. Todos os direitos reservados.</p>
+          <div className="pt-4 border-t w-max mx-auto px-8">
+            <Link 
+              href="/debug" 
+              className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-amber-600 hover:text-amber-700 transition-colors"
+            >
+              <Wifi className="size-3" /> Testar Conexão com Firebase
+            </Link>
+          </div>
         </div>
       </footer>
     </main>
