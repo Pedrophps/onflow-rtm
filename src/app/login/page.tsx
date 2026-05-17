@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useAuth, useFirestore } from '@/firebase';
+import { useState, useEffect } from 'react';
+import { useAuth, useFirestore, useUser } from '@/firebase';
 import { 
   signInWithEmailAndPassword, 
   signInWithPopup, 
@@ -28,8 +28,16 @@ export default function LoginPage() {
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const { user: currentUser, loading: authLoading } = useUser();
   const [loading, setLoading] = useState(false);
   const [cnpj, setCnpj] = useState('');
+
+  // Redireciona automaticamente se o usuário já estiver logado
+  useEffect(() => {
+    if (currentUser && !loading) {
+      checkUserAndRedirect(currentUser);
+    }
+  }, [currentUser]);
 
   const formatCNPJ = (value: string) => {
     return value
@@ -127,7 +135,6 @@ export default function LoginPage() {
         createdAt: new Date().toISOString()
       };
 
-      // Mutações no Firestore sem await para melhor responsividade
       setDoc(userRef, userData, { merge: true })
         .catch(async (error) => {
           const permissionError = new FirestorePermissionError({
@@ -140,10 +147,9 @@ export default function LoginPage() {
 
       toast({
         title: "Conta criada com sucesso!",
-        description: "Seja bem-vindo ao OnFlow by RTM."
+        description: "Seja bem-vindo ao OnFlow."
       });
 
-      // Redirecionamento imediato
       if (role === 'admin') {
         router.push('/dashboard/admin/select-profile');
       } else {
@@ -166,14 +172,10 @@ export default function LoginPage() {
       
       if (userDoc.exists()) {
         const role = userDoc.data().role;
-        toast({
-          title: "Login realizado com sucesso!",
-          description: `Bem-vindo de volta, ${userDoc.data().displayName || user.email}`
-        });
         if (role === 'admin') {
           router.push('/dashboard/admin/select-profile');
         } else {
-          router.push(`/dashboard/${role}`);
+          router.push('/dashboard/client');
         }
       } else {
         // Primeiro login social, cria perfil padrão
@@ -193,17 +195,20 @@ export default function LoginPage() {
             });
             errorEmitter.emit('permission-error', permissionError);
           });
-
-        toast({
-          title: "Bem-vindo!",
-          description: "Seu perfil de acesso foi criado."
-        });
         router.push('/dashboard/client');
       }
     } catch (error) {
       console.error("Erro ao verificar usuário:", error);
       setLoading(false);
     }
+  }
+
+  if (authLoading && !currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="size-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
