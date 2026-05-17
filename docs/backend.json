@@ -21,16 +21,46 @@
       },
       "required": ["email", "role", "displayName", "status"]
     },
-    "OnboardingStage": {
-      "title": "Etapa de Onboarding",
-      "description": "Definição de uma fase no processo de implantação.",
+    "OnboardingFlow": {
+      "title": "Fluxo de Onboarding",
+      "description": "Template de sequência de etapas para um produto ou perfil de cliente.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "active": { "type": "boolean" },
+        "productType": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "productType"]
+    },
+    "Stage": {
+      "title": "Etapa do Fluxo",
+      "description": "Definição de uma fase específica dentro de um fluxo.",
       "type": "object",
       "properties": {
         "title": { "type": "string" },
         "description": { "type": "string" },
         "order": { "type": "number" },
-        "status": { "type": "string", "enum": ["pendente", "em_revisao", "concluida"] }
-      }
+        "type": { "type": "string", "enum": ["info", "upload", "form"] },
+        "required": { "type": "boolean" }
+      },
+      "required": ["title", "order", "type"]
+    },
+    "Submission": {
+      "title": "Submissão de Evidência",
+      "description": "Registro de envio de documentos ou dados por parte do cliente.",
+      "type": "object",
+      "properties": {
+        "stageId": { "type": "string" },
+        "userId": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "fileName": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "submittedAt": { "type": "string" },
+        "feedback": { "type": "string" }
+      },
+      "required": ["stageId", "userId", "submittedAt"]
     }
   },
   "auth": {
@@ -40,6 +70,18 @@
     "/users/{userId}": {
       "schema": { "$ref": "#/backend/entities/UserProfile" },
       "description": "Repositório central de identidades e progresso institucional."
+    },
+    "/onboardingFlows/{flowId}": {
+      "schema": { "$ref": "#/backend/entities/OnboardingFlow" },
+      "description": "Templates globais de jornadas de onboarding."
+    },
+    "/onboardingFlows/{flowId}/stages/{stageId}": {
+      "schema": { "$ref": "#/backend/entities/Stage" },
+      "description": "Etapas configuradas para um fluxo específico."
+    },
+    "/submissions/{submissionId}": {
+      "schema": { "$ref": "#/backend/entities/Submission" },
+      "description": "Coleção centralizada de evidências para análise do Suporte/Comercial."
     }
   }
 }
