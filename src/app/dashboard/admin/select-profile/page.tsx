@@ -1,12 +1,10 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Headset, Briefcase, ArrowRight, LogOut, Loader2 } from 'lucide-react';
+import { Headset, Briefcase, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth, useUser, useFirestore, useDoc } from '@/firebase';
-import { signOut } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { UserProfile } from '@/lib/types';
@@ -16,7 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function SelectProfilePage() {
   const router = useRouter();
-  const auth = useAuth();
   const db = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
@@ -26,10 +23,11 @@ export default function SelectProfilePage() {
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
   useEffect(() => {
+    // Se o perfil já estiver carregado e já tiver um tipo definido, redireciona imediatamente
     if (!profileLoading && profile?.adminType && !isUpdating) {
       router.replace(`/dashboard/admin?view=${profile.adminType}`);
     }
-  }, [profile?.adminType, profileLoading, router, isUpdating]);
+  }, [profile, profileLoading, router, isUpdating]);
 
   const handleSelect = async (adminType: 'suporte' | 'comercial') => {
     if (!user) return;
@@ -45,13 +43,15 @@ export default function SelectProfilePage() {
       updatedAt: serverTimestamp()
     };
     
+    // Forçamos o setDoc e aguardamos o sucesso antes de navegar
     setDoc(userDocRef, updateData, { merge: true })
       .then(() => {
         toast({
           title: "Perfil Configurado",
           description: `Seu ambiente de ${adminType} foi ativado com sucesso.`,
         });
-        router.push(`/dashboard/admin?view=${adminType}`);
+        // Navegação forçada para garantir o estado
+        window.location.href = `/dashboard/admin?view=${adminType}`;
       })
       .catch(async (error: any) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -63,12 +63,7 @@ export default function SelectProfilePage() {
       });
   };
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push('/login');
-  };
-
-  if (profileLoading || (profile?.adminType && !isUpdating) || isUpdating) {
+  if (profileLoading || (profile?.adminType && !isUpdating)) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="size-10 animate-spin text-primary" />
@@ -83,14 +78,14 @@ export default function SelectProfilePage() {
         <div className="space-y-4 text-center">
           <h1 className="text-4xl font-bold font-headline text-slate-900">Configuração de Ambiente</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Olá, <span className="text-primary font-bold">{user?.displayName?.split(' ')[0]}</span>. Selecione sua equipe para continuar.
+            Olá, <span className="text-primary font-bold">{user?.displayName?.split(' ')[0] || 'Admin'}</span>. Selecione sua equipe para continuar.
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
           <Card 
             className="group hover:border-primary transition-all cursor-pointer border-2 shadow-sm hover:shadow-xl bg-white"
-            onClick={() => handleSelect('suporte')}
+            onClick={() => !isUpdating && handleSelect('suporte')}
           >
             <CardHeader className="pt-10 text-center">
               <div className="size-20 rounded-2xl bg-primary/5 flex items-center justify-center text-primary mx-auto mb-6">
@@ -100,13 +95,15 @@ export default function SelectProfilePage() {
               <CardDescription>Validação técnica e infraestrutura.</CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">
-              <Button className="rounded-full font-bold gap-2">Selecionar <ArrowRight className="size-4" /></Button>
+              <Button className="rounded-full font-bold gap-2" disabled={isUpdating}>
+                {isUpdating ? <Loader2 className="size-4 animate-spin" /> : "Selecionar"} <ArrowRight className="size-4" />
+              </Button>
             </CardContent>
           </Card>
 
           <Card 
             className="group hover:border-primary transition-all cursor-pointer border-2 shadow-sm hover:shadow-xl bg-white"
-            onClick={() => handleSelect('comercial')}
+            onClick={() => !isUpdating && handleSelect('comercial')}
           >
             <CardHeader className="pt-10 text-center">
               <div className="size-20 rounded-2xl bg-secondary/5 flex items-center justify-center text-secondary mx-auto mb-6">
@@ -116,7 +113,9 @@ export default function SelectProfilePage() {
               <CardDescription>Aprovação de clientes e produtos.</CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">
-              <Button variant="secondary" className="rounded-full font-bold gap-2">Selecionar <ArrowRight className="size-4" /></Button>
+              <Button variant="secondary" className="rounded-full font-bold gap-2" disabled={isUpdating}>
+                {isUpdating ? <Loader2 className="size-4 animate-spin" /> : "Selecionar"} <ArrowRight className="size-4" />
+              </Button>
             </CardContent>
           </Card>
         </div>
