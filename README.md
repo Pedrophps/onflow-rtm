@@ -40,33 +40,34 @@ A arquitetura é dividida em:
   - `onboardingFlows`: Somente admins escrevem.
   - `submissions`: Clientes criam, admins aprovam/rejeitam.
 
-### 🧠 # CONTEXTO COMPORTAMENTAL
-- **Perfil do Usuário**: Especialista técnico com alto nível de exigência em integridade de dados.
-- **Expectativa**: Respostas diretas, código pronto para produção e transparência total em logs de erro.
-- **Ponto de Satisfação**: Verificação em tempo real (Páginas de Debug/Testes).
-- **Ponto de Irritação**: Redirecionamentos em loop ou perda de estado de autenticação por falta de sincronia com o Firestore.
-
 ### 📜 # HISTÓRICO DE TENTATIVAS
 - **TENTATIVA 1 (Falha)**: Provisionamento via `RequestFirebaseBackendTool`. Erro de `thought_signature` recorrente no modelo Gemini 3 Flash Preview.
 - **TENTATIVA 2 (Sucesso)**: Configuração manual das Regras de Segurança e do banco de dados no Console do Firebase pelo usuário.
 - **TENTATIVA 3 (Validação)**: Criação de uma página de `/debug/integration-test` para validar as regras. Identificada a necessidade de um botão de "Auto-Elevação para Admin" para usuários de teste.
 
-### ⏳ # PENDÊNCIAS ATUAIS
-1. Implementar o módulo de upload real para Firebase Storage (Evidências).
-2. Criar o gerador dinâmico de etapas para o Comercial configurar novos produtos.
-3. Desenvolver os relatórios consolidados em `/dashboard/admin/reports`.
-4. Integrar GenAI para análise de conformidade de PDFs submetidos.
+---
 
-### 🚦 # REGRAS OPERACIONAIS
-1. **Prioridade de Role**: Antes de qualquer renderização administrativa, verificar `user.role == 'admin'`.
-2. **Fallback de Rede**: O app deve lidar graciosamente com estados de `offline` do Firebase (implementado via `useDoc` silencioso).
-3. **Additive Docs**: Siga a política de versionamento acima; nunca remova logs de decisão.
+## [UPDATE - V1.2 - PROTOCOLOS DE TESTE E VALIDAÇÃO]
 
-### 💾 # MEMÓRIA ESTRATÉGICA
-A RTM é o coração tecnológico do mercado financeiro brasileiro. O OnFlow não é apenas um portal de arquivos; é uma ferramenta de **confiança institucional**. Cada interação deve reforçar segurança e neutralidade.
+### 🧪 # AMBIENTE DE TESTES (ABAS DE VALIDAÇÃO)
 
-### 🚀 # RESUMO EXECUTIVO FINAL
-Fundação de Auth e Firestore concluída. Regras de segurança ativas. Sistema de captura de erros operacional. O projeto está pronto para a fase de **Lógica de Negócio**: Construção de fluxos dinâmicos e gestão real de submissões. A próxima IA deve focar em transformar os modelos estáticos de onboarding em documentos reativos do Firestore.
+#### 1. Diagnóstico de Conexão (`/debug`)
+- **Objetivo**: Validar se o SDK do Firebase está inicializado e se o navegador tem conectividade com os serviços (Auth/Firestore).
+- **O que testar**: Clique em "Refazer Testes" e verifique se todos os logs aparecem em verde.
+
+#### 2. Teste de Regras de Segurança (`/debug/integration-test`)
+- **Objetivo**: Validar a eficácia das regras coladas no console do Firebase.
+- **Casos de Teste**:
+  - **Escrita de Perfil**: O usuário logado deve conseguir gravar em `/users/{seu_uid}`.
+  - **Escrita de Fluxo**: Deve FALHAR para usuários `role: client` e SUCEDER para `role: admin`.
+  - **Elevação**: O botão "Tornar meu usuário Admin agora" deve gravar `role: admin` no Firestore.
+
+#### 3. Fluxo de Login e RBAC
+- **Aba de Preenchimento Rápido**: No `/login`, utilize os botões de atalho para testar diferentes perfis (Suporte, Comercial, Cliente).
+- **Validação de Visão**: Verifique se o Cliente é bloqueado na tela "Acesso Restrito" caso não tenha ID RTM e Produto Ativo.
+
+### 🚀 # RESUMO EXECUTIVO PARA CONTINUIDADE
+O sistema está com a infraestrutura de dados **validada**. As regras de segurança protegem as coleções críticas. O foco agora deve ser a **Lógica de Negócio**: transformar as submissões estáticas em um fluxo dinâmico onde o Admin possa aprovar/rejeitar documentos com feedback em tempo real.
 
 ---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*
