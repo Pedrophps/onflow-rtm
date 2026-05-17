@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserProfile } from "@/lib/types";
-import { UserCheck, ShieldAlert, Search, Filter, MoreHorizontal, CheckCircle2, XCircle } from "lucide-react";
+import { UserCheck, ShieldAlert, Search, Filter, MoreHorizontal, CheckCircle2, XCircle, Building2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from "next/navigation";
@@ -24,7 +24,6 @@ export default function ClientsAdminPage() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   
-  // Obter o perfil do admin para saber se ele é Comercial ou Suporte
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile } = useDoc<UserProfile>(userRef);
   
@@ -43,8 +42,8 @@ export default function ClientsAdminPage() {
   const handleApprove = (client: UserProfile) => {
     if (!client.id) return;
     
-    const userRef = doc(db, "users", client.id);
-    updateDoc(userRef, {
+    const clientRef = doc(db, "users", client.id);
+    updateDoc(clientRef, {
       status: 'approved',
       clientCode: clientCode,
       activeProduct: activeProduct,
@@ -59,12 +58,13 @@ export default function ClientsAdminPage() {
     setIsDialogOpen(false);
     setClientCode("");
     setActiveProduct("");
+    setSelectedClient(null);
   };
 
   const handleReject = (client: UserProfile) => {
     if (!client.id) return;
-    const userRef = doc(db, "users", client.id);
-    updateDoc(userRef, { status: 'rejected' });
+    const clientRef = doc(db, "users", client.id);
+    updateDoc(clientRef, { status: 'rejected' });
     toast({ title: "Cliente Rejeitado", variant: "destructive" });
   };
 
@@ -74,7 +74,7 @@ export default function ClientsAdminPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
             <h1 className="text-3xl font-bold font-headline">Gestão de Clientes</h1>
-            <p className="text-muted-foreground">Acompanhe e valide o acesso das instituições ao Hub RTM.</p>
+            <p className="text-muted-foreground">Valide o acesso e atribua recursos às novas instituições.</p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
             <div className="relative flex-1">
@@ -85,98 +85,116 @@ export default function ClientsAdminPage() {
           </div>
         </div>
 
-        {/* Alerta de Pendência apenas para o Comercial */}
-        {currentView === 'comercial' && pendingClients.length > 0 && (
-          <section className="space-y-4 animate-in fade-in duration-500">
-            <h3 className="text-sm font-bold flex items-center gap-2 text-amber-600 uppercase tracking-widest">
-              <ShieldAlert className="size-4" /> Pendentes de Aprovação Comercial
-            </h3>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {pendingClients.map((client) => (
-                <Card key={client.id} className="border-amber-200 bg-amber-50/30 shadow-sm">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">{client.displayName}</CardTitle>
-                    <CardDescription className="font-medium text-amber-700">{client.institutionName}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="text-xs space-y-1">
-                      <p className="text-muted-foreground">CNPJ: <span className="text-foreground">{client.cnpj}</span></p>
-                      <p className="text-muted-foreground">E-mail: <span className="text-foreground">{client.email}</span></p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Dialog open={isDialogOpen && selectedClient?.id === client.id} onOpenChange={(open) => {
-                        setIsDialogOpen(open);
-                        if(open) setSelectedClient(client);
-                      }}>
-                        <DialogTrigger asChild>
-                          <Button size="sm" className="flex-1 gap-2">
-                            <UserCheck className="size-4" /> Aprovar
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Validar Novo Cliente</DialogTitle>
-                            <DialogDescription>
-                              Atribua os parâmetros de integração para <strong>{client.institutionName}</strong>.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="code">Código Interno do Cliente (RTM Code)</Label>
-                              <Input 
-                                id="code" 
-                                placeholder="Ex: C885-2024" 
-                                value={clientCode} 
-                                onChange={(e) => setClientCode(e.target.value)}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="product">Produto / Serviço Contratado</Label>
-                              <Select onValueChange={setActiveProduct}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione o serviço" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="RSFN">Conectividade RSFN</SelectItem>
-                                  <SelectItem value="SWIFT">Mensageria SWIFT</SelectItem>
-                                  <SelectItem value="PIX">Integração PIX</SelectItem>
-                                  <SelectItem value="MESA">Mesa de Operações</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-                            <Button disabled={!clientCode || !activeProduct} onClick={() => handleApprove(client)}>Confirmar Ativação</Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                      <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10" onClick={() => handleReject(client)}>
-                        <XCircle className="size-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+        {/* Seção de Aprovação: Visível para Comercial */}
+        {currentView === 'comercial' && (
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold flex items-center gap-2 text-amber-600 uppercase tracking-widest">
+                <ShieldAlert className="size-4" /> Aguardando Validação Comercial ({pendingClients.length})
+              </h3>
             </div>
+            
+            {pendingClients.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {pendingClients.map((client) => (
+                  <Card key={client.id} className="border-amber-200 bg-amber-50/30 shadow-sm hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-base">{client.displayName}</CardTitle>
+                          <CardDescription className="font-medium text-amber-700">{client.institutionName}</CardDescription>
+                        </div>
+                        <Building2 className="size-5 text-amber-400" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="text-[11px] space-y-1 bg-white p-2 rounded-lg border border-amber-100">
+                        <p className="text-muted-foreground">CNPJ: <span className="text-foreground font-mono">{client.cnpj}</span></p>
+                        <p className="text-muted-foreground">E-mail: <span className="text-foreground">{client.email}</span></p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Dialog open={isDialogOpen && selectedClient?.id === client.id} onOpenChange={(open) => {
+                          setIsDialogOpen(open);
+                          if(open) setSelectedClient(client);
+                        }}>
+                          <DialogTrigger asChild>
+                            <Button size="sm" className="flex-1 gap-2">
+                              <UserCheck className="size-4" /> Aprovar Acesso
+                            </Button>
+                          </Trigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Aprovação de Nova Instituição</DialogTitle>
+                              <DialogDescription>
+                                Configure os dados de integração para <strong>{client.institutionName}</strong>.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="code" className="text-xs uppercase font-bold text-muted-foreground">Código de Identificação (RTM ID)</Label>
+                                <Input 
+                                  id="code" 
+                                  placeholder="Ex: RTM-8890-SP" 
+                                  value={clientCode} 
+                                  onChange={(e) => setClientCode(e.target.value)}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="product" className="text-xs uppercase font-bold text-muted-foreground">Produto para Ativação</Label>
+                                <Select onValueChange={setActiveProduct}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o serviço contratado" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="RSFN">Rede RSFN</SelectItem>
+                                    <SelectItem value="SWIFT">Mensageria SWIFT</SelectItem>
+                                    <SelectItem value="PIX">Integração PIX</SelectItem>
+                                    <SelectItem value="MESA">Mesa de Operações</SelectItem>
+                                    <SelectItem value="DREX">Ambiente DREX</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Voltar</Button>
+                              <Button disabled={!clientCode || !activeProduct} onClick={() => handleApprove(client)}>
+                                Confirmar e Ativar
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                        <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10" onClick={() => handleReject(client)}>
+                          <XCircle className="size-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center border-2 border-dashed rounded-xl bg-muted/20 text-muted-foreground">
+                <CheckCircle2 className="size-8 mx-auto mb-2 opacity-20" />
+                <p className="text-sm font-medium">Nenhum cliente aguardando aprovação.</p>
+              </div>
+            )}
           </section>
         )}
 
         <Card>
           <CardHeader>
-            <CardTitle>Base Consolidada</CardTitle>
-            <CardDescription>Lista de todas as instituições registradas.</CardDescription>
+            <CardTitle>Base de Instituições</CardTitle>
+            <CardDescription>Visualização completa de todos os usuários do tipo cliente.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Instituição</TableHead>
+                  <TableHead>Instituição / CNPJ</TableHead>
                   <TableHead>Responsável</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Código RTM</TableHead>
                   <TableHead>Produto</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="text-right">Opções</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -184,8 +202,8 @@ export default function ClientsAdminPage() {
                   <TableRow key={client.id}>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-bold">{client.institutionName || "-"}</span>
-                        <span className="text-[10px] text-muted-foreground">{client.cnpj || "-"}</span>
+                        <span className="font-bold">{client.institutionName || "Não Informado"}</span>
+                        <span className="text-[10px] text-muted-foreground font-mono">{client.cnpj || "-"}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">{client.displayName}</TableCell>
@@ -194,11 +212,11 @@ export default function ClientsAdminPage() {
                         variant={client.status === 'approved' ? 'default' : client.status === 'rejected' ? 'destructive' : 'secondary'} 
                         className={client.status === 'approved' ? 'bg-emerald-500 hover:bg-emerald-600' : ''}
                       >
-                        {client.status === 'approved' ? 'Ativo' : client.status === 'rejected' ? 'Rejeitado' : 'Pendente'}
+                        {client.status === 'approved' ? 'Ativo' : client.status === 'rejected' ? 'Bloqueado' : 'Pendente'}
                       </Badge>
                     </TableCell>
                     <TableCell className="font-mono text-xs">{client.clientCode || "-"}</TableCell>
-                    <TableCell className="text-xs">{client.activeProduct || "-"}</TableCell>
+                    <TableCell className="text-xs font-medium">{client.activeProduct || "-"}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon"><MoreHorizontal className="size-4" /></Button>
                     </TableCell>
@@ -207,7 +225,7 @@ export default function ClientsAdminPage() {
                 {!loading && clients.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                      Nenhuma instituição cadastrada.
+                      Nenhum registro encontrado.
                     </TableCell>
                   </TableRow>
                 )}

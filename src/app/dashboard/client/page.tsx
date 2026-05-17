@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/status-badge";
 import { OnboardingStage, UserProfile } from "@/lib/types";
-import { CheckCircle2, ChevronDown, ChevronUp, FileUp, MessageSquare, Send, Clock, ShieldAlert, Loader2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronUp, FileUp, MessageSquare, Send, Clock, ShieldAlert, Loader2, Zap } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +68,7 @@ export default function ClientPage() {
             <h1 className="text-3xl font-bold font-headline">Acesso em Análise</h1>
             <p className="text-muted-foreground text-lg leading-relaxed">
               Olá, <span className="font-bold text-foreground">{profile.displayName}</span>. 
-              Sua solicitação de acesso para a instituição <span className="font-semibold text-primary">{profile.institutionName || "não informada"}</span> está sendo processada.
+              Sua solicitação para a instituição <span className="font-semibold text-primary">{profile.institutionName}</span> está sendo processada.
             </p>
           </div>
           
@@ -79,29 +79,29 @@ export default function ClientPage() {
             </div>
             <CardContent className="p-6 text-left space-y-4">
               <p className="text-sm text-muted-foreground">
-                Para garantir a segurança do Hub RTM, cada nova conta passa por uma verificação manual de CNPJ e conformidade.
+                Para garantir a segurança do Hub RTM, cada nova conta passa por uma verificação manual de CNPJ e conformidade técnica.
               </p>
               <div className="grid gap-3">
                 <div className="flex items-center gap-3 text-sm">
-                  <div className="size-1.5 rounded-full bg-amber-500" />
-                  <span className="font-medium">Análise de CNPJ: {profile.cnpj || "Pendente"}</span>
+                  <div className="size-1.5 rounded-full bg-emerald-500" />
+                  <span className="font-medium text-emerald-700">Cadastro de Instituição Recebido</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="font-medium">Análise Comercial e Atribuição de Código RTM</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <div className="size-1.5 rounded-full bg-slate-300" />
-                  <span className="text-muted-foreground">Atribuição de Código RTM</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="size-1.5 rounded-full bg-slate-300" />
-                  <span className="text-muted-foreground">Liberação das Etapas Técnicas</span>
+                  <span className="text-muted-foreground">Liberação das Etapas de Implantação</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <div className="flex flex-col items-center gap-4">
-            <p className="text-xs text-muted-foreground">Você receberá um e-mail assim que seu acesso for liberado.</p>
+            <p className="text-xs text-muted-foreground italic">"Identificar para integrar. Entender para atender."</p>
             <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
-              Verificar Status Agora
+              Atualizar Status de Acesso
             </Button>
           </div>
         </div>
@@ -118,7 +118,7 @@ export default function ClientPage() {
             <ShieldAlert className="size-10" />
           </div>
           <h1 className="text-2xl font-bold">Acesso não autorizado</h1>
-          <p className="text-muted-foreground">Sua solicitação foi recusada por nossa equipe comercial. Entre em contato com seu gerente de contas RTM para mais informações.</p>
+          <p className="text-muted-foreground">Sua solicitação foi recusada por nossa equipe comercial. Entre em contato com seu gerente de contas RTM para verificar a conformidade do seu cadastro.</p>
         </div>
       </DashboardLayout>
     );
@@ -133,22 +133,29 @@ export default function ClientPage() {
         <div className="bg-white rounded-2xl p-8 shadow-sm border space-y-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1 px-3">
+                  <CheckCircle2 className="size-3" /> Acesso Ativo
+                </Badge>
+              </div>
               <h1 className="text-2xl font-bold font-headline">Olá, {profile?.displayName?.split(' ')[0]}! 👋</h1>
-              <p className="text-muted-foreground">{profile?.institutionName}</p>
-              {profile?.clientCode && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="inline-flex items-center gap-2 px-2 py-1 rounded bg-primary/5 text-[10px] font-bold text-primary uppercase border border-primary/10">
-                    ID: {profile.clientCode}
-                  </span>
-                  <span className="inline-flex items-center gap-2 px-2 py-1 rounded bg-secondary/5 text-[10px] font-bold text-secondary uppercase border border-secondary/10">
-                    Produto: {profile.activeProduct}
-                  </span>
+              <p className="text-muted-foreground font-medium">{profile?.institutionName}</p>
+              
+              <div className="mt-4 flex flex-wrap gap-2">
+                <div className="px-3 py-1.5 rounded-lg bg-slate-900 text-white flex items-center gap-3">
+                  <span className="text-[10px] font-bold opacity-60 uppercase tracking-widest border-r border-white/20 pr-3">ID RTM</span>
+                  <span className="text-xs font-mono font-bold tracking-wider">{profile?.clientCode}</span>
                 </div>
-              )}
+                <div className="px-3 py-1.5 rounded-lg bg-primary text-white flex items-center gap-3">
+                  <Zap className="size-3 text-amber-300" />
+                  <span className="text-[10px] font-bold opacity-80 uppercase tracking-widest border-r border-white/20 pr-3">Produto</span>
+                  <span className="text-xs font-bold">{profile?.activeProduct}</span>
+                </div>
+              </div>
             </div>
             <div className="text-right">
               <span className="text-4xl font-bold text-primary">{Math.round(progress)}%</span>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Sua Integração</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Sua Implantação</p>
             </div>
           </div>
           <Progress value={progress} className="h-2" />
@@ -188,8 +195,8 @@ export default function ClientPage() {
                             {req.type === 'file' ? (
                               <div className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center bg-white group hover:border-primary cursor-pointer transition-colors">
                                 <FileUp className="size-5 mb-2 text-primary" />
-                                <p className="text-sm font-medium">Clique para fazer upload do arquivo</p>
-                                <p className="text-[10px] text-muted-foreground mt-1">Formatos aceitos: PDF, DOCX (Máx. 5MB)</p>
+                                <p className="text-sm font-medium">Clique para selecionar o arquivo</p>
+                                <p className="text-[10px] text-muted-foreground mt-1">PDF, DOCX (Máximo 10MB)</p>
                               </div>
                             ) : (
                               <Input placeholder={`Digite ${req.label.toLowerCase()}...`} className="bg-white" />
@@ -197,8 +204,8 @@ export default function ClientPage() {
                           </div>
                         ))}
                         <div className="flex justify-end gap-3 pt-2">
-                          <Button size="sm" className="gap-2 rounded-full px-6">
-                            Enviar para Revisão <Send className="size-3.5" />
+                          <Button size="sm" className="gap-2 rounded-full px-6 shadow-sm">
+                            Enviar Evidência <Send className="size-3.5" />
                           </Button>
                         </div>
                       </div>
