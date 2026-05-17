@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Headset, Briefcase, ArrowRight, LogOut, Loader2 } from 'lucide-react';
 import { useAuth, useUser, useFirestore, useDoc } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { UserProfile } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -23,31 +23,29 @@ export default function SelectProfilePage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Redirecionamento automático se o perfil já estiver definido no banco
   useEffect(() => {
     if (profile?.adminType && !isUpdating) {
       router.push(`/dashboard/admin?view=${profile.adminType}`);
     }
   }, [profile?.adminType, router, isUpdating]);
 
-  const handleSelect = (adminType: 'suporte' | 'comercial') => {
+  const handleSelect = async (adminType: 'suporte' | 'comercial') => {
     if (!user) return;
     setIsUpdating(true);
 
     const docRef = doc(db, 'users', user.uid);
     
-    // Gravação não bloqueante: inicia e segue em frente
-    updateDoc(docRef, { adminType }).catch(async (err) => {
+    try {
+      await updateDoc(docRef, { adminType });
+      router.push(`/dashboard/admin?view=${adminType}`);
+    } catch (err) {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: docRef.path,
         operation: 'update',
         requestResourceData: { adminType }
       }));
       setIsUpdating(false);
-    });
-
-    // Navegação otimista: não espera o Firestore confirmar o sucesso
-    router.push(`/dashboard/admin?view=${adminType}`);
+    }
   };
 
   const handleLogout = async () => {
@@ -55,13 +53,11 @@ export default function SelectProfilePage() {
     router.push('/login');
   };
 
-  // Só mostra o loader se realmente não tivermos dados e estivermos no carregamento inicial
-  // OU se o roteador estiver processando a navegação após o clique
   if ((profileLoading && !profile) || isUpdating || profile?.adminType) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="size-10 animate-spin text-primary" />
-        <p className="text-muted-foreground font-medium">Iniciando painel de controle...</p>
+        <p className="text-muted-foreground font-medium">Configurando seu ambiente...</p>
       </div>
     );
   }

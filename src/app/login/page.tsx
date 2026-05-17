@@ -50,22 +50,21 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  // Redirecionamento automático robusto para usuários já logados
   useEffect(() => {
     if (currentUser && !authLoading) {
       const role = isAdminEmail(currentUser.email) ? 'admin' : 'client';
       
-      if (role === 'admin') {
-        const userDocRef = doc(db, 'users', currentUser.uid);
-        getDoc(userDocRef).then((userDoc) => {
-          const profile = userDoc.data() as UserProfile;
-          redirectBasedOnRole('admin', profile?.adminType);
-        }).catch(() => {
-          redirectBasedOnRole('admin');
-        });
-      } else {
-        redirectBasedOnRole('client');
-      }
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      getDoc(userDocRef).then((userDoc) => {
+        const profile = userDoc.data() as UserProfile;
+        if (profile) {
+          redirectBasedOnRole(profile.role, profile.adminType);
+        } else {
+          redirectBasedOnRole(role);
+        }
+      }).catch(() => {
+        redirectBasedOnRole(role);
+      });
     }
   }, [currentUser, authLoading, isAdminEmail, redirectBasedOnRole, db]);
 
@@ -115,14 +114,7 @@ export default function LoginPage() {
         createdAt: new Date().toISOString()
       };
 
-      setDoc(userRef, userData, { merge: true }).catch(err => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: userRef.path,
-          operation: 'create',
-          requestResourceData: userData
-        }));
-      });
-
+      await setDoc(userRef, userData, { merge: true });
       redirectBasedOnRole(role);
     } catch (error: any) {
       setLoading(false);
@@ -147,17 +139,14 @@ export default function LoginPage() {
       const role = isAdminEmail(result.user.email) ? 'admin' : 'client';
       
       const userDocRef = doc(db, 'users', result.user.uid);
-      getDoc(userDocRef).then((userDoc) => {
-        if (userDoc.exists()) {
-          const profile = userDoc.data() as UserProfile;
-          redirectBasedOnRole(profile.role, profile.adminType);
-        } else {
-          redirectBasedOnRole(role);
-        }
-      }).catch(() => {
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        const profile = userDoc.data() as UserProfile;
+        redirectBasedOnRole(profile.role, profile.adminType);
+      } else {
         redirectBasedOnRole(role);
-      });
-
+      }
     } catch (error: any) {
       setLoading(false);
       toast({ variant: "destructive", title: "Falha no acesso", description: getFriendlyErrorMessage(error.code) });

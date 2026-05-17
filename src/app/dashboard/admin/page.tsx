@@ -1,5 +1,5 @@
 
-"use client";
+'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,10 +49,15 @@ export default function AdminPage() {
   const db = useFirestore();
   
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
-  const { data: profile } = useDoc<UserProfile>(userRef);
+  const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Prioriza o parâmetro da URL, senão usa o perfil salvo, senão 'suporte' como fallback
   const currentView = searchParams.get('view') || profile?.adminType || 'suporte';
+
+  useEffect(() => {
+    if (!profileLoading && profile && profile.role === 'admin' && !profile.adminType) {
+      router.push('/dashboard/admin/select-profile');
+    }
+  }, [profile, profileLoading, router]);
 
   const handleTabChange = (value: string) => {
     router.push(`/dashboard/admin?view=${value}`);
