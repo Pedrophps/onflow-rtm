@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Chrome, Mail, Lock, Loader2, User, Building2, AlertCircle } from 'lucide-react';
+import { Chrome, Mail, Lock, Loader2, User, Building2, AlertCircle, TestTube2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -33,8 +33,10 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [cnpj, setCnpj] = useState('');
   const [connectionError, setConnectionError] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
 
-  // Redireciona automaticamente se o usuário já estiver logado ao carregar a página
   useEffect(() => {
     if (currentUser && !loading) {
       checkUserAndRedirect(currentUser);
@@ -87,50 +89,39 @@ export default function LoginPage() {
       const result = await signInWithPopup(auth, provider);
       await checkUserAndRedirect(result.user);
     } catch (error: any) {
-      console.error("Erro no login social:", error);
+      setLoading(false);
       toast({
         variant: "destructive",
         title: "Erro ao entrar",
         description: getFriendlyErrorMessage(error.code)
       });
-      setLoading(false);
     }
   }
 
-  async function handleEmailLogin(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function handleEmailLogin(e?: React.FormEvent) {
+    e?.preventDefault();
     if (loading) return;
     setLoading(true);
     setConnectionError(false);
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
 
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       await checkUserAndRedirect(result.user);
     } catch (error: any) {
-      console.error("Erro no login por e-mail:", error);
+      setLoading(false);
       toast({
         variant: "destructive",
         title: "Falha no acesso",
         description: getFriendlyErrorMessage(error.code)
       });
-      setLoading(false);
     }
   }
 
-  async function handleSignUp(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function handleSignUp(e?: React.FormEvent) {
+    e?.preventDefault();
     if (loading) return;
     setLoading(true);
     setConnectionError(false);
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    const name = formData.get('name') as string;
-    const role = formData.get('role') as 'admin' | 'client';
-    const cnpjValue = formData.get('cnpj') as string;
 
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
@@ -142,20 +133,19 @@ export default function LoginPage() {
       const userRef = doc(db, 'users', result.user.uid);
       const userData = {
         email,
-        role,
+        role: 'client', // Default role for signup form
         displayName: name,
-        cnpj: cnpjValue,
+        cnpj: cnpj,
         createdAt: new Date().toISOString()
       };
 
       setDoc(userRef, userData, { merge: true })
         .catch(async (error) => {
-          const permissionError = new FirestorePermissionError({
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: userRef.path,
             operation: 'create',
             requestResourceData: userData
-          });
-          errorEmitter.emit('permission-error', permissionError);
+          }));
         });
 
       toast({
@@ -163,19 +153,14 @@ export default function LoginPage() {
         description: "Seja bem-vindo ao OnFlow."
       });
 
-      if (role === 'admin') {
-        router.push('/dashboard/admin/select-profile');
-      } else {
-        router.push('/dashboard/client');
-      }
+      router.push('/dashboard/client');
     } catch (error: any) {
-      console.error("Erro no cadastro:", error);
+      setLoading(false);
       toast({
         variant: "destructive",
         title: "Erro no cadastro",
         description: getFriendlyErrorMessage(error.code)
       });
-      setLoading(false);
     }
   }
 
@@ -184,8 +169,6 @@ export default function LoginPage() {
     try {
       setConnectionError(false);
       const userDocRef = doc(db, 'users', user.uid);
-      
-      // Tenta buscar o documento com um tempo limite implícito do SDK
       const userDoc = await getDoc(userDocRef);
       
       if (userDoc.exists()) {
@@ -196,7 +179,6 @@ export default function LoginPage() {
           router.push('/dashboard/client');
         }
       } else {
-        // Usuário novo via login social sem perfil no banco
         const userData = { 
           email: user.email, 
           role: 'client',
@@ -206,26 +188,23 @@ export default function LoginPage() {
 
         setDoc(userDocRef, userData)
           .catch(async () => {
-            const permissionError = new FirestorePermissionError({
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
               path: userDocRef.path,
               operation: 'create',
               requestResourceData: userData
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            }));
           });
           
         router.push('/dashboard/client');
       }
     } catch (error: any) {
-      console.error("Erro ao verificar usuário:", error);
-      
-      // Se for erro de offline, mostramos o aviso mas paramos o carregamento
+      setLoading(false);
       if (error.code === 'unavailable' || error.message?.includes('offline')) {
         setConnectionError(true);
         toast({
           variant: "destructive",
           title: "Sem conexão",
-          description: "Não conseguimos validar seu perfil agora. Verifique sua internet e tente novamente."
+          description: "Não conseguimos validar seu perfil agora. Verifique sua internet."
         });
       } else {
         toast({
@@ -235,10 +214,28 @@ export default function LoginPage() {
         });
       }
     } finally {
-      // GARANTE que o loading saia da tela
-      setLoading(false);
+      // Small timeout to allow redirects to happen before hiding loader
+      setTimeout(() => setLoading(false), 2000);
     }
   }
+
+  const fillTestAccount = (type: 'admin' | 'client') => {
+    if (type === 'admin') {
+      setEmail('admin.teste@rtm.net.br');
+      setPassword('123456');
+      setName('Administrador Teste');
+      setCnpj('12.345.678/0001-90');
+    } else {
+      setEmail('cliente.teste@rtm.net.br');
+      setPassword('123456');
+      setName('Cliente Teste');
+      setCnpj('98.765.432/0001-10');
+    }
+    toast({
+      title: "Campos Preenchidos",
+      description: `Dados de ${type} carregados. Clique em "Acessar Portal" ou "Criar Conta".`
+    });
+  };
 
   if (authLoading && !currentUser) {
     return (
@@ -250,18 +247,18 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
-      <div className="w-full max-w-md space-y-8 animate-in fade-in zoom-in duration-500">
+      <div className="w-full max-w-md space-y-6 animate-in fade-in zoom-in duration-500">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold font-headline text-primary">OnFlow</h1>
           <p className="text-muted-foreground">O Hub Integrador do Mercado Financeiro</p>
         </div>
 
         {connectionError && (
-          <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 mb-4">
+          <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Você está offline</AlertTitle>
             <AlertDescription>
-              O sistema não conseguiu se conectar aos nossos servidores. Verifique sua internet.
+              O Firebase reportou que o cliente está offline. Verifique se há algum firewall ou VPN bloqueando a conexão.
             </AlertDescription>
           </Alert>
         )}
@@ -282,14 +279,32 @@ export default function LoginPage() {
                     <Label htmlFor="email">E-mail Corporativo</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                      <Input id="email" name="email" type="email" placeholder="seu@email.com" className="pl-10" required disabled={loading} />
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        placeholder="seu@email.com" 
+                        className="pl-10" 
+                        required 
+                        disabled={loading} 
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Senha</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                      <Input id="password" name="password" type="password" placeholder="••••••••" className="pl-10" required disabled={loading} />
+                      <Input 
+                        id="password" 
+                        type="password" 
+                        placeholder="••••••••" 
+                        className="pl-10" 
+                        required 
+                        disabled={loading} 
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
                     </div>
                   </div>
                   <Button type="submit" className="w-full font-bold h-12" disabled={loading}>
@@ -304,10 +319,18 @@ export default function LoginPage() {
               <form onSubmit={handleSignUp}>
                 <CardContent className="space-y-4 pt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Nome Completo do Colaborador</Label>
+                    <Label htmlFor="signup-name">Nome Completo</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                      <Input id="signup-name" name="name" placeholder="Como devemos te chamar?" className="pl-10" required disabled={loading} />
+                      <Input 
+                        id="signup-name" 
+                        placeholder="Seu nome" 
+                        className="pl-10" 
+                        required 
+                        disabled={loading} 
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                      />
                     </div>
                   </div>
                   
@@ -317,7 +340,6 @@ export default function LoginPage() {
                       <Building2 className="absolute left-3 top-3 size-4 text-muted-foreground" />
                       <Input 
                         id="signup-cnpj" 
-                        name="cnpj" 
                         placeholder="00.000.000/0000-00" 
                         className="pl-10" 
                         value={cnpj}
@@ -330,24 +352,27 @@ export default function LoginPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">E-mail</Label>
-                    <Input id="signup-email" name="email" type="email" placeholder="seu@email.com" required disabled={loading} />
+                    <Input 
+                      id="signup-email" 
+                      type="email" 
+                      placeholder="seu@email.com" 
+                      required 
+                      disabled={loading} 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Senha</Label>
-                    <Input id="signup-password" name="password" type="password" placeholder="Mínimo 6 caracteres" required disabled={loading} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Perfil de Acesso</Label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <label className="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-muted/50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                        <input type="radio" name="role" value="client" defaultChecked className="hidden" disabled={loading} />
-                        <span className="text-sm font-medium">Instituição</span>
-                      </label>
-                      <label className="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-muted/50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                        <input type="radio" name="role" value="admin" className="hidden" disabled={loading} />
-                        <span className="text-sm font-medium">Administrador</span>
-                      </label>
-                    </div>
+                    <Input 
+                      id="signup-password" 
+                      type="password" 
+                      placeholder="Mínimo 6 caracteres" 
+                      required 
+                      disabled={loading} 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
                   </div>
                   <Button type="submit" className="w-full font-bold h-12" disabled={loading}>
                     {loading ? <Loader2 className="animate-spin mr-2 size-4" /> : null}
@@ -361,9 +386,31 @@ export default function LoginPage() {
               <div className="relative w-full">
                 <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Ou</span>
+                  <span className="bg-card px-2 text-muted-foreground">Acesso Rápido para Teste</span>
                 </div>
               </div>
+              
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2" 
+                  onClick={() => fillTestAccount('admin')}
+                  disabled={loading}
+                >
+                  <TestTube2 className="size-3" /> Admin Teste
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2" 
+                  onClick={() => fillTestAccount('client')}
+                  disabled={loading}
+                >
+                  <TestTube2 className="size-3" /> Cliente Teste
+                </Button>
+              </div>
+
               <Button variant="outline" className="w-full gap-2 h-11" onClick={handleSocialLogin} disabled={loading}>
                 <Chrome className="size-4" /> {loading ? "Entrando..." : "Entrar com Google"}
               </Button>
