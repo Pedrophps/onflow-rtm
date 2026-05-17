@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Headset, Briefcase, ArrowRight, LogOut, Loader2 } from 'lucide-react';
 import { useAuth, useUser, useFirestore, useDoc } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { UserProfile } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -23,11 +23,12 @@ export default function SelectProfilePage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
+  // Redirecionamento automático se já possuir perfil
   useEffect(() => {
-    if (profile?.adminType && !isUpdating) {
-      router.push(`/dashboard/admin?view=${profile.adminType}`);
+    if (!profileLoading && profile?.adminType && !isUpdating) {
+      router.replace(`/dashboard/admin?view=${profile.adminType}`);
     }
-  }, [profile?.adminType, router, isUpdating]);
+  }, [profile?.adminType, profileLoading, router, isUpdating]);
 
   const handleSelect = async (adminType: 'suporte' | 'comercial') => {
     if (!user) return;
@@ -35,17 +36,18 @@ export default function SelectProfilePage() {
 
     const docRef = doc(db, 'users', user.uid);
     
-    try {
-      await updateDoc(docRef, { adminType });
-      router.push(`/dashboard/admin?view=${adminType}`);
-    } catch (err) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: docRef.path,
-        operation: 'update',
-        requestResourceData: { adminType }
-      }));
-      setIsUpdating(false);
-    }
+    // Atualização otimista: redireciona antes de confirmar a gravação para evitar lentidão
+    updateDoc(docRef, { adminType })
+      .catch((err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'update',
+          requestResourceData: { adminType }
+        }));
+      });
+
+    // Força o redirecionamento imediato para o dashboard com o parâmetro de visão
+    router.push(`/dashboard/admin?view=${adminType}`);
   };
 
   const handleLogout = async () => {
@@ -53,11 +55,12 @@ export default function SelectProfilePage() {
     router.push('/login');
   };
 
-  if ((profileLoading && !profile) || isUpdating || profile?.adminType) {
+  // Enquanto carrega ou se já tem perfil (o useEffect cuidará do redirecionamento), mostra o loader
+  if (profileLoading || profile?.adminType || isUpdating) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="size-10 animate-spin text-primary" />
-        <p className="text-muted-foreground font-medium">Configurando seu ambiente...</p>
+        <p className="text-muted-foreground font-medium">Validando seu perfil...</p>
       </div>
     );
   }
@@ -68,8 +71,8 @@ export default function SelectProfilePage() {
         <div className="space-y-4 text-center">
           <h1 className="text-4xl font-bold font-headline">Seja bem-vindo, <span className="text-primary">{user?.displayName?.split(' ')[0] || 'Administrador'}</span>!</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Seu cadastro foi concluído. Para começar, selecione para qual equipe você deseja visualizar os dados hoje. 
-            <span className="block mt-2 text-sm font-semibold text-amber-600">Esta escolha será salva como seu perfil padrão.</span>
+            Para começar, selecione sua equipe de atuação. 
+            <span className="block mt-2 text-sm font-semibold text-amber-600">Esta escolha será definitiva para seu perfil de acesso.</span>
           </p>
         </div>
 
@@ -84,7 +87,7 @@ export default function SelectProfilePage() {
               </div>
               <CardTitle className="text-2xl font-headline">Equipe de Suporte</CardTitle>
               <CardDescription className="text-base px-6 mt-2">
-                Gerencie o atendimento técnico, valide documentos e acompanhe etapas de implantação dos clientes.
+                Gerencie o atendimento técnico, valide documentos e acompanhe etapas de implantação.
               </CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">
@@ -104,7 +107,7 @@ export default function SelectProfilePage() {
               </div>
               <CardTitle className="text-2xl font-headline">Equipe Comercial</CardTitle>
               <CardDescription className="text-base px-6 mt-2">
-                Visualize métricas de vendas, novos leads em onboarding e o funil de conversão de negócios.
+                Visualize métricas de vendas, novos leads e o funil de conversão de negócios.
               </CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">

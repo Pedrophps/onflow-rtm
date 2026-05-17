@@ -17,8 +17,6 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Mail, Lock, Loader2, Headset, Briefcase, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { UserProfile } from '@/lib/types';
 
 export default function LoginPage() {
@@ -50,49 +48,23 @@ export default function LoginPage() {
     }
   }, [router]);
 
+  // Efeito para usuários já logados
   useEffect(() => {
     if (currentUser && !authLoading) {
-      const role = isAdminEmail(currentUser.email) ? 'admin' : 'client';
-      
       const userDocRef = doc(db, 'users', currentUser.uid);
       getDoc(userDocRef).then((userDoc) => {
-        const profile = userDoc.data() as UserProfile;
-        if (profile) {
+        if (userDoc.exists()) {
+          const profile = userDoc.data() as UserProfile;
           redirectBasedOnRole(profile.role, profile.adminType);
         } else {
+          const role = isAdminEmail(currentUser.email) ? 'admin' : 'client';
           redirectBasedOnRole(role);
         }
-      }).catch(() => {
-        redirectBasedOnRole(role);
       });
     }
   }, [currentUser, authLoading, isAdminEmail, redirectBasedOnRole, db]);
 
-  const formatCNPJ = (value: string) => {
-    return value
-      .replace(/\D/g, '') 
-      .replace(/^(\d{2})(\d)/, '$1.$2') 
-      .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3') 
-      .replace(/\.(\d{3})(\d)/, '.$1/$2') 
-      .replace(/(\d{4})(\d)/, '$1-$2') 
-      .substring(0, 18); 
-  };
-
-  const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCNPJ(e.target.value);
-    setCnpj(formatted);
-  };
-
-  const getFriendlyErrorMessage = (errorCode: string) => {
-    switch (errorCode) {
-      case 'auth/email-already-in-use': return 'Este e-mail já está em uso.';
-      case 'auth/invalid-credential': return 'E-mail ou senha incorretos.';
-      case 'auth/network-request-failed': return 'Falha na conexão. Verifique sua internet.';
-      default: return 'Erro ao tentar acessar. Tente novamente.';
-    }
-  };
-
-  async function handleSignUp(e?: React.FormEvent) {
+  const handleSignUp = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (loading) return;
     setLoading(true);
@@ -121,12 +93,12 @@ export default function LoginPage() {
       toast({
         variant: "destructive",
         title: "Erro no cadastro",
-        description: getFriendlyErrorMessage(error.code)
+        description: "Falha ao criar conta. Verifique os dados."
       });
     }
-  }
+  };
 
-  async function handleEmailLogin(e?: React.FormEvent, customEmail?: string, customPassword?: string) {
+  const handleEmailLogin = async (e?: React.FormEvent, customEmail?: string, customPassword?: string) => {
     e?.preventDefault();
     if (loading) return;
     setLoading(true);
@@ -136,8 +108,6 @@ export default function LoginPage() {
 
     try {
       const result = await signInWithEmailAndPassword(auth, targetEmail, targetPassword);
-      const role = isAdminEmail(result.user.email) ? 'admin' : 'client';
-      
       const userDocRef = doc(db, 'users', result.user.uid);
       const userDoc = await getDoc(userDocRef);
       
@@ -145,22 +115,21 @@ export default function LoginPage() {
         const profile = userDoc.data() as UserProfile;
         redirectBasedOnRole(profile.role, profile.adminType);
       } else {
+        const role = isAdminEmail(result.user.email) ? 'admin' : 'client';
         redirectBasedOnRole(role);
       }
     } catch (error: any) {
       setLoading(false);
-      toast({ variant: "destructive", title: "Falha no acesso", description: getFriendlyErrorMessage(error.code) });
+      toast({ variant: "destructive", title: "Falha no acesso", description: "E-mail ou senha incorretos." });
     }
-  }
+  };
 
   const quickAccess = (type: 'suporte' | 'comercial' | 'client') => {
     let qEmail = '';
     let qPass = '123456';
-    
     if (type === 'suporte') qEmail = 'suporte.rtm@rtm.net.br';
     else if (type === 'comercial') qEmail = 'comercial.rtm@rtm.net.br';
     else qEmail = 'cliente.teste@instituicao.com.br';
-
     handleEmailLogin(undefined, qEmail, qPass);
   };
 
@@ -171,10 +140,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold font-headline text-primary">OnFlow</h1>
-          <p className="text-muted-foreground">Hub Integrador RTM</p>
+          <p className="text-muted-foreground font-medium uppercase tracking-widest text-xs">Hub Integrador RTM</p>
         </div>
 
-        <Card className="border-2 shadow-xl">
+        <Card className="border-2 shadow-xl bg-white">
           <Tabs defaultValue="login">
             <CardHeader className="pb-0">
               <TabsList className="grid w-full grid-cols-2">
@@ -214,9 +183,9 @@ export default function LoginPage() {
                     <Input type="email" placeholder="seu@rtm.net.br" required value={email} onChange={e => setEmail(e.target.value)} />
                   </div>
                   {!isAdminEmail(email) && email.length > 5 && (
-                    <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+                    <div className="space-y-2">
                       <Label>CNPJ da Instituição</Label>
-                      <Input placeholder="00.000.000/0000-00" value={cnpj} onChange={handleCnpjChange} required />
+                      <Input placeholder="00.000.000/0000-00" value={cnpj} onChange={e => setCnpj(e.target.value)} required />
                     </div>
                   )}
                   <div className="space-y-2"><Label>Senha</Label><Input type="password" placeholder="Mínimo 6 caracteres" required value={password} onChange={e => setPassword(e.target.value)} /></div>
@@ -224,18 +193,18 @@ export default function LoginPage() {
                 </CardContent>
               </form>
             </TabsContent>
-            <CardFooter className="flex flex-col gap-4 border-t pt-6">
-              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider text-center w-full">Acesso Rápido para Teste</p>
+            <CardFooter className="flex flex-col gap-4 border-t pt-6 bg-muted/20">
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest text-center w-full">Acesso Rápido para Teste</p>
               <div className="grid grid-cols-1 gap-2 w-full">
                 <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" size="sm" className="gap-2" onClick={() => quickAccess('suporte')} disabled={loading}>
+                  <Button variant="outline" size="sm" className="gap-2 bg-white" onClick={() => quickAccess('suporte')} disabled={loading}>
                     <Headset className="size-3.5" /> Adm Suporte
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-2" onClick={() => quickAccess('comercial')} disabled={loading}>
+                  <Button variant="outline" size="sm" className="gap-2 bg-white" onClick={() => quickAccess('comercial')} disabled={loading}>
                     <Briefcase className="size-3.5" /> Adm Comercial
                   </Button>
                 </div>
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => quickAccess('client')} disabled={loading}>
+                <Button variant="outline" size="sm" className="gap-2 bg-white" onClick={() => quickAccess('client')} disabled={loading}>
                   <User className="size-3.5" /> Cliente
                 </Button>
               </div>

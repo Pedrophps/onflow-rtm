@@ -25,7 +25,7 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useUser, useFirestore, useDoc } from "@/firebase";
@@ -33,7 +33,7 @@ import { doc } from "firebase/firestore";
 import { useMemo, useEffect } from "react";
 import { UserProfile } from "@/lib/types";
 
-const data = [
+const chartData = [
   { name: 'Jan', value: 12 },
   { name: 'Fev', value: 18 },
   { name: 'Mar', value: 25 },
@@ -51,11 +51,13 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
+  // Determina a visão atual com base na URL ou no perfil salvo
   const currentView = searchParams.get('view') || profile?.adminType || 'suporte';
 
+  // Trava de segurança: Se o admin não selecionou o tipo de acesso, manda para a seleção
   useEffect(() => {
     if (!profileLoading && profile && profile.role === 'admin' && !profile.adminType) {
-      router.push('/dashboard/admin/select-profile');
+      router.replace('/dashboard/admin/select-profile');
     }
   }, [profile, profileLoading, router]);
 
@@ -141,7 +143,7 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data}>
+                <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E5E5" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} />
                   <YAxis axisLine={false} tickLine={false} />
@@ -150,8 +152,8 @@ export default function AdminPage() {
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                   />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="#D32F2F">
-                    {data.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={index === data.length - 1 ? '#D32F2F' : '#757575'} />
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={index === chartData.length - 1 ? '#D32F2F' : '#757575'} />
                     ))}
                   </Bar>
                 </BarChart>
