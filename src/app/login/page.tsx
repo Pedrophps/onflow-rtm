@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -39,14 +38,12 @@ export default function LoginPage() {
 
   const fastRedirect = useCallback((userEmail: string | null) => {
     if (isAdminEmail(userEmail)) {
-      // Mandamos para o dashboard admin. Se faltar o adminType, a própria página de lá redireciona para a seleção.
       router.push('/dashboard/admin');
     } else {
       router.push('/dashboard/client');
     }
   }, [router, isAdminEmail]);
 
-  // Redirecionamento instantâneo assim que o estado de Auth muda
   useEffect(() => {
     if (currentUser && !authLoading) {
       fastRedirect(currentUser.email);
@@ -65,7 +62,6 @@ export default function LoginPage() {
       const role = isAdminEmail(email) ? 'admin' : 'client';
       const userRef = doc(db, 'users', result.user.uid);
 
-      // Gravação em background TOTALMENTE não-bloqueante
       setDoc(userRef, {
         email,
         role,
@@ -96,7 +92,6 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, targetEmail, targetPassword);
-      // O useEffect cuidará do redirecionamento instantâneo
     } catch (error: any) {
       setLoading(false);
       toast({ 
@@ -133,7 +128,7 @@ export default function LoginPage() {
           <p className="text-muted-foreground font-medium uppercase tracking-widest text-xs">Hub Integrador RTM</p>
         </div>
 
-        <Card className="border-2 shadow-xl bg-white">
+        <Card className="border-2 shadow-xl bg-white overflow-hidden">
           <Tabs defaultValue="login">
             <CardHeader className="pb-0">
               <TabsList className="grid w-full grid-cols-2">
@@ -187,18 +182,18 @@ export default function LoginPage() {
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest text-center w-full">Acesso Rápido para Teste</p>
               <div className="grid grid-cols-1 gap-2 w-full">
                 <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" size="sm" className="gap-2 bg-white" onClick={() => quickAccess('suporte')} disabled={loading}>
-                    <Headset className="size-3.5" /> Adm Suporte
+                  <Button variant="outline" size="sm" className="gap-2 bg-white h-10" onClick={() => quickAccess('suporte')} disabled={loading}>
+                    <Headset className="size-3.5" /> Suporte
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-2 bg-white" onClick={() => quickAccess('comercial')} disabled={loading}>
-                    <Briefcase className="size-3.5" /> Adm Comercial
+                  <Button variant="outline" size="sm" className="gap-2 bg-white h-10" onClick={() => quickAccess('comercial')} disabled={loading}>
+                    <Briefcase className="size-3.5" /> Comercial
                   </Button>
                 </div>
-                <Button variant="outline" size="sm" className="gap-2 bg-white" onClick={() => quickAccess('client')} disabled={loading}>
-                  <User className="size-3.5" /> Cliente
+                <Button variant="outline" size="sm" className="gap-2 bg-white h-10" onClick={() => quickAccess('client')} disabled={loading}>
+                  <User className="size-3.5" /> Cliente de Teste
                 </Button>
                 <Link href="/debug" className="flex items-center justify-center gap-2 text-[10px] text-amber-600 hover:text-amber-700 font-bold uppercase tracking-tighter mt-2">
-                  <Wifi className="size-3" /> Problemas de Conexão? Ver Diagnóstico
+                  <Wifi className="size-3" /> Ver Diagnóstico de Conexão
                 </Link>
               </div>
             </CardFooter>

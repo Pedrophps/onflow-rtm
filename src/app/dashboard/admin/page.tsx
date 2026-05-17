@@ -1,4 +1,3 @@
-
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -50,7 +49,6 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Determina a visão atual: 1. URL | 2. Perfil do Banco | 3. Default
   const currentView = searchParams.get('view') || profile?.adminType || 'suporte';
 
   useEffect(() => {
