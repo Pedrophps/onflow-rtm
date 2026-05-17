@@ -1,0 +1,23 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-onboarding",
+      "description": "Professional team working on project planning",
+      "imageUrl": "https://picsum.photos/seed/onflow1/1200/800",
+      "imageHint": "business meeting team"
+    },
+    {
+      "id": "avatar-admin",
+      "description": "Admin user profile picture",
+      "imageUrl": "https://picsum.photos/seed/admin/200/200",
+      "imageHint": "profile avatar man"
+    },
+    {
+      "id": "avatar-client",
+      "description": "Client user profile picture",
+      "imageUrl": "https://picsum.photos/seed/client/200/200",
+      "imageHint": "profile avatar woman"
+    }
+  ]
+}
