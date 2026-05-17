@@ -21,16 +21,69 @@ import {
   Lock,
   PhoneCall,
   CreditCard,
-  ExternalLink
+  ExternalLink,
+  Menu
 } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 export default function Home() {
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-rtm');
 
   return (
     <main className="min-h-screen bg-white selection:bg-primary/10">
+      {/* Header Section */}
+      <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-border/50">
+        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <Link href="/" className="flex items-center gap-2 font-headline font-bold text-2xl text-primary">
+              RTM
+              <span className="text-foreground text-sm font-medium tracking-widest uppercase ml-1 opacity-60">OnFlow</span>
+            </Link>
+            <nav className="hidden lg:flex items-center gap-6">
+              <Link href="#sobre" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Sobre</Link>
+              <Link href="#servicos" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Serviços</Link>
+              <Link href="#solucoes" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Soluções</Link>
+            </nav>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-3">
+              <Button variant="ghost" size="sm" className="font-bold text-xs uppercase tracking-wider" asChild>
+                <Link href="/dashboard/admin">Admin</Link>
+              </Button>
+              <Button size="sm" className="rounded-full px-6 font-bold text-xs uppercase tracking-wider" asChild>
+                <Link href="/dashboard/client">Acessar Onboarding</Link>
+              </Button>
+            </div>
+
+            {/* Mobile Menu */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden">
+                  <Menu className="size-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                <nav className="flex flex-col gap-6 mt-10">
+                  <Link href="#sobre" className="text-lg font-bold font-headline hover:text-primary transition-colors">Sobre a RTM</Link>
+                  <Link href="#servicos" className="text-lg font-bold font-headline hover:text-primary transition-colors">Serviços Críticos</Link>
+                  <Link href="#solucoes" className="text-lg font-bold font-headline hover:text-primary transition-colors">Soluções Especializadas</Link>
+                  <hr className="my-4" />
+                  <Link href="/dashboard/admin" className="text-lg font-bold font-headline text-muted-foreground hover:text-primary transition-colors">Portal Admin</Link>
+                  <Link href="/dashboard/client" className="text-lg font-bold font-headline text-primary">Jornada do Cliente</Link>
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
-      <section className="relative h-[90vh] flex items-center overflow-hidden bg-background">
+      <section className="relative min-h-screen flex items-center overflow-hidden bg-background pt-20">
         <div className="container mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
           <div className="space-y-8 animate-in fade-in slide-in-from-left duration-700">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-bold tracking-tight uppercase">
@@ -61,7 +114,7 @@ export default function Home() {
               alt={heroImage?.description || "RTM Hub"} 
               fill 
               className="object-cover rounded-3xl shadow-2xl relative z-10"
-              data-ai-hint={heroImage?.imageHint || "modern buildings"}
+              data-ai-hint="modern buildings"
             />
           </div>
         </div>
@@ -72,7 +125,7 @@ export default function Home() {
       <section className="py-24 bg-primary text-white">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16 space-y-4">
-            <h2 className="text-3xl font-bold font-headline">Nosso Posicionamento</h2>
+            <h2 className="text-3xl font-bold font-headline uppercase tracking-tighter">Nosso Posicionamento</h2>
             <p className="text-xl opacity-90 max-w-2xl mx-auto">Identificar para integrar. Entender para atender. Conhecer para evoluir.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
@@ -94,7 +147,7 @@ export default function Home() {
       </section>
 
       {/* About Section */}
-      <section className="py-24">
+      <section id="sobre" className="py-24">
         <div className="container mx-auto px-6 max-w-5xl">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
             <div className="lg:col-span-7 space-y-6">
@@ -132,7 +185,7 @@ export default function Home() {
       </section>
 
       {/* Serviços Críticos Section */}
-      <section className="py-24 bg-background">
+      <section id="servicos" className="py-24 bg-background">
         <div className="container mx-auto px-6">
           <div className="text-center space-y-4 mb-16">
             <h2 className="text-4xl font-bold font-headline">Serviços Críticos</h2>
@@ -196,7 +249,7 @@ export default function Home() {
       </section>
 
       {/* Solutions Section */}
-      <section className="py-24 bg-muted/30">
+      <section id="solucoes" className="py-24 bg-muted/30">
         <div className="container mx-auto px-6">
           <div className="text-center space-y-4 mb-16">
             <h2 className="text-4xl font-bold font-headline">Soluções Especializadas</h2>
@@ -275,3 +328,4 @@ export default function Home() {
     </main>
   );
 }
+
