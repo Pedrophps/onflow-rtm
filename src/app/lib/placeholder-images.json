@@ -2,10 +2,16 @@
 {
   "placeholderImages": [
     {
-      "id": "hero-onboarding",
-      "description": "Professional team working on project planning",
-      "imageUrl": "https://picsum.photos/seed/onflow1/1200/800",
-      "imageHint": "business meeting team"
+      "id": "hero-rtm",
+      "description": "Modern financial data center and technology hub",
+      "imageUrl": "https://picsum.photos/seed/rtm-hub/1200/800",
+      "imageHint": "technology center"
+    },
+    {
+      "id": "rtm-integration",
+      "description": "Digital connectivity and network integration",
+      "imageUrl": "https://picsum.photos/seed/rtm-conn/800/600",
+      "imageHint": "network connection"
     },
     {
       "id": "avatar-admin",
