@@ -8,7 +8,8 @@ import {
   signInWithPopup, 
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  User as FirebaseUser
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -17,8 +18,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Chrome, Mail, Lock, ArrowRight, Loader2, User, Building2 } from 'lucide-react';
+import { Chrome, Mail, Lock, Loader2, User, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -67,11 +70,7 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
-      toast({
-        title: "Login realizado com sucesso!",
-        description: `Bem-vindo de volta, ${result.user.displayName || result.user.email}`
-      });
-      await checkUserAndRedirect(result.user.uid, result.user.email!);
+      await checkUserAndRedirect(result.user);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -91,11 +90,7 @@ export default function LoginPage() {
 
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
-      toast({
-        title: "Login realizado com sucesso!",
-        description: "Acessando seu portal corporativo..."
-      });
-      await checkUserAndRedirect(result.user.uid, email);
+      await checkUserAndRedirect(result.user);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -123,19 +118,32 @@ export default function LoginPage() {
         displayName: name
       });
 
-      await setDoc(doc(db, 'users', result.user.uid), {
+      const userRef = doc(db, 'users', result.user.uid);
+      const userData = {
         email,
         role,
         displayName: name,
         cnpj: cnpjValue,
         createdAt: new Date().toISOString()
-      });
+      };
+
+      // Mutações no Firestore sem await para melhor responsividade
+      setDoc(userRef, userData, { merge: true })
+        .catch(async (error) => {
+          const permissionError = new FirestorePermissionError({
+            path: userRef.path,
+            operation: 'create',
+            requestResourceData: userData
+          });
+          errorEmitter.emit('permission-error', permissionError);
+        });
 
       toast({
         title: "Conta criada com sucesso!",
         description: "Seja bem-vindo ao OnFlow by RTM."
       });
 
+      // Redirecionamento imediato
       if (role === 'admin') {
         router.push('/dashboard/admin/select-profile');
       } else {
@@ -151,23 +159,50 @@ export default function LoginPage() {
     }
   }
 
-  async function checkUserAndRedirect(uid: string, email: string) {
-    const userDoc = await getDoc(doc(db, 'users', uid));
-    if (userDoc.exists()) {
-      const role = userDoc.data().role;
-      if (role === 'admin') {
-        router.push('/dashboard/admin/select-profile');
+  async function checkUserAndRedirect(user: FirebaseUser) {
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        const role = userDoc.data().role;
+        toast({
+          title: "Login realizado com sucesso!",
+          description: `Bem-vindo de volta, ${userDoc.data().displayName || user.email}`
+        });
+        if (role === 'admin') {
+          router.push('/dashboard/admin/select-profile');
+        } else {
+          router.push(`/dashboard/${role}`);
+        }
       } else {
-        router.push(`/dashboard/${role}`);
+        // Primeiro login social, cria perfil padrão
+        const userData = { 
+          email: user.email, 
+          role: 'client',
+          displayName: user.displayName || user.email?.split('@')[0],
+          createdAt: new Date().toISOString()
+        };
+
+        setDoc(userDocRef, userData)
+          .catch(async () => {
+            const permissionError = new FirestorePermissionError({
+              path: userDocRef.path,
+              operation: 'create',
+              requestResourceData: userData
+            });
+            errorEmitter.emit('permission-error', permissionError);
+          });
+
+        toast({
+          title: "Bem-vindo!",
+          description: "Seu perfil de acesso foi criado."
+        });
+        router.push('/dashboard/client');
       }
-    } else {
-      await setDoc(doc(db, 'users', uid), { 
-        email, 
-        role: 'client',
-        displayName: auth.currentUser?.displayName || email.split('@')[0],
-        createdAt: new Date().toISOString()
-      });
-      router.push('/dashboard/client');
+    } catch (error) {
+      console.error("Erro ao verificar usuário:", error);
+      setLoading(false);
     }
   }
 
