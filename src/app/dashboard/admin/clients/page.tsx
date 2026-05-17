@@ -29,9 +29,10 @@ export default function ClientsAdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
   
-  // Define a visão baseada no perfil salvo ou parâmetro da URL
+  // Define a visão: prioriza banco, depois URL.
   const currentView = profile?.adminType || searchParams.get('view');
   
+  // Query para buscar todos os clientes
   const clientsQuery = useMemo(() => query(collection(db, "users"), where("role", "==", "client")), [db]);
   const { data: clients, loading: clientsLoading } = useCollection<UserProfile>(clientsQuery);
 
@@ -40,6 +41,7 @@ export default function ClientsAdminPage() {
   const [activeProduct, setActiveProduct] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  // Clientes que aguardam aprovação comercial (status pending)
   const pendingClients = useMemo(() => clients.filter(c => c.status === 'pending'), [clients]);
 
   const openApprovalDialog = (client: UserProfile) => {
@@ -60,6 +62,7 @@ export default function ClientsAdminPage() {
       approvedAt: new Date().toISOString()
     };
 
+    // Atualiza no Firestore sem await para interface rápida
     updateDoc(clientRef, updateData)
       .catch(async (error) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -95,7 +98,7 @@ export default function ClientsAdminPage() {
       <DashboardLayout role="admin">
         <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
           <Loader2 className="size-8 animate-spin text-primary" />
-          <p className="text-muted-foreground font-medium">Carregando permissões...</p>
+          <p className="text-muted-foreground font-medium">Sincronizando ambiente...</p>
         </div>
       </DashboardLayout>
     );
@@ -107,7 +110,7 @@ export default function ClientsAdminPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
             <h1 className="text-3xl font-bold font-headline">Gestão de Clientes</h1>
-            <p className="text-muted-foreground">Administração de instituições e controle de acessos.</p>
+            <p className="text-muted-foreground">Administração de instituições e controle de acessos corporativos.</p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
             <div className="relative flex-1">
@@ -118,7 +121,7 @@ export default function ClientsAdminPage() {
           </div>
         </div>
 
-        {/* ÁREA EXCLUSIVA DO COMERCIAL PARA APROVAÇÕES */}
+        {/* ÁREA DE PENDÊNCIAS: Visível apenas para o Comercial */}
         {currentView === 'comercial' && (
           <section className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="flex items-center justify-between">
@@ -135,14 +138,14 @@ export default function ClientsAdminPage() {
                       <div className="flex justify-between items-start">
                         <div className="space-y-1">
                           <CardTitle className="text-base">{client.displayName}</CardTitle>
-                          <CardDescription className="font-bold text-amber-700">{client.institutionName}</CardDescription>
+                          <CardDescription className="font-bold text-amber-700">{client.institutionName || "Instituição s/ Nome"}</CardDescription>
                         </div>
                         <Building2 className="size-5 text-amber-400" />
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="text-[11px] space-y-1 bg-white p-3 rounded-lg border border-amber-100">
-                        <p className="text-muted-foreground">CNPJ: <span className="text-foreground font-mono font-bold">{client.cnpj}</span></p>
+                        <p className="text-muted-foreground">CNPJ: <span className="text-foreground font-mono font-bold">{client.cnpj || "Não informado"}</span></p>
                         <p className="text-muted-foreground">E-mail: <span className="text-foreground">{client.email}</span></p>
                       </div>
                       <div className="flex gap-2">
@@ -169,7 +172,7 @@ export default function ClientsAdminPage() {
             ) : (
               <div className="p-8 text-center border-2 border-dashed rounded-xl bg-muted/20 text-muted-foreground">
                 <CheckCircle2 className="size-8 mx-auto mb-2 opacity-20" />
-                <p className="text-sm font-medium">Nenhuma instituição aguardando validação comercial.</p>
+                <p className="text-sm font-medium">Nenhum cliente aguardando validação comercial no momento.</p>
               </div>
             )}
           </section>
@@ -178,59 +181,67 @@ export default function ClientsAdminPage() {
         {/* LISTAGEM GERAL DE CLIENTES */}
         <Card className="bg-white">
           <CardHeader>
-            <CardTitle className="text-lg">Base de Instituições Conectadas</CardTitle>
-            <CardDescription>Visualização completa de todos os usuários corporativos.</CardDescription>
+            <CardTitle className="text-lg">Base de Clientes Conectados</CardTitle>
+            <CardDescription>Visualização completa de todos os usuários corporativos cadastrados.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Instituição / CNPJ</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Código RTM</TableHead>
-                  <TableHead>Produto</TableHead>
-                  <TableHead className="text-right">Opções</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {clients.map((client) => (
-                  <TableRow key={client.id}>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-bold">{client.institutionName || "Não Informado"}</span>
-                        <span className="text-[10px] text-muted-foreground font-mono">{client.cnpj || "-"}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm font-medium">{client.displayName}</TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={client.status === 'approved' ? 'default' : client.status === 'rejected' ? 'destructive' : 'secondary'} 
-                        className={client.status === 'approved' ? 'bg-emerald-500 hover:bg-emerald-600' : ''}
-                      >
-                        {client.status === 'approved' ? 'Ativo' : client.status === 'rejected' ? 'Bloqueado' : 'Pendente'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs font-bold">{client.clientCode || "-"}</TableCell>
-                    <TableCell className="text-xs font-semibold">{client.activeProduct || "-"}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon"><MoreHorizontal className="size-4" /></Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {!clientsLoading && clients.length === 0 && (
+            {clientsLoading ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-2">
+                <Loader2 className="size-6 animate-spin text-primary" />
+                <p className="text-xs text-muted-foreground font-medium">Buscando base de dados...</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground italic">
-                      Nenhuma instituição encontrada na base de dados.
-                    </TableCell>
+                    <TableHead>Instituição / CNPJ</TableHead>
+                    <TableHead>Responsável</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Código RTM</TableHead>
+                    <TableHead>Produto</TableHead>
+                    <TableHead className="text-right">Opções</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {clients.map((client) => (
+                    <TableRow key={client.id}>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-bold">{client.institutionName || "Não Informado"}</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">{client.cnpj || "-"}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm font-medium">{client.displayName}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={client.status === 'approved' ? 'default' : client.status === 'rejected' ? 'destructive' : 'secondary'} 
+                          className={client.status === 'approved' ? 'bg-emerald-500 hover:bg-emerald-600' : ''}
+                        >
+                          {client.status === 'approved' ? 'Ativo' : client.status === 'rejected' ? 'Bloqueado' : 'Pendente'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs font-bold">{client.clientCode || "-"}</TableCell>
+                      <TableCell className="text-xs font-semibold">{client.activeProduct || "-"}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon"><MoreHorizontal className="size-4" /></Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {clients.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-32 text-center text-muted-foreground italic">
+                        Nenhuma instituição encontrada na base de dados.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>
 
+      {/* DIÁLOGO DE APROVAÇÃO TÉCNICA/COMERCIAL */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -239,7 +250,7 @@ export default function ClientsAdminPage() {
               Aprovação Institucional
             </DialogTitle>
             <DialogDescription>
-              Insira os dados técnicos para habilitar o acesso de <strong>{selectedClient?.institutionName}</strong>.
+              Insira os dados técnicos obrigatórios para habilitar o acesso de <strong>{selectedClient?.institutionName || selectedClient?.displayName}</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-5 py-4">
