@@ -37,6 +37,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
 
+  // Tenta redirecionar automaticamente se o usuário já estiver logado
   useEffect(() => {
     if (currentUser && !loading) {
       checkUserAndRedirect(currentUser);
@@ -72,18 +73,22 @@ export default function LoginPage() {
         return 'Senha incorreta.';
       case 'auth/popup-closed-by-user':
         return 'A janela de login foi fechada antes de completar a autenticação.';
-      case 'unavailable':
-      case 'offline':
-        return 'O serviço está temporariamente indisponível. Verifique sua conexão com a internet.';
       default:
-        return 'Ocorreu um erro inesperado. Tente novamente em instantes.';
+        return 'Ocorreu um erro ao tentar acessar. Verifique sua conexão e tente novamente.';
+    }
+  };
+
+  const redirectBasedOnRole = (role: string) => {
+    if (role === 'admin') {
+      router.push('/dashboard/admin/select-profile');
+    } else {
+      router.push('/dashboard/client');
     }
   };
 
   async function handleSocialLogin() {
     if (loading) return;
     setLoading(true);
-    setConnectionError(false);
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
@@ -102,7 +107,6 @@ export default function LoginPage() {
     e?.preventDefault();
     if (loading) return;
     setLoading(true);
-    setConnectionError(false);
 
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
@@ -121,7 +125,6 @@ export default function LoginPage() {
     e?.preventDefault();
     if (loading) return;
     setLoading(true);
-    setConnectionError(false);
 
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
@@ -130,9 +133,9 @@ export default function LoginPage() {
         displayName: name
       });
 
-      const userRef = doc(db, 'users', result.user.uid);
       const isTestAdmin = email.toLowerCase().includes('admin');
       const role = isTestAdmin ? 'admin' : 'client';
+      const userRef = doc(db, 'users', result.user.uid);
 
       const userData = {
         email,
@@ -142,6 +145,7 @@ export default function LoginPage() {
         createdAt: new Date().toISOString()
       };
 
+      // Gravação otimista (não aguardamos o Firestore para redirecionar)
       setDoc(userRef, userData, { merge: true })
         .catch(async (error) => {
           errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -156,11 +160,7 @@ export default function LoginPage() {
         description: "Seja bem-vindo ao OnFlow."
       });
 
-      if (role === 'admin') {
-        router.push('/dashboard/admin/select-profile');
-      } else {
-        router.push('/dashboard/client');
-      }
+      redirectBasedOnRole(role);
     } catch (error: any) {
       setLoading(false);
       toast({
@@ -174,62 +174,45 @@ export default function LoginPage() {
   async function checkUserAndRedirect(user: FirebaseUser) {
     setLoading(true);
     try {
-      setConnectionError(false);
       const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
       
-      if (userDoc.exists()) {
-        const role = userDoc.data().role;
-        if (role === 'admin') {
-          router.push('/dashboard/admin/select-profile');
+      // Tentativa de buscar o documento com um timeout curto
+      const fetchPromise = getDoc(userDocRef);
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000));
+      
+      try {
+        const userDoc = await Promise.race([fetchPromise, timeoutPromise]) as any;
+        
+        if (userDoc.exists()) {
+          redirectBasedOnRole(userDoc.data().role);
         } else {
-          router.push('/dashboard/client');
+          // Fallback: Inferir papel pelo e-mail se o documento não existir
+          const role = user.email?.toLowerCase().includes('admin') ? 'admin' : 'client';
+          const userData = { 
+            email: user.email, 
+            role,
+            displayName: user.displayName || user.email?.split('@')[0],
+            createdAt: new Date().toISOString()
+          };
+          setDoc(userDocRef, userData); // Grava em background
+          redirectBasedOnRole(role);
         }
-      } else {
-        const isTestAdmin = user.email?.toLowerCase().includes('admin');
-        const role = isTestAdmin ? 'admin' : 'client';
-
-        const userData = { 
-          email: user.email, 
-          role,
-          displayName: user.displayName || user.email?.split('@')[0],
-          createdAt: new Date().toISOString()
-        };
-
-        setDoc(userDocRef, userData)
-          .catch(async () => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-              path: userDocRef.path,
-              operation: 'create',
-              requestResourceData: userData
-            }));
-          });
-          
-        if (role === 'admin') {
-          router.push('/dashboard/admin/select-profile');
-        } else {
-          router.push('/dashboard/client');
-        }
+      } catch (err) {
+        // Se der timeout ou erro de offline, redirecionamos usando o fallback do e-mail
+        console.warn("Firestore inacessível, usando redirecionamento de fallback.");
+        const role = user.email?.toLowerCase().includes('admin') ? 'admin' : 'client';
+        redirectBasedOnRole(role);
       }
     } catch (error: any) {
       setLoading(false);
-      if (error.code === 'unavailable' || error.message?.includes('offline')) {
-        setConnectionError(true);
-        toast({
-          variant: "destructive",
-          title: "Sem conexão",
-          description: "Não conseguimos validar seu perfil agora. Verifique sua internet."
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Erro interno",
-          description: "Ocorreu um problema ao carregar seu perfil."
-        });
-      }
+      toast({
+        variant: "destructive",
+        title: "Erro de Redirecionamento",
+        description: "Não conseguimos carregar seu perfil agora."
+      });
     } finally {
-      // Pequeno atraso para garantir que o router processe o redirecionamento
-      setTimeout(() => setLoading(false), 3000);
+      // Garante que o estado de loading seja limpo após um tempo para não travar a UI
+      setTimeout(() => setLoading(false), 5000);
     }
   }
 
@@ -247,7 +230,7 @@ export default function LoginPage() {
     }
     toast({
       title: "Campos Preenchidos",
-      description: `Dados de ${type} carregados. Clique em "Acessar Portal" ou "Criar Conta".`
+      description: `Clique em "Acessar Portal" para entrar.`
     });
   };
 
@@ -266,16 +249,6 @@ export default function LoginPage() {
           <h1 className="text-4xl font-bold font-headline text-primary">OnFlow</h1>
           <p className="text-muted-foreground">O Hub Integrador do Mercado Financeiro</p>
         </div>
-
-        {connectionError && (
-          <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Você está offline</AlertTitle>
-            <AlertDescription>
-              O Firebase reportou que o cliente está offline. Verifique se há algum firewall ou VPN bloqueando a conexão.
-            </AlertDescription>
-          </Alert>
-        )}
 
         <Card className="border-2 shadow-xl">
           <Tabs defaultValue="login" className="w-full">
