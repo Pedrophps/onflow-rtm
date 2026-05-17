@@ -10,6 +10,8 @@ import { signOut } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { UserProfile } from '@/lib/types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function SelectProfilePage() {
   const router = useRouter();
@@ -21,7 +23,7 @@ export default function SelectProfilePage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Redirecionamento automático agressivo se já possuir perfil salvo
+  // Redirecionamento automático agressivo se já possuir perfil salvo no banco
   useEffect(() => {
     if (!profileLoading && profile?.adminType && !isUpdating) {
       router.replace(`/dashboard/admin?view=${profile.adminType}`);
@@ -32,21 +34,27 @@ export default function SelectProfilePage() {
     if (!user) return;
     setIsUpdating(true);
 
-    const docRef = doc(db, 'users', user.uid);
-    
-    // Navegação otimista imediata para não travar o usuário
-    router.push(`/dashboard/admin?view=${adminType}`);
-
-    // Gravação resiliente em background (sem await)
-    setDoc(docRef, { 
+    const userDocRef = doc(db, 'users', user.uid);
+    const updateData = { 
       adminType,
       role: 'admin',
       status: 'approved',
       email: user.email,
       displayName: user.displayName || 'Administrador'
-    }, { merge: true })
-      .catch((err) => {
-        console.warn("Falha ao sincronizar perfil no banco:", err);
+    };
+    
+    // Navegação imediata para melhor UX
+    router.push(`/dashboard/admin?view=${adminType}`);
+
+    // Persistência no Firestore
+    setDoc(userDocRef, updateData, { merge: true })
+      .catch(async (error) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: 'write',
+          requestResourceData: updateData
+        }));
+        setIsUpdating(false);
       });
   };
 
@@ -55,7 +63,6 @@ export default function SelectProfilePage() {
     router.push('/login');
   };
 
-  // Se já temos o dado, não mostramos a tela enquanto redirecionamos
   if (profileLoading || (profile?.adminType && !isUpdating)) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
@@ -72,7 +79,7 @@ export default function SelectProfilePage() {
           <h1 className="text-4xl font-bold font-headline">Seja bem-vindo, <span className="text-primary">{user?.displayName?.split(' ')[0] || 'Administrador'}</span>!</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Para configurar sua conta, selecione sua equipe de atuação na RTM.
-            <span className="block mt-2 text-sm font-semibold text-amber-600">Esta escolha será salva no seu perfil.</span>
+            <span className="block mt-2 text-sm font-semibold text-amber-600">Esta escolha será salva permanentemente no seu perfil.</span>
           </p>
         </div>
 

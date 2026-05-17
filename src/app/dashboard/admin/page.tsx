@@ -51,19 +51,19 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Preferência: 1. URL (?view=) | 2. Perfil do Banco | 3. Inferência por e-mail
+  // Lógica de visualização: Prioriza o que está no banco, depois URL, depois nada.
+  const currentView = profile?.adminType || searchParams.get('view');
   const isAdminByEmail = user?.email?.endsWith('@rtm.net.br') || user?.email?.includes('admin');
-  const currentView = searchParams.get('view') || profile?.adminType;
 
   useEffect(() => {
+    // Só redireciona se o carregamento terminou e realmente não temos um adminType definido no banco
     if (!userLoading && user && !profileLoading) {
-      if (isAdminByEmail && !currentView) {
+      if (isAdminByEmail && !profile?.adminType && !searchParams.get('view')) {
         router.replace('/dashboard/admin/select-profile');
       }
     }
-  }, [profile, profileLoading, user, userLoading, router, currentView, isAdminByEmail]);
+  }, [profile, profileLoading, user, userLoading, router, isAdminByEmail, searchParams]);
 
-  // Loader preventivo para evitar loops enquanto os dados principais carregam
   if (userLoading || (user && profileLoading && !currentView)) {
     return (
       <DashboardLayout role="admin">
