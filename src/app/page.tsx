@@ -1,4 +1,3 @@
-
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -53,10 +52,10 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-3">
               <Button variant="ghost" size="sm" className="font-bold text-xs uppercase tracking-wider" asChild>
-                <Link href="/dashboard/admin">Admin</Link>
+                <Link href="/dashboard/admin">Entrar</Link>
               </Button>
               <Button size="sm" className="rounded-full px-6 font-bold text-xs uppercase tracking-wider" asChild>
-                <Link href="/dashboard/client">Acessar Onboarding</Link>
+                <Link href="/dashboard/client">Cadastre-se</Link>
               </Button>
             </div>
 
@@ -73,8 +72,8 @@ export default function Home() {
                   <Link href="#servicos" className="text-lg font-bold font-headline hover:text-primary transition-colors">Serviços Críticos</Link>
                   <Link href="#solucoes" className="text-lg font-bold font-headline hover:text-primary transition-colors">Soluções Especializadas</Link>
                   <hr className="my-4" />
-                  <Link href="/dashboard/admin" className="text-lg font-bold font-headline text-muted-foreground hover:text-primary transition-colors">Portal Admin</Link>
-                  <Link href="/dashboard/client" className="text-lg font-bold font-headline text-primary">Jornada do Cliente</Link>
+                  <Link href="/dashboard/admin" className="text-lg font-bold font-headline text-muted-foreground hover:text-primary transition-colors">Entrar</Link>
+                  <Link href="/dashboard/client" className="text-lg font-bold font-headline text-primary">Cadastre-se</Link>
                 </nav>
               </SheetContent>
             </Sheet>
@@ -98,11 +97,11 @@ export default function Home() {
             <div className="flex flex-wrap gap-4">
               <Button size="lg" className="rounded-full px-8 h-14 text-base font-bold gap-2 shadow-xl shadow-primary/20" asChild>
                 <Link href="/dashboard/client">
-                  Jornada do Cliente <ArrowRight className="size-5" />
+                  Cadastre-se <ArrowRight className="size-5" />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="rounded-full px-8 h-14 text-base font-bold border-2" asChild>
-                <Link href="/dashboard/admin">Portal Admin</Link>
+                <Link href="/dashboard/admin">Entrar</Link>
               </Button>
             </div>
           </div>
@@ -288,7 +287,7 @@ export default function Home() {
                   <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
                     <LayoutDashboard className="size-6" />
                   </div>
-                  <CardTitle>Painel Administrativo</CardTitle>
+                  <CardTitle>Entrar</CardTitle>
                   <CardDescription>Gerencie fluxos, etapas e visualize métricas de progresso.</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -305,12 +304,12 @@ export default function Home() {
                   <div className="size-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary mb-2">
                     <Users className="size-6" />
                   </div>
-                  <CardTitle>Jornada do Cliente</CardTitle>
+                  <CardTitle>Cadastre-se</CardTitle>
                   <CardDescription>Acompanhe seu progresso e envie as evidências solicitadas.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button className="w-full justify-between" variant="ghost">
-                    Acessar como Cliente <ArrowRight className="size-4" />
+                    Jornada do Cliente <ArrowRight className="size-4" />
                   </Button>
                 </CardContent>
               </Card>
@@ -328,4 +327,3 @@ export default function Home() {
     </main>
   );
 }
-
