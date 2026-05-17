@@ -51,28 +51,33 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
+  // Preferência: 1. URL (?view=) | 2. Perfil do Banco | 3. Inferência por e-mail
+  const isAdminByEmail = user?.email?.endsWith('@rtm.net.br') || user?.email?.includes('admin');
   const currentView = searchParams.get('view') || profile?.adminType;
 
   useEffect(() => {
     if (!userLoading && user && !profileLoading) {
-      const isAdminByEmail = user.email?.endsWith('@rtm.net.br') || user.email?.includes('admin');
-      
-      // Se é admin e não tem visão definida (no banco ou URL), vai selecionar perfil
       if (isAdminByEmail && !currentView) {
         router.replace('/dashboard/admin/select-profile');
       }
     }
-  }, [profile, profileLoading, user, userLoading, router, currentView]);
+  }, [profile, profileLoading, user, userLoading, router, currentView, isAdminByEmail]);
 
-  if (userLoading || profileLoading || !currentView) {
+  // Loader preventivo para evitar loops enquanto os dados principais carregam
+  if (userLoading || (user && profileLoading && !currentView)) {
     return (
       <DashboardLayout role="admin">
         <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
           <Loader2 className="size-8 animate-spin text-primary" />
-          <p className="text-muted-foreground font-medium">Sincronizando ambiente administrativo...</p>
+          <p className="text-muted-foreground font-medium text-center">Sincronizando ambiente RTM...</p>
         </div>
       </DashboardLayout>
     );
+  }
+
+  // Se for admin mas não tiver visão escolhida nem na URL nem no banco, redireciona
+  if (isAdminByEmail && !currentView) {
+    return null;
   }
 
   return (
@@ -80,29 +85,24 @@ export default function AdminPage() {
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 border-b pb-6">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold font-headline">Painel de Controle</h1>
+            <h1 className="text-3xl font-bold font-headline">Painel OnFlow</h1>
             <div className="flex items-center gap-2 text-primary font-medium animate-in fade-in duration-500">
               {currentView === 'suporte' ? (
                 <>
                   <Headset className="size-4" />
-                  <span>Acessando como: <strong>Equipe de Suporte</strong></span>
+                  <span>Ambiente: <strong>Equipe de Suporte</strong></span>
                 </>
               ) : (
                 <>
                   <Briefcase className="size-4" />
-                  <span>Acessando como: <strong>Equipe Comercial</strong></span>
+                  <span>Ambiente: <strong>Equipe Comercial</strong></span>
                 </>
               )}
             </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              {currentView === 'suporte' 
-                ? "Gestão técnica e acompanhamento de implantações." 
-                : "Métricas de conversão e gestão de novos clientes."}
-            </p>
           </div>
           
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold uppercase tracking-widest">
-            Hub RTM Conectado
+            Conexão Segura RTM
           </div>
         </div>
 
@@ -110,7 +110,7 @@ export default function AdminPage() {
           <Card className="border-l-4 border-l-primary shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                {currentView === 'suporte' ? 'Implantações' : 'Novos Negócios'}
+                {currentView === 'suporte' ? 'Implantações' : 'Negócios'}
               </CardTitle>
               <Users className="size-4 text-primary" />
             </CardHeader>
@@ -156,10 +156,7 @@ export default function AdminPage() {
         <div className="grid gap-8 md:grid-cols-7">
           <Card className="md:col-span-4">
             <CardHeader>
-              <CardTitle className="text-lg">
-                Performance Mensal
-              </CardTitle>
-              <CardDescription>Fluxo de trabalho dos últimos 6 meses.</CardDescription>
+              <CardTitle className="text-lg">Fluxo Operacional</CardTitle>
             </CardHeader>
             <CardContent className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -183,17 +180,14 @@ export default function AdminPage() {
 
           <Card className="md:col-span-3">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Atividade Recente</CardTitle>
-                <Button variant="ghost" size="icon"><MoreHorizontal className="size-4" /></Button>
-              </div>
+              <CardTitle className="text-lg">Atividade Recente</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {[
-                { name: "Banco Digital Beta", task: currentView === 'suporte' ? "Aguardando config VPN" : "Novo ID RTM gerado", time: "Agora", status: "em_revisao" },
-                { name: "Invest Corp", task: "Concluiu Boas Vindas", time: "Há 45 min", status: "concluida" },
-                { name: "Global Payments", task: "Aguardando ID Comercial", time: "Há 2 horas", status: "pendente" },
-                { name: "Tech Finance", task: "Documento Rejeitado", time: "Há 4 horas", status: "em_revisao" },
+                { name: "Banco Digital Beta", task: currentView === 'suporte' ? "Validando config VPN" : "ID RTM pendente", time: "Agora", status: "em_revisao" },
+                { name: "Invest Corp", task: "Onboarding finalizado", time: "Há 45 min", status: "concluida" },
+                { name: "Global Payments", task: "Aguardando comercial", time: "Há 2 horas", status: "pendente" },
+                { name: "Tech Finance", task: "Doc. em revisão", time: "Há 4 horas", status: "em_revisao" },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-4">
                   <div className={cn(
