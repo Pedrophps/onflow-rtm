@@ -25,6 +25,9 @@ export default function LoginPage() {
   const { toast } = useToast();
   const { user: currentUser, loading: authLoading } = useUser();
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
+  
+  // Form states
   const [cnpj, setCnpj] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -57,7 +60,7 @@ export default function LoginPage() {
 
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(result.user, { displayName: name });
+      await updateProfile(result.user, { displayName: name || 'Usuário RTM' });
 
       const role = isAdminEmail(email) ? 'admin' : 'client';
       const userRef = doc(db, 'users', result.user.uid);
@@ -66,7 +69,7 @@ export default function LoginPage() {
         email,
         role,
         status: role === 'admin' ? 'approved' : 'pending',
-        displayName: name,
+        displayName: name || 'Usuário RTM',
         cnpj: role === 'client' ? cnpj : '',
         createdAt: new Date().toISOString()
       }, { merge: true }).catch(() => {});
@@ -82,16 +85,13 @@ export default function LoginPage() {
     }
   };
 
-  const handleEmailLogin = async (e?: React.FormEvent, customEmail?: string, customPassword?: string) => {
+  const handleEmailLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (loading) return;
     setLoading(true);
 
-    const targetEmail = customEmail || email;
-    const targetPassword = customPassword || password;
-
     try {
-      await signInWithEmailAndPassword(auth, targetEmail, targetPassword);
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       setLoading(false);
       toast({ 
@@ -102,14 +102,29 @@ export default function LoginPage() {
     }
   };
 
-  const quickAccess = (type: 'suporte' | 'comercial' | 'client') => {
-    let qEmail = '';
-    let qPass = '123456';
-    if (type === 'suporte') qEmail = 'suporte.rtm@rtm.net.br';
-    else if (type === 'comercial') qEmail = 'comercial.rtm@rtm.net.br';
-    else qEmail = 'cliente.teste@instituicao.com.br';
+  const fillQuickAccess = (type: 'suporte' | 'comercial' | 'client') => {
+    const pass = '123456';
+    if (type === 'suporte') {
+      setEmail('suporte.rtm@rtm.net.br');
+      setPassword(pass);
+      setName('Analista de Suporte');
+      setCnpj('');
+    } else if (type === 'comercial') {
+      setEmail('comercial.rtm@rtm.net.br');
+      setPassword(pass);
+      setName('Gerente Comercial');
+      setCnpj('');
+    } else {
+      setEmail('cliente.teste@instituicao.com.br');
+      setPassword(pass);
+      setName('Instituição Financeira Beta');
+      setCnpj('12.345.678/0001-99');
+    }
     
-    handleEmailLogin(undefined, qEmail, qPass);
+    toast({
+      title: "Campos Preenchidos",
+      description: `Credenciais de ${type} carregadas nos formulários.`,
+    });
   };
 
   if (authLoading && !currentUser) {
@@ -129,7 +144,7 @@ export default function LoginPage() {
         </div>
 
         <Card className="border-2 shadow-xl bg-white overflow-hidden">
-          <Tabs defaultValue="login">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <CardHeader className="pb-0">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Entrar</TabsTrigger>
@@ -179,17 +194,17 @@ export default function LoginPage() {
               </form>
             </TabsContent>
             <CardFooter className="flex flex-col gap-4 border-t pt-6 bg-muted/20">
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest text-center w-full">Acesso Rápido para Teste</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest text-center w-full">Auto-preencher para Teste</p>
               <div className="grid grid-cols-1 gap-2 w-full">
                 <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" size="sm" className="gap-2 bg-white h-10" onClick={() => quickAccess('suporte')} disabled={loading}>
+                  <Button variant="outline" size="sm" className="gap-2 bg-white h-10" onClick={() => fillQuickAccess('suporte')} disabled={loading}>
                     <Headset className="size-3.5" /> Suporte
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-2 bg-white h-10" onClick={() => quickAccess('comercial')} disabled={loading}>
+                  <Button variant="outline" size="sm" className="gap-2 bg-white h-10" onClick={() => fillQuickAccess('comercial')} disabled={loading}>
                     <Briefcase className="size-3.5" /> Comercial
                   </Button>
                 </div>
-                <Button variant="outline" size="sm" className="gap-2 bg-white h-10" onClick={() => quickAccess('client')} disabled={loading}>
+                <Button variant="outline" size="sm" className="gap-2 bg-white h-10" onClick={() => fillQuickAccess('client')} disabled={loading}>
                   <User className="size-3.5" /> Cliente de Teste
                 </Button>
                 <Link href="/debug" className="flex items-center justify-center gap-2 text-[10px] text-amber-600 hover:text-amber-700 font-bold uppercase tracking-tighter mt-2">
