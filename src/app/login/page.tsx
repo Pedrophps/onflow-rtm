@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth, useFirestore, useUser } from '@/firebase';
 import { 
   signInWithEmailAndPassword, 
@@ -34,12 +34,30 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
 
+  const isAdminEmail = useCallback((emailStr: string | null | undefined) => {
+    if (!emailStr) return false;
+    return emailStr.toLowerCase().endsWith('@rtm.net.br');
+  }, []);
+
+  const redirectBasedOnRole = useCallback((role: string, adminType?: string) => {
+    if (role === 'admin') {
+      if (adminType) {
+        router.push(`/dashboard/admin?view=${adminType}`);
+      } else {
+        router.push('/dashboard/admin/select-profile');
+      }
+    } else {
+      router.push('/dashboard/client');
+    }
+  }, [router]);
+
   // Redirecionamento automático se já estiver logado
   useEffect(() => {
     if (currentUser && !authLoading) {
-      checkUserAndRedirect(currentUser);
+      const role = isAdminEmail(currentUser.email) ? 'admin' : 'client';
+      redirectBasedOnRole(role);
     }
-  }, [currentUser, authLoading]);
+  }, [currentUser, authLoading, isAdminEmail, redirectBasedOnRole]);
 
   const formatCNPJ = (value: string) => {
     return value
@@ -56,29 +74,12 @@ export default function LoginPage() {
     setCnpj(formatted);
   };
 
-  const isAdminEmail = (emailStr: string | null | undefined) => {
-    if (!emailStr) return false;
-    return emailStr.toLowerCase().endsWith('@rtm.net.br');
-  };
-
   const getFriendlyErrorMessage = (errorCode: string) => {
     switch (errorCode) {
       case 'auth/email-already-in-use': return 'Este e-mail já está em uso.';
       case 'auth/invalid-credential': return 'E-mail ou senha incorretos.';
       case 'auth/network-request-failed': return 'Falha na conexão. Verifique sua internet.';
       default: return 'Erro ao tentar acessar. Tente novamente.';
-    }
-  };
-
-  const redirectBasedOnRole = (role: string, adminType?: string) => {
-    if (role === 'admin') {
-      if (adminType) {
-        router.push(`/dashboard/admin?view=${adminType}`);
-      } else {
-        router.push('/dashboard/admin/select-profile');
-      }
-    } else {
-      router.push('/dashboard/client');
     }
   };
 
@@ -104,18 +105,13 @@ export default function LoginPage() {
         createdAt: new Date().toISOString()
       };
 
-      // Inicia a gravação em background para não travar o redirecionamento
+      // Gravação em background sem await para não travar a navegação
       setDoc(userRef, userData, { merge: true }).catch(err => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: userRef.path,
           operation: 'create',
           requestResourceData: userData
         }));
-      });
-
-      toast({
-        title: role === 'admin' ? "Sucesso!" : "Cadastro Recebido",
-        description: "Redirecionando para o portal..."
       });
 
       redirectBasedOnRole(role);
@@ -129,67 +125,48 @@ export default function LoginPage() {
     }
   }
 
-  async function handleEmailLogin(e?: React.FormEvent) {
+  async function handleEmailLogin(e?: React.FormEvent, customEmail?: string, customPassword?: string) {
     e?.preventDefault();
     if (loading) return;
     setLoading(true);
 
+    const targetEmail = customEmail || email;
+    const targetPassword = customPassword || password;
+
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      await checkUserAndRedirect(result.user);
+      const result = await signInWithEmailAndPassword(auth, targetEmail, targetPassword);
+      
+      // Redirecionamento instantâneo baseado no e-mail (Fallback rápido)
+      const role = isAdminEmail(result.user.email) ? 'admin' : 'client';
+      
+      // Tenta buscar o perfil para ver se tem adminType, mas não trava o loading se demorar
+      const userDocRef = doc(db, 'users', result.user.uid);
+      getDoc(userDocRef).then((userDoc) => {
+        if (userDoc.exists()) {
+          const profile = userDoc.data() as UserProfile;
+          redirectBasedOnRole(profile.role, profile.adminType);
+        } else {
+          redirectBasedOnRole(role);
+        }
+      }).catch(() => {
+        redirectBasedOnRole(role);
+      });
+
     } catch (error: any) {
       setLoading(false);
       toast({ variant: "destructive", title: "Falha no acesso", description: getFriendlyErrorMessage(error.code) });
     }
   }
 
-  async function checkUserAndRedirect(user: FirebaseUser) {
-    try {
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-      
-      if (userDoc.exists()) {
-        const profile = userDoc.data() as UserProfile;
-        redirectBasedOnRole(profile.role, profile.adminType);
-      } else {
-        const role = isAdminEmail(user.email) ? 'admin' : 'client';
-        const status = role === 'admin' ? 'approved' : 'pending';
-        const userData = { 
-          email: user.email, 
-          role,
-          status,
-          displayName: user.displayName || user.email?.split('@')[0],
-          createdAt: new Date().toISOString()
-        };
-        // Não esperamos o setDoc terminar para ser mais rápido
-        setDoc(userDocRef, userData);
-        redirectBasedOnRole(role);
-      }
-    } catch (err) {
-      // Fallback: se o banco falhar (offline), redireciona baseado no e-mail
-      const role = isAdminEmail(user.email) ? 'admin' : 'client';
-      redirectBasedOnRole(role);
-    } finally {
-      // Importante: Não adicionar setTimeout aqui para evitar lentidão artificial
-      setLoading(false);
-    }
-  }
+  const quickAccess = (type: 'suporte' | 'comercial' | 'client') => {
+    let qEmail = '';
+    let qPass = '123456';
+    
+    if (type === 'suporte') qEmail = 'suporte.rtm@rtm.net.br';
+    else if (type === 'comercial') qEmail = 'comercial.rtm@rtm.net.br';
+    else qEmail = 'cliente.teste@instituicao.com.br';
 
-  const fillTestAccount = (type: 'suporte' | 'comercial' | 'client') => {
-    if (type === 'suporte') {
-      setEmail('suporte.rtm@rtm.net.br');
-      setPassword('123456');
-      setName('Analista de Suporte RTM');
-    } else if (type === 'comercial') {
-      setEmail('comercial.rtm@rtm.net.br');
-      setPassword('123456');
-      setName('Gestor Comercial RTM');
-    } else {
-      setEmail('cliente.teste@instituicao.com.br');
-      setPassword('123456');
-      setName('Instituição Financeira');
-      setCnpj('11.222.333/0001-44');
-    }
+    handleEmailLogin(undefined, qEmail, qPass);
   };
 
   if (authLoading && !currentUser) return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary size-8" /></div>;
@@ -256,15 +233,15 @@ export default function LoginPage() {
               <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider text-center w-full">Acesso Rápido para Teste</p>
               <div className="grid grid-cols-1 gap-2 w-full">
                 <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" size="sm" className="gap-2" onClick={() => fillTestAccount('suporte')}>
-                    <Headset className="size-3.5" /> Adm Suporte
+                  <Button variant="outline" size="sm" className="gap-2" onClick={() => quickAccess('suporte')} disabled={loading}>
+                    <Headset className="size-3.5" /> Suporte RTM
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-2" onClick={() => fillTestAccount('comercial')}>
-                    <Briefcase className="size-3.5" /> Adm Comercial
+                  <Button variant="outline" size="sm" className="gap-2" onClick={() => quickAccess('comercial')} disabled={loading}>
+                    <Briefcase className="size-3.5" /> Comercial RTM
                   </Button>
                 </div>
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => fillTestAccount('client')}>
-                  <User className="size-3.5" /> Cliente
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => quickAccess('client')} disabled={loading}>
+                  <User className="size-3.5" /> Cliente Teste
                 </Button>
               </div>
             </CardFooter>
