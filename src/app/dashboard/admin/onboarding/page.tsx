@@ -4,7 +4,7 @@
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, GripVertical, Edit3, Trash2, Settings2, FileText, Type } from "lucide-react";
+import { Plus, GripVertical, Edit3, Trash2, Settings2, FileText, Type, BarChart3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
