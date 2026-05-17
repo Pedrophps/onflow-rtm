@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -52,10 +53,10 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-3">
               <Button variant="ghost" size="sm" className="font-bold text-xs uppercase tracking-wider" asChild>
-                <Link href="/dashboard/admin">Entrar</Link>
+                <Link href="/login">Entrar</Link>
               </Button>
               <Button size="sm" className="rounded-full px-6 font-bold text-xs uppercase tracking-wider" asChild>
-                <Link href="/dashboard/client">Cadastre-se</Link>
+                <Link href="/login">Cadastre-se</Link>
               </Button>
             </div>
 
@@ -72,8 +73,8 @@ export default function Home() {
                   <Link href="#servicos" className="text-lg font-bold font-headline hover:text-primary transition-colors">Serviços Críticos</Link>
                   <Link href="#solucoes" className="text-lg font-bold font-headline hover:text-primary transition-colors">Soluções Especializadas</Link>
                   <hr className="my-4" />
-                  <Link href="/dashboard/admin" className="text-lg font-bold font-headline text-muted-foreground hover:text-primary transition-colors">Entrar</Link>
-                  <Link href="/dashboard/client" className="text-lg font-bold font-headline text-primary">Cadastre-se</Link>
+                  <Link href="/login" className="text-lg font-bold font-headline text-muted-foreground hover:text-primary transition-colors">Entrar</Link>
+                  <Link href="/login" className="text-lg font-bold font-headline text-primary">Cadastre-se</Link>
                 </nav>
               </SheetContent>
             </Sheet>
@@ -96,12 +97,12 @@ export default function Home() {
             </p>
             <div className="flex flex-wrap gap-4">
               <Button size="lg" className="rounded-full px-8 h-14 text-base font-bold gap-2 shadow-xl shadow-primary/20" asChild>
-                <Link href="/dashboard/client">
+                <Link href="/login">
                   Cadastre-se <ArrowRight className="size-5" />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="rounded-full px-8 h-14 text-base font-bold border-2" asChild>
-                <Link href="/dashboard/admin">Entrar</Link>
+                <Link href="/login">Entrar</Link>
               </Button>
             </div>
           </div>
@@ -281,7 +282,7 @@ export default function Home() {
       <section className="py-24">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Link href="/dashboard/admin">
+            <Link href="/login">
               <Card className="hover:border-primary transition-all cursor-pointer group h-full border-2 border-dashed">
                 <CardHeader>
                   <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
@@ -298,7 +299,7 @@ export default function Home() {
               </Card>
             </Link>
 
-            <Link href="/dashboard/client">
+            <Link href="/login">
               <Card className="hover:border-primary transition-all cursor-pointer group h-full border-2 border-dashed">
                 <CardHeader>
                   <div className="size-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary mb-2">

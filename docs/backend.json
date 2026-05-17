@@ -1,0 +1,36 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "title": "Perfil do Usuário",
+      "description": "Informações estendidas do usuário, incluindo seu papel no sistema.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "E-mail do usuário"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "client"],
+          "description": "Papel do usuário no sistema"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Nome de exibição"
+        }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "auth": {
+    "providers": ["google.com", "password"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Dados de perfil do usuário indexados pelo UID do Firebase Auth"
+    }
+  }
+}
