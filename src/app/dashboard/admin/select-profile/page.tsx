@@ -10,6 +10,8 @@ import { signOut } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { UserProfile } from '@/lib/types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function SelectProfilePage() {
   const router = useRouter();
@@ -21,25 +23,31 @@ export default function SelectProfilePage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Se o usuário já selecionou um tipo, redireciona automaticamente
+  // Redirecionamento automático se o perfil já estiver definido no banco
   useEffect(() => {
     if (profile?.adminType && !isUpdating) {
       router.push(`/dashboard/admin?view=${profile.adminType}`);
     }
-  }, [profile, router, isUpdating]);
+  }, [profile?.adminType, router, isUpdating]);
 
-  const handleSelect = async (adminType: 'suporte' | 'comercial') => {
+  const handleSelect = (adminType: 'suporte' | 'comercial') => {
     if (!user) return;
     setIsUpdating(true);
 
-    try {
-      const docRef = doc(db, 'users', user.uid);
-      await updateDoc(docRef, { adminType });
-      router.push(`/dashboard/admin?view=${adminType}`);
-    } catch (error) {
-      console.error("Erro ao salvar perfil:", error);
+    const docRef = doc(db, 'users', user.uid);
+    
+    // Gravação não bloqueante: inicia e segue em frente
+    updateDoc(docRef, { adminType }).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'update',
+        requestResourceData: { adminType }
+      }));
       setIsUpdating(false);
-    }
+    });
+
+    // Navegação otimista: não espera o Firestore confirmar o sucesso
+    router.push(`/dashboard/admin?view=${adminType}`);
   };
 
   const handleLogout = async () => {
@@ -47,11 +55,13 @@ export default function SelectProfilePage() {
     router.push('/login');
   };
 
-  if (profileLoading || isUpdating) {
+  // Só mostra o loader se realmente não tivermos dados e estivermos no carregamento inicial
+  // OU se o roteador estiver processando a navegação após o clique
+  if ((profileLoading && !profile) || isUpdating) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="size-10 animate-spin text-primary" />
-        <p className="text-muted-foreground font-medium">Configurando seu ambiente...</p>
+        <p className="text-muted-foreground font-medium">Iniciando painel de controle...</p>
       </div>
     );
   }
