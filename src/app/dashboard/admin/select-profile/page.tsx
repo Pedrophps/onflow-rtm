@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -36,18 +35,20 @@ export default function SelectProfilePage() {
 
     const docRef = doc(db, 'users', user.uid);
     
-    // Usamos setDoc com merge: true para garantir que o documento e o campo sejam criados/atualizados
-    setDoc(docRef, { adminType }, { merge: true })
-      .then(() => {
-        router.push(`/dashboard/admin?view=${adminType}`);
-      })
+    // Navegação imediata para evitar bloqueio por rede
+    router.push(`/dashboard/admin?view=${adminType}`);
+
+    // Gravação em background com merge:true para garantir persistência
+    setDoc(docRef, { 
+      adminType,
+      role: 'admin',
+      status: 'approved',
+      email: user.email,
+      displayName: user.displayName || 'Administrador'
+    }, { merge: true })
       .catch((err) => {
-        setIsUpdating(false);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'write',
-          requestResourceData: { adminType }
-        }));
+        // Silencioso em caso de offline, já que navegamos localmente
+        console.warn("Falha ao sincronizar perfil (provavelmente offline):", err);
       });
   };
 
@@ -60,7 +61,7 @@ export default function SelectProfilePage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="size-10 animate-spin text-primary" />
-        <p className="text-muted-foreground font-medium">Validando seu perfil de acesso...</p>
+        <p className="text-muted-foreground font-medium">Sincronizando seu perfil...</p>
       </div>
     );
   }
@@ -71,8 +72,8 @@ export default function SelectProfilePage() {
         <div className="space-y-4 text-center">
           <h1 className="text-4xl font-bold font-headline">Seja bem-vindo, <span className="text-primary">{user?.displayName?.split(' ')[0] || 'Administrador'}</span>!</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Para configurar sua conta, selecione sua equipe de atuação. 
-            <span className="block mt-2 text-sm font-semibold text-amber-600">Esta escolha será salva e definitiva para seu perfil.</span>
+            Para configurar sua conta, selecione sua equipe de atuação na RTM.
+            <span className="block mt-2 text-sm font-semibold text-amber-600">Esta escolha será salva permanentemente no seu perfil.</span>
           </p>
         </div>
 

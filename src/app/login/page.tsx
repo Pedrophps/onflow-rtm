@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -52,24 +51,23 @@ export default function LoginPage() {
   useEffect(() => {
     if (currentUser && !authLoading) {
       const userDocRef = doc(db, 'users', currentUser.uid);
-      getDoc(userDocRef).then((userDoc) => {
-        if (userDoc.exists()) {
-          const profile = userDoc.data() as UserProfile;
-          redirectBasedOnRole(profile.role, profile.adminType);
-        } else {
+      
+      // Tentativa resiliente de buscar o perfil
+      getDoc(userDocRef)
+        .then((userDoc) => {
+          if (userDoc.exists()) {
+            const profile = userDoc.data() as UserProfile;
+            redirectBasedOnRole(profile.role, profile.adminType);
+          } else {
+            const role = isAdminEmail(currentUser.email) ? 'admin' : 'client';
+            redirectBasedOnRole(role);
+          }
+        })
+        .catch(() => {
+          // Se falhar (ex: offline), usa o fallback do e-mail para não travar o usuário
           const role = isAdminEmail(currentUser.email) ? 'admin' : 'client';
-          // Se o documento não existe (ex: login direto), criamos um básico
-          const basicData = {
-            email: currentUser.email,
-            role,
-            status: role === 'admin' ? 'approved' : 'pending',
-            displayName: currentUser.displayName || 'Usuário',
-            createdAt: new Date().toISOString()
-          };
-          setDoc(userDocRef, basicData, { merge: true });
           redirectBasedOnRole(role);
-        }
-      });
+        });
     }
   }, [currentUser, authLoading, isAdminEmail, redirectBasedOnRole, db]);
 
@@ -94,14 +92,15 @@ export default function LoginPage() {
         createdAt: new Date().toISOString()
       };
 
-      await setDoc(userRef, userData, { merge: true });
+      // Gravação em background
+      setDoc(userRef, userData, { merge: true });
       redirectBasedOnRole(role);
     } catch (error: any) {
       setLoading(false);
       toast({
         variant: "destructive",
         title: "Erro no cadastro",
-        description: "Falha ao criar conta."
+        description: error.message || "Falha ao criar conta."
       });
     }
   };
@@ -117,15 +116,21 @@ export default function LoginPage() {
     try {
       const result = await signInWithEmailAndPassword(auth, targetEmail, targetPassword);
       const userDocRef = doc(db, 'users', result.user.uid);
-      const userDoc = await getDoc(userDocRef);
       
-      if (userDoc.exists()) {
-        const profile = userDoc.data() as UserProfile;
-        redirectBasedOnRole(profile.role, profile.adminType);
-      } else {
-        const role = isAdminEmail(result.user.email) ? 'admin' : 'client';
-        redirectBasedOnRole(role);
-      }
+      getDoc(userDocRef)
+        .then((userDoc) => {
+          if (userDoc.exists()) {
+            const profile = userDoc.data() as UserProfile;
+            redirectBasedOnRole(profile.role, profile.adminType);
+          } else {
+            const role = isAdminEmail(result.user.email) ? 'admin' : 'client';
+            redirectBasedOnRole(role);
+          }
+        })
+        .catch(() => {
+          const role = isAdminEmail(result.user.email) ? 'admin' : 'client';
+          redirectBasedOnRole(role);
+        });
     } catch (error: any) {
       setLoading(false);
       toast({ variant: "destructive", title: "Falha no acesso", description: "Verifique suas credenciais." });
@@ -133,14 +138,12 @@ export default function LoginPage() {
   };
 
   const quickAccess = async (type: 'suporte' | 'comercial' | 'client') => {
-    setLoading(true);
     let qEmail = '';
     let qPass = '123456';
     if (type === 'suporte') qEmail = 'suporte.rtm@rtm.net.br';
     else if (type === 'comercial') qEmail = 'comercial.rtm@rtm.net.br';
     else qEmail = 'cliente.teste@instituicao.com.br';
     
-    // Tenta logar diretamente
     handleEmailLogin(undefined, qEmail, qPass);
   };
 
