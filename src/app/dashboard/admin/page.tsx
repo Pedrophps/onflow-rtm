@@ -49,12 +49,13 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Visão atual baseada no banco ou fallback de URL
+  // Fallback: se o perfil ainda carrega mas temos o parâmetro na URL, usamos a URL.
+  // Se o perfil carregou, ele é a fonte da verdade.
   const currentView = profile?.adminType || searchParams.get('view');
 
   useEffect(() => {
-    // Só redireciona se os dados carregaram e realmente não há adminType
     if (!userLoading && !profileLoading && user) {
+      // Se não há adminType no banco E não há parâmetro na URL, força seleção
       if (!profile?.adminType && !searchParams.get('view')) {
         router.replace('/dashboard/admin/select-profile');
       }
@@ -63,12 +64,10 @@ export default function AdminPage() {
 
   if (userLoading || (user && profileLoading && !currentView)) {
     return (
-      <DashboardLayout role="admin">
-        <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-          <Loader2 className="size-8 animate-spin text-primary" />
-          <p className="text-muted-foreground font-medium text-center">Carregando ambiente administrativo...</p>
-        </div>
-      </DashboardLayout>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4">
+        <Loader2 className="size-8 animate-spin text-primary" />
+        <p className="text-muted-foreground font-medium">Carregando painel administrativo...</p>
+      </div>
     );
   }
 

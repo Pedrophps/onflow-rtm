@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Headset, Briefcase, ArrowRight, LogOut, Loader2 } from 'lucide-react';
 import { useAuth, useUser, useFirestore, useDoc } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { UserProfile } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -24,7 +24,7 @@ export default function SelectProfilePage() {
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
   useEffect(() => {
-    // Se o perfil já tem adminType no Firestore, não permite ficar nesta tela
+    // Se o perfil já tem adminType no Firestore, redireciona imediatamente
     if (!profileLoading && profile?.adminType && !isUpdating) {
       router.replace(`/dashboard/admin?view=${profile.adminType}`);
     }
@@ -41,13 +41,13 @@ export default function SelectProfilePage() {
       status: 'approved',
       email: user.email,
       displayName: user.displayName || 'Administrador',
-      updatedAt: new Date().toISOString()
+      updatedAt: serverTimestamp()
     };
     
-    // Gravamos no Firestore e aguardamos o sucesso antes de redirecionar
+    // Tentativa de gravação robusta
     try {
       await setDoc(userDocRef, updateData, { merge: true });
-      // Redirecionamento forçado para a visão escolhida
+      // Redirecionamento após confirmação do Firestore
       router.push(`/dashboard/admin?view=${adminType}`);
     } catch (error: any) {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -68,7 +68,7 @@ export default function SelectProfilePage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="size-10 animate-spin text-primary" />
-        <p className="text-muted-foreground font-medium">Sincronizando seu perfil RTM...</p>
+        <p className="text-muted-foreground font-medium">Configurando seu ambiente RTM...</p>
       </div>
     );
   }
@@ -79,10 +79,10 @@ export default function SelectProfilePage() {
         <div className="space-y-4 text-center">
           <h1 className="text-4xl font-bold font-headline text-slate-900">Seja bem-vindo, <span className="text-primary">{user?.displayName?.split(' ')[0] || 'Administrador'}</span>!</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Selecione sua equipe de atuação para configurar sua visão do Hub OnFlow.
+            Selecione sua equipe de atuação para configurar sua visão definitiva do Hub OnFlow.
           </p>
           <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2 rounded-lg inline-block text-sm font-semibold">
-            Esta escolha será vinculada permanentemente ao seu usuário corporativo.
+            Esta escolha ficará salva no seu perfil institucional.
           </div>
         </div>
 
@@ -97,11 +97,11 @@ export default function SelectProfilePage() {
               </div>
               <CardTitle className="text-2xl font-headline">Equipe de Suporte</CardTitle>
               <CardDescription className="text-base px-6 mt-2">
-                Acompanhe implantações, valide documentos técnicos e gerencie tickets.
+                Valide documentos técnicos e gerencie a infraestrutura de rede.
               </CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">
-              <Button className="rounded-full px-8 font-bold gap-2 group-hover:bg-primary/90 transition-all">
+              <Button className="rounded-full px-8 font-bold gap-2 group-hover:bg-primary/90 transition-all" disabled={isUpdating}>
                 Acessar Suporte <ArrowRight className="size-4" />
               </Button>
             </CardContent>
@@ -117,11 +117,11 @@ export default function SelectProfilePage() {
               </div>
               <CardTitle className="text-2xl font-headline">Equipe Comercial</CardTitle>
               <CardDescription className="text-base px-6 mt-2">
-                Aprove instituições, atribua IDs RTM e defina produtos contratados.
+                Aprove instituições e configure produtos contratados.
               </CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">
-              <Button variant="secondary" className="rounded-full px-8 font-bold gap-2 transition-all">
+              <Button variant="secondary" className="rounded-full px-8 font-bold gap-2 transition-all" disabled={isUpdating}>
                 Acessar Comercial <ArrowRight className="size-4" />
               </Button>
             </CardContent>
