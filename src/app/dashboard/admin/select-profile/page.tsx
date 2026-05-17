@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -23,7 +22,6 @@ export default function SelectProfilePage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Redireciona se o perfil já estiver configurado para evitar loops
   useEffect(() => {
     if (!profileLoading && profile?.adminType && !isUpdating) {
       router.replace(`/dashboard/admin?view=${profile.adminType}`);
@@ -44,24 +42,21 @@ export default function SelectProfilePage() {
       updatedAt: serverTimestamp()
     };
     
-    // Escrevemos no Firestore e aguardamos a conclusão antes do redirecionamento
-    setDoc(userDocRef, updateData, { merge: true })
-      .then(() => {
-        toast({
-          title: "Ambiente Ativado",
-          description: `Perfil de ${adminType} configurado com sucesso.`,
-        });
-        // Usamos replace para garantir que o histórico não volte para esta tela
-        router.replace(`/dashboard/admin?view=${adminType}`);
-      })
-      .catch(async (error) => {
-        setIsUpdating(false);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: 'write',
-          requestResourceData: updateData
-        }));
+    try {
+      await setDoc(userDocRef, updateData, { merge: true });
+      toast({
+        title: "Ambiente Ativado",
+        description: `Perfil de ${adminType} configurado com sucesso.`,
       });
+      router.replace(`/dashboard/admin?view=${adminType}`);
+    } catch (error: any) {
+      setIsUpdating(false);
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: userDocRef.path,
+        operation: 'write',
+        requestResourceData: updateData
+      }));
+    }
   };
 
   if (profileLoading) {

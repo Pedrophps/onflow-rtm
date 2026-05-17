@@ -1,21 +1,26 @@
 'use client';
 
-import { useState } from 'react';
-import { useUser, useFirestore } from '@/firebase';
+import { useState, useMemo } from 'react';
+import { useUser, useFirestore, useDoc } from '@/firebase';
 import { doc, setDoc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle2, XCircle, ShieldCheck, Database, FileText, ArrowLeft } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, ShieldCheck, Database, FileText, ArrowLeft, ShieldAlert, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { UserProfile } from '@/lib/types';
 
 export default function IntegrationTestPage() {
   const { user, loading: userLoading } = useUser();
   const db = useFirestore();
   const { toast } = useToast();
   
+  const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
+  const { data: profile } = useDoc<UserProfile>(userRef);
+
   const [isRunning, setIsRunning] = useState(false);
+  const [isElevating, setIsElevating] = useState(false);
   const [results, setResults] = useState<{
     profileWrite: 'pending' | 'success' | 'error';
     profileRead: 'pending' | 'success' | 'error';
@@ -27,6 +32,24 @@ export default function IntegrationTestPage() {
     flowWrite: 'pending',
     submissionWrite: 'pending',
   });
+
+  const elevateToAdmin = async () => {
+    if (!user) return;
+    setIsElevating(true);
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        role: 'admin',
+        adminType: 'comercial',
+        status: 'approved',
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      toast({ title: "Privilégios Atualizados", description: "Agora você é um administrador no Firestore." });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Erro na Elevação", description: "Verifique suas regras de segurança." });
+    } finally {
+      setIsElevating(false);
+    }
+  };
 
   const runTests = async () => {
     if (!user) {
@@ -46,7 +69,7 @@ export default function IntegrationTestPage() {
       submissionWrite: 'pending',
     });
 
-    // 1. Test Profile Write (Deve funcionar para o próprio usuário)
+    // 1. Test Profile Write
     try {
       const userRef = doc(db, 'users', user.uid);
       await setDoc(userRef, {
@@ -55,7 +78,6 @@ export default function IntegrationTestPage() {
       }, { merge: true });
       setResults(prev => ({ ...prev, profileWrite: 'success' }));
     } catch (e) {
-      console.error("Profile Write Error:", e);
       setResults(prev => ({ ...prev, profileWrite: 'error' }));
     }
 
@@ -69,7 +91,6 @@ export default function IntegrationTestPage() {
         setResults(prev => ({ ...prev, profileRead: 'error' }));
       }
     } catch (e) {
-      console.error("Profile Read Error:", e);
       setResults(prev => ({ ...prev, profileRead: 'error' }));
     }
 
@@ -82,7 +103,6 @@ export default function IntegrationTestPage() {
       }, { merge: true });
       setResults(prev => ({ ...prev, flowWrite: 'success' }));
     } catch (e: any) {
-      console.error("Flow Write Error:", e);
       if (e.code === 'permission-denied') {
         setResults(prev => ({ ...prev, flowWrite: 'forbidden' }));
       } else {
@@ -90,7 +110,7 @@ export default function IntegrationTestPage() {
       }
     }
 
-    // 4. Test Submission Write (Deve funcionar para qualquer logado)
+    // 4. Test Submission Write
     try {
       await addDoc(collection(db, 'submissions'), {
         userId: user.uid,
@@ -101,18 +121,16 @@ export default function IntegrationTestPage() {
       });
       setResults(prev => ({ ...prev, submissionWrite: 'success' }));
     } catch (e) {
-      console.error("Submission Write Error:", e);
       setResults(prev => ({ ...prev, submissionWrite: 'error' }));
     }
 
     setIsRunning(false);
-    toast({ title: "Bateria de testes concluída" });
   };
 
   const StatusIcon = ({ status }: { status: string }) => {
-    if (status === 'success') return <CheckCircle2 className="size-5 text-emerald-500 animate-in zoom-in duration-300" />;
-    if (status === 'error') return <XCircle className="size-5 text-destructive animate-in zoom-in duration-300" />;
-    if (status === 'forbidden') return <ShieldCheck className="size-5 text-amber-500 animate-in zoom-in duration-300" />;
+    if (status === 'success') return <CheckCircle2 className="size-5 text-emerald-500 animate-in zoom-in" />;
+    if (status === 'error') return <XCircle className="size-5 text-destructive animate-in zoom-in" />;
+    if (status === 'forbidden') return <ShieldAlert className="size-5 text-amber-500 animate-in zoom-in" />;
     return <Loader2 className="size-5 animate-spin text-muted-foreground opacity-20" />;
   };
 
@@ -126,10 +144,14 @@ export default function IntegrationTestPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 font-body">
-      <div className="w-full max-w-2xl mb-4">
+      <div className="w-full max-w-2xl mb-4 flex justify-between items-center">
         <Button variant="ghost" size="sm" asChild className="gap-2">
           <Link href="/debug"><ArrowLeft className="size-4" /> Voltar ao Debug</Link>
         </Button>
+        <Badge variant={profile?.role === 'admin' ? "default" : "secondary"} className="gap-1 px-3">
+          {profile?.role === 'admin' ? <ShieldCheck className="size-3" /> : <ShieldAlert className="size-3" />}
+          Role Atual: {profile?.role || 'null'}
+        </Badge>
       </div>
       
       <Card className="w-full max-w-2xl shadow-xl border-t-4 border-t-primary bg-white">
@@ -137,100 +159,58 @@ export default function IntegrationTestPage() {
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-headline font-bold">Validação de Segurança</CardTitle>
-              <CardDescription>Testando a comunicação real com o Firestore (Security Rules v2)</CardDescription>
+              <CardDescription>Testando regras reais no Firestore</CardDescription>
             </div>
             <Database className="size-8 text-primary/10" />
           </div>
         </CardHeader>
         <CardContent className="pt-8 space-y-6">
           <div className="grid gap-4">
-            <TestRow 
-              title="Escrita de Perfil" 
-              subtitle={`Coleção: /users/${user?.uid || '...'}`}
-              status={results.profileWrite}
-              icon={<CheckCircle2 className="size-5" />}
-              color="blue"
-            />
-
-            <TestRow 
-              title="Leitura de Perfil" 
-              subtitle="Verificando acesso aos próprios dados"
-              status={results.profileRead}
-              icon={<Database className="size-5" />}
-              color="emerald"
-            />
-
-            <TestRow 
-              title="Escrita de Fluxo" 
-              subtitle="Coleção: /onboardingFlows (Requer Admin)"
-              status={results.flowWrite}
-              icon={<ShieldCheck className="size-5" />}
-              color="amber"
-              badge={results.flowWrite === 'forbidden' ? "Requer role=admin" : undefined}
-            />
-
-            <TestRow 
-              title="Submissão de Evidência" 
-              subtitle="Coleção: /submissions"
-              status={results.submissionWrite}
-              icon={<FileText className="size-5" />}
-              color="purple"
-            />
+            <TestRow title="Escrita de Perfil" status={results.profileWrite} icon={<CheckCircle2 />} color="blue" subtitle="Acesso aos próprios dados" />
+            <TestRow title="Leitura de Perfil" status={results.profileRead} icon={<Database />} color="emerald" subtitle="Verificação de persistência" />
+            <TestRow title="Escrita de Fluxo" status={results.flowWrite} icon={<ShieldCheck />} color="amber" subtitle="Requer role='admin'" badge={results.flowWrite === 'forbidden' ? "Negado pelas regras" : undefined} />
+            <TestRow title="Submissão" status={results.submissionWrite} icon={<FileText />} color="purple" subtitle="Acesso livre para autenticados" />
           </div>
 
-          {!user ? (
-            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium flex items-center gap-3">
-              <ShieldCheck className="size-5" />
-              Usuário deslogado. Faça login para testar as permissões de usuário.
+          {results.flowWrite === 'forbidden' && (
+            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium space-y-3">
+              <div className="flex items-center gap-3">
+                <ShieldAlert className="size-5" />
+                <span>O teste de fluxo falhou porque seu usuário é um "cliente".</span>
+              </div>
+              <Button onClick={elevateToAdmin} disabled={isElevating} variant="outline" className="w-full bg-white border-amber-200 text-amber-700 hover:bg-amber-100 font-bold gap-2">
+                {isElevating ? <Loader2 className="animate-spin" /> : <Zap className="size-4" />}
+                Tornar meu usuário Admin agora
+              </Button>
             </div>
-          ) : (
-            <Button 
-              className="w-full h-12 font-bold text-base shadow-lg shadow-primary/20" 
-              onClick={runTests} 
-              disabled={isRunning}
-            >
-              {isRunning ? <Loader2 className="animate-spin mr-2" /> : "Iniciar Bateria de Testes"}
-            </Button>
           )}
 
-          <div className="flex gap-3">
-             <Button variant="outline" className="flex-1 font-bold" asChild>
-                <Link href="/login">Ir para Login</Link>
-             </Button>
-             <Button variant="outline" className="flex-1 font-bold" asChild>
-                <Link href="/dashboard/admin/select-profile">Ativar Perfil Admin</Link>
-             </Button>
-          </div>
+          <Button className="w-full h-12 font-bold text-base shadow-lg" onClick={runTests} disabled={isRunning}>
+            {isRunning ? <Loader2 className="animate-spin mr-2" /> : "Iniciar Bateria de Testes"}
+          </Button>
         </CardContent>
       </Card>
-      
-      <p className="mt-8 text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">
-        OnFlow RTM • Diagnóstico de Permissões
-      </p>
     </div>
   );
 
-  function TestRow({ title, subtitle, status, icon, color, badge }: any) {
+  function TestRow({ title, status, icon, color, subtitle, badge }: any) {
     const colorClasses: any = {
       blue: "bg-blue-50 text-blue-600",
       emerald: "bg-emerald-50 text-emerald-600",
       amber: "bg-amber-50 text-amber-600",
       purple: "bg-purple-50 text-purple-600",
     };
-
     return (
-      <div className="flex items-center justify-between p-4 rounded-xl border bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all group">
+      <div className="flex items-center justify-between p-4 rounded-xl border bg-slate-50/50 hover:bg-white transition-all group">
         <div className="flex items-center gap-4">
-          <div className={`size-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${colorClasses[color]}`}>
-            {icon}
-          </div>
+          <div className={`size-10 rounded-xl flex items-center justify-center ${colorClasses[color]}`}>{icon}</div>
           <div>
             <p className="text-sm font-bold text-slate-900">{title}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{subtitle}</p>
+            <p className="text-[10px] text-muted-foreground uppercase">{subtitle}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {badge && <Badge variant="outline" className="text-[9px] font-bold uppercase py-0">{badge}</Badge>}
+          {badge && <Badge variant="outline" className="text-[9px] font-bold uppercase">{badge}</Badge>}
           <StatusIcon status={status} />
         </div>
       </div>
