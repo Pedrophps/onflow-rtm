@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -65,6 +66,7 @@ export default function LoginPage() {
       const role = isAdminEmail(email) ? 'admin' : 'client';
       const userRef = doc(db, 'users', result.user.uid);
 
+      // Gravação do perfil no Firestore
       setDoc(userRef, {
         email,
         role,
@@ -72,7 +74,9 @@ export default function LoginPage() {
         displayName: name || 'Usuário RTM',
         cnpj: role === 'client' ? cnpj : '',
         createdAt: new Date().toISOString()
-      }, { merge: true }).catch(() => {});
+      }, { merge: true }).catch((err) => {
+        console.warn("Erro ao salvar perfil no cadastro:", err);
+      });
 
       fastRedirect(email);
     } catch (error: any) {
@@ -122,8 +126,8 @@ export default function LoginPage() {
     }
     
     toast({
-      title: "Campos Preenchidos",
-      description: `Credenciais de ${type} carregadas nos formulários.`,
+      title: "Dados Carregados",
+      description: `Formulário preenchido para perfil de ${type}.`,
     });
   };
 
@@ -177,18 +181,24 @@ export default function LoginPage() {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp}>
                 <CardContent className="space-y-4 pt-4">
-                  <div className="space-y-2"><Label>Nome Completo</Label><Input placeholder="Seu nome" required value={name} onChange={e => setName(e.target.value)} /></div>
+                  <div className="space-y-2">
+                    <Label>Nome Completo</Label>
+                    <Input placeholder="Seu nome" required value={name} onChange={e => setName(e.target.value)} />
+                  </div>
                   <div className="space-y-2">
                     <Label>E-mail Corporativo</Label>
                     <Input type="email" placeholder="seu@rtm.net.br" required value={email} onChange={e => setEmail(e.target.value)} />
                   </div>
-                  {!isAdminEmail(email) && email.length > 5 && (
-                    <div className="space-y-2">
+                  {!isAdminEmail(email) && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
                       <Label>CNPJ da Instituição</Label>
                       <Input placeholder="00.000.000/0000-00" value={cnpj} onChange={e => setCnpj(e.target.value)} required />
                     </div>
                   )}
-                  <div className="space-y-2"><Label>Senha</Label><Input type="password" placeholder="Mínimo 6 caracteres" required value={password} onChange={e => setPassword(e.target.value)} /></div>
+                  <div className="space-y-2">
+                    <Label>Senha</Label>
+                    <Input type="password" placeholder="Mínimo 6 caracteres" required value={password} onChange={e => setPassword(e.target.value)} />
+                  </div>
                   <Button type="submit" className="w-full font-bold h-12" disabled={loading}>Criar Conta</Button>
                 </CardContent>
               </form>
