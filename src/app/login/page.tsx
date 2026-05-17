@@ -71,7 +71,8 @@ export default function LoginPage() {
       case 'auth/popup-closed-by-user':
         return 'A janela de login foi fechada antes de completar a autenticação.';
       case 'unavailable':
-        return 'O serviço está temporariamente indisponível. Verifique sua conexão.';
+      case 'offline':
+        return 'O serviço está temporariamente indisponível. Verifique sua conexão com a internet.';
       default:
         return 'Ocorreu um erro inesperado. Tente novamente em instantes.';
     }
@@ -179,11 +180,12 @@ export default function LoginPage() {
   }
 
   async function checkUserAndRedirect(user: FirebaseUser) {
+    setLoading(true);
     try {
       setConnectionError(false);
       const userDocRef = doc(db, 'users', user.uid);
       
-      // Tenta buscar o documento. Se falhar por timeout/offline, o catch trata.
+      // Tenta buscar o documento com um tempo limite implícito do SDK
       const userDoc = await getDoc(userDocRef);
       
       if (userDoc.exists()) {
@@ -216,16 +218,25 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       console.error("Erro ao verificar usuário:", error);
-      setLoading(false); 
       
+      // Se for erro de offline, mostramos o aviso mas paramos o carregamento
       if (error.code === 'unavailable' || error.message?.includes('offline')) {
         setConnectionError(true);
         toast({
           variant: "destructive",
-          title: "Conexão perdida",
-          description: "Não foi possível verificar seu perfil. Verifique sua internet."
+          title: "Sem conexão",
+          description: "Não conseguimos validar seu perfil agora. Verifique sua internet e tente novamente."
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erro interno",
+          description: "Ocorreu um problema ao carregar seu perfil."
         });
       }
+    } finally {
+      // GARANTE que o loading saia da tela
+      setLoading(false);
     }
   }
 
@@ -246,11 +257,11 @@ export default function LoginPage() {
         </div>
 
         {connectionError && (
-          <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">
+          <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 mb-4">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Erro de Conexão</AlertTitle>
+            <AlertTitle>Você está offline</AlertTitle>
             <AlertDescription>
-              Parece que você está offline. Tente atualizar a página quando recuperar a conexão.
+              O sistema não conseguiu se conectar aos nossos servidores. Verifique sua internet.
             </AlertDescription>
           </Alert>
         )}
@@ -271,14 +282,14 @@ export default function LoginPage() {
                     <Label htmlFor="email">E-mail Corporativo</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                      <Input id="email" name="email" type="email" placeholder="seu@email.com" className="pl-10" required />
+                      <Input id="email" name="email" type="email" placeholder="seu@email.com" className="pl-10" required disabled={loading} />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Senha</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                      <Input id="password" name="password" type="password" placeholder="••••••••" className="pl-10" required />
+                      <Input id="password" name="password" type="password" placeholder="••••••••" className="pl-10" required disabled={loading} />
                     </div>
                   </div>
                   <Button type="submit" className="w-full font-bold h-12" disabled={loading}>
@@ -296,7 +307,7 @@ export default function LoginPage() {
                     <Label htmlFor="signup-name">Nome Completo do Colaborador</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                      <Input id="signup-name" name="name" placeholder="Como devemos te chamar?" className="pl-10" required />
+                      <Input id="signup-name" name="name" placeholder="Como devemos te chamar?" className="pl-10" required disabled={loading} />
                     </div>
                   </div>
                   
@@ -312,27 +323,28 @@ export default function LoginPage() {
                         value={cnpj}
                         onChange={handleCnpjChange}
                         required 
+                        disabled={loading}
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">E-mail</Label>
-                    <Input id="signup-email" name="email" type="email" placeholder="seu@email.com" required />
+                    <Input id="signup-email" name="email" type="email" placeholder="seu@email.com" required disabled={loading} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Senha</Label>
-                    <Input id="signup-password" name="password" type="password" placeholder="Mínimo 6 caracteres" required />
+                    <Input id="signup-password" name="password" type="password" placeholder="Mínimo 6 caracteres" required disabled={loading} />
                   </div>
                   <div className="space-y-2">
                     <Label>Perfil de Acesso</Label>
                     <div className="grid grid-cols-2 gap-4">
                       <label className="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-muted/50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                        <input type="radio" name="role" value="client" defaultChecked className="hidden" />
+                        <input type="radio" name="role" value="client" defaultChecked className="hidden" disabled={loading} />
                         <span className="text-sm font-medium">Instituição</span>
                       </label>
                       <label className="flex items-center gap-2 p-3 border rounded-xl cursor-pointer hover:bg-muted/50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                        <input type="radio" name="role" value="admin" className="hidden" />
+                        <input type="radio" name="role" value="admin" className="hidden" disabled={loading} />
                         <span className="text-sm font-medium">Administrador</span>
                       </label>
                     </div>
@@ -360,7 +372,7 @@ export default function LoginPage() {
         </Card>
 
         <div className="text-center">
-          <Button variant="link" className="text-muted-foreground" onClick={() => router.push('/')}>
+          <Button variant="link" className="text-muted-foreground" onClick={() => router.push('/')} disabled={loading}>
             Voltar para o site institucional
           </Button>
         </div>
