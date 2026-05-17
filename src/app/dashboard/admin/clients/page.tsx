@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,6 +17,8 @@ import { UserCheck, ShieldAlert, Search, Filter, MoreHorizontal, CheckCircle2, X
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from "next/navigation";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function ClientsAdminPage() {
   const db = useFirestore();
@@ -39,32 +41,52 @@ export default function ClientsAdminPage() {
 
   const pendingClients = clients.filter(c => c.status === 'pending');
 
-  const handleApprove = (client: UserProfile) => {
-    if (!client.id) return;
+  const openApprovalDialog = (client: UserProfile) => {
+    setSelectedClient(client);
+    setClientCode("");
+    setActiveProduct("");
+    setIsDialogOpen(true);
+  };
+
+  const handleApprove = () => {
+    if (!selectedClient?.id) return;
     
-    const clientRef = doc(db, "users", client.id);
-    updateDoc(clientRef, {
+    const clientRef = doc(db, "users", selectedClient.id);
+    const updateData = {
       status: 'approved',
       clientCode: clientCode,
       activeProduct: activeProduct,
       approvedAt: new Date().toISOString()
-    });
+    };
+
+    updateDoc(clientRef, updateData)
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: clientRef.path,
+          operation: 'update',
+          requestResourceData: updateData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
 
     toast({
       title: "Cliente Aprovado!",
-      description: `O acesso de ${client.displayName} da ${client.institutionName} foi liberado.`
+      description: `O acesso de ${selectedClient.displayName} foi liberado com o código ${clientCode}.`
     });
     
     setIsDialogOpen(false);
-    setClientCode("");
-    setActiveProduct("");
-    setSelectedClient(null);
   };
 
   const handleReject = (client: UserProfile) => {
     if (!client.id) return;
     const clientRef = doc(db, "users", client.id);
-    updateDoc(clientRef, { status: 'rejected' });
+    updateDoc(clientRef, { status: 'rejected' })
+      .catch(async () => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: clientRef.path,
+          operation: 'update'
+        }));
+      });
     toast({ title: "Cliente Rejeitado", variant: "destructive" });
   };
 
@@ -112,57 +134,19 @@ export default function ClientsAdminPage() {
                         <p className="text-muted-foreground">E-mail: <span className="text-foreground">{client.email}</span></p>
                       </div>
                       <div className="flex gap-2">
-                        <Dialog open={isDialogOpen && selectedClient?.id === client.id} onOpenChange={(open) => {
-                          setIsDialogOpen(open);
-                          if(open) setSelectedClient(client);
-                        }}>
-                          <DialogTrigger asChild>
-                            <Button size="sm" className="flex-1 gap-2">
-                              <UserCheck className="size-4" /> Aprovar Acesso
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Aprovação de Nova Instituição</DialogTitle>
-                              <DialogDescription>
-                                Configure os dados de integração para <strong>{client.institutionName}</strong>.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="code" className="text-xs uppercase font-bold text-muted-foreground">Código de Identificação (RTM ID)</Label>
-                                <Input 
-                                  id="code" 
-                                  placeholder="Ex: RTM-8890-SP" 
-                                  value={clientCode} 
-                                  onChange={(e) => setClientCode(e.target.value)}
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="product" className="text-xs uppercase font-bold text-muted-foreground">Produto para Ativação</Label>
-                                <Select onValueChange={setActiveProduct}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecione o serviço contratado" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="RSFN">Rede RSFN</SelectItem>
-                                    <SelectItem value="SWIFT">Mensageria SWIFT</SelectItem>
-                                    <SelectItem value="PIX">Integração PIX</SelectItem>
-                                    <SelectItem value="MESA">Mesa de Operações</SelectItem>
-                                    <SelectItem value="DREX">Ambiente DREX</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Voltar</Button>
-                              <Button disabled={!clientCode || !activeProduct} onClick={() => handleApprove(client)}>
-                                Confirmar e Ativar
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                        <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10" onClick={() => handleReject(client)}>
+                        <Button 
+                          size="sm" 
+                          className="flex-1 gap-2" 
+                          onClick={() => openApprovalDialog(client)}
+                        >
+                          <UserCheck className="size-4" /> Aprovar Acesso
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-destructive hover:bg-destructive/10" 
+                          onClick={() => handleReject(client)}
+                        >
                           <XCircle className="size-4" />
                         </Button>
                       </div>
@@ -233,6 +217,49 @@ export default function ClientsAdminPage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Aprovação de Nova Instituição</DialogTitle>
+            <DialogDescription>
+              Configure os dados de integração para <strong>{selectedClient?.institutionName}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="code" className="text-xs uppercase font-bold text-muted-foreground">Código de Identificação (RTM ID)</Label>
+              <Input 
+                id="code" 
+                placeholder="Ex: RTM-8890-SP" 
+                value={clientCode} 
+                onChange={(e) => setClientCode(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="product" className="text-xs uppercase font-bold text-muted-foreground">Produto para Ativação</Label>
+              <Select onValueChange={setActiveProduct} value={activeProduct}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o serviço contratado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="RSFN">Rede RSFN</SelectItem>
+                  <SelectItem value="SWIFT">Mensageria SWIFT</SelectItem>
+                  <SelectItem value="PIX">Integração PIX</SelectItem>
+                  <SelectItem value="MESA">Mesa de Operações</SelectItem>
+                  <SelectItem value="DREX">Ambiente DREX</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Voltar</Button>
+            <Button disabled={!clientCode || !activeProduct} onClick={handleApprove}>
+              Confirmar e Ativar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
