@@ -85,7 +85,6 @@ export default function ClientsAdminPage() {
           </div>
         </div>
 
-        {/* Seção de Aprovação: Visível para Comercial */}
         {currentView === 'comercial' && (
           <section className="space-y-4">
             <div className="flex items-center justify-between">
@@ -121,7 +120,7 @@ export default function ClientsAdminPage() {
                             <Button size="sm" className="flex-1 gap-2">
                               <UserCheck className="size-4" /> Aprovar Acesso
                             </Button>
-                          </Trigger>
+                          </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
                               <DialogTitle>Aprovação de Nova Instituição</DialogTitle>
