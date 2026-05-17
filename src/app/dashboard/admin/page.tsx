@@ -1,3 +1,4 @@
+
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -10,7 +11,8 @@ import {
   TrendingUp,
   MoreHorizontal,
   Headset,
-  Briefcase
+  Briefcase,
+  Loader2
 } from "lucide-react";
 import { 
   BarChart, 
@@ -49,13 +51,27 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  const currentView = searchParams.get('view') || profile?.adminType || 'suporte';
+  // A visão atual depende EXCLUSIVAMENTE do que está no perfil ou no parâmetro da URL
+  const currentView = searchParams.get('view') || profile?.adminType;
 
   useEffect(() => {
-    if (!profileLoading && profile && profile.role === 'admin' && !profile.adminType && !searchParams.get('view')) {
+    // Se o perfil carregou e não temos um adminType definido nem na URL nem no banco, 
+    // forçamos a seleção manual de perfil.
+    if (!profileLoading && profile && profile.role === 'admin' && !currentView) {
       router.replace('/dashboard/admin/select-profile');
     }
-  }, [profile, profileLoading, router, searchParams]);
+  }, [profile, profileLoading, router, currentView]);
+
+  if (profileLoading || !currentView) {
+    return (
+      <DashboardLayout role="admin">
+        <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+          <Loader2 className="size-8 animate-spin text-primary" />
+          <p className="text-muted-foreground font-medium">Preparando seu painel...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout role="admin">
@@ -63,7 +79,7 @@ export default function AdminPage() {
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 border-b pb-6">
           <div className="space-y-1">
             <h1 className="text-3xl font-bold font-headline">Painel de Controle</h1>
-            <div className="flex items-center gap-2 text-primary font-medium">
+            <div className="flex items-center gap-2 text-primary font-medium animate-in fade-in duration-500">
               {currentView === 'suporte' ? (
                 <>
                   <Headset className="size-4" />
