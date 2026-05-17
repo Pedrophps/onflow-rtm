@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   Sidebar, 
   SidebarContent, 
@@ -22,10 +22,14 @@ import {
   BarChart3, 
   Settings, 
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { useUser, useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
+import { Button } from "@/components/ui/button";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -34,6 +38,14 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children, role }: DashboardLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading } = useUser();
+  const auth = useAuth();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/');
+  };
 
   const menuItems = role === "admin" 
     ? [
@@ -47,6 +59,14 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
         { title: "Documentos", icon: ClipboardList, href: "/dashboard/client/docs" },
         { title: "Suporte", icon: Settings, href: "/dashboard/client/support" },
       ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="size-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -82,21 +102,22 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
           <SidebarFooter className="p-4">
             <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-xl mb-4">
               <Avatar className="size-10 border-2 border-primary/20">
-                <AvatarImage src={`https://picsum.photos/seed/${role}/100/100`} />
-                <AvatarFallback>{role === 'admin' ? 'AD' : 'CL'}</AvatarFallback>
+                <AvatarImage src={`https://picsum.photos/seed/${user?.uid || role}/100/100`} />
+                <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || (role === 'admin' ? 'AD' : 'CL')}</AvatarFallback>
               </Avatar>
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold">{role === 'admin' ? 'Admin OnFlow' : 'João Silva'}</span>
-                <span className="text-xs text-muted-foreground capitalize">{role}</span>
+              <div className="flex flex-col overflow-hidden">
+                <span className="text-sm font-semibold truncate">{user?.displayName || (role === 'admin' ? 'Admin' : 'Cliente')}</span>
+                <span className="text-[10px] text-muted-foreground truncate">{user?.email}</span>
               </div>
             </div>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                  <Link href="/">
-                    <LogOut className="size-5" />
-                    <span>Sair</span>
-                  </Link>
+                <SidebarMenuButton 
+                  onClick={handleLogout}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                >
+                  <LogOut className="size-5" />
+                  <span>Sair</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
