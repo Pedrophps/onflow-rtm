@@ -57,7 +57,7 @@ export default function SelectProfilePage() {
 
   // Só mostra o loader se realmente não tivermos dados e estivermos no carregamento inicial
   // OU se o roteador estiver processando a navegação após o clique
-  if ((profileLoading && !profile) || isUpdating) {
+  if ((profileLoading && !profile) || isUpdating || profile?.adminType) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="size-10 animate-spin text-primary" />

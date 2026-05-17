@@ -6,8 +6,7 @@ import { useAuth, useFirestore, useUser } from '@/firebase';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
-  updateProfile,
-  User as FirebaseUser
+  updateProfile
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -51,13 +50,24 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  // Redirecionamento automático se já estiver logado
+  // Redirecionamento automático robusto para usuários já logados
   useEffect(() => {
     if (currentUser && !authLoading) {
       const role = isAdminEmail(currentUser.email) ? 'admin' : 'client';
-      redirectBasedOnRole(role);
+      
+      if (role === 'admin') {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        getDoc(userDocRef).then((userDoc) => {
+          const profile = userDoc.data() as UserProfile;
+          redirectBasedOnRole('admin', profile?.adminType);
+        }).catch(() => {
+          redirectBasedOnRole('admin');
+        });
+      } else {
+        redirectBasedOnRole('client');
+      }
     }
-  }, [currentUser, authLoading, isAdminEmail, redirectBasedOnRole]);
+  }, [currentUser, authLoading, isAdminEmail, redirectBasedOnRole, db]);
 
   const formatCNPJ = (value: string) => {
     return value
@@ -105,7 +115,6 @@ export default function LoginPage() {
         createdAt: new Date().toISOString()
       };
 
-      // Gravação em background sem await para não travar a navegação
       setDoc(userRef, userData, { merge: true }).catch(err => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: userRef.path,
@@ -135,11 +144,8 @@ export default function LoginPage() {
 
     try {
       const result = await signInWithEmailAndPassword(auth, targetEmail, targetPassword);
-      
-      // Redirecionamento instantâneo baseado no e-mail (Fallback rápido)
       const role = isAdminEmail(result.user.email) ? 'admin' : 'client';
       
-      // Tenta buscar o perfil para ver se tem adminType, mas não trava o loading se demorar
       const userDocRef = doc(db, 'users', result.user.uid);
       getDoc(userDocRef).then((userDoc) => {
         if (userDoc.exists()) {
@@ -234,14 +240,14 @@ export default function LoginPage() {
               <div className="grid grid-cols-1 gap-2 w-full">
                 <div className="grid grid-cols-2 gap-2">
                   <Button variant="outline" size="sm" className="gap-2" onClick={() => quickAccess('suporte')} disabled={loading}>
-                    <Headset className="size-3.5" /> Suporte RTM
+                    <Headset className="size-3.5" /> Adm Suporte
                   </Button>
                   <Button variant="outline" size="sm" className="gap-2" onClick={() => quickAccess('comercial')} disabled={loading}>
-                    <Briefcase className="size-3.5" /> Comercial RTM
+                    <Briefcase className="size-3.5" /> Adm Comercial
                   </Button>
                 </div>
                 <Button variant="outline" size="sm" className="gap-2" onClick={() => quickAccess('client')} disabled={loading}>
-                  <User className="size-3.5" /> Cliente Teste
+                  <User className="size-3.5" /> Cliente
                 </Button>
               </div>
             </CardFooter>
