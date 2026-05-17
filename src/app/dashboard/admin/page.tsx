@@ -7,7 +7,6 @@ import {
   CheckCircle2, 
   Clock, 
   AlertCircle,
-  TrendingUp,
   Headset,
   Briefcase,
   Loader2
@@ -45,18 +44,17 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Priorizamos o adminType do banco, senão pegamos da URL
+  // Define a visão atual baseada no perfil salvo ou na URL
   const currentView = profile?.adminType || searchParams.get('view');
 
   useEffect(() => {
-    // Só redirecionamos se o carregamento do perfil terminou e REALMENTE não houver adminType definido
     if (!userLoading && !profileLoading) {
       if (!user) {
         router.push('/login');
         return;
       }
       
-      // Se não houver adminType e nem parâmetro de visualização, forçamos a escolha
+      // Se não houver adminType e nem parâmetro de visualização, redireciona para a escolha de perfil
       if (!profile?.adminType && !searchParams.get('view')) {
         router.push('/dashboard/admin/select-profile');
       }
@@ -67,7 +65,7 @@ export default function AdminPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4">
         <Loader2 className="size-8 animate-spin text-primary" />
-        <p className="text-muted-foreground font-medium text-sm">Validando credenciais administrativas...</p>
+        <p className="text-muted-foreground font-medium text-sm">Validando acesso administrativo...</p>
       </div>
     );
   }
@@ -80,9 +78,9 @@ export default function AdminPage() {
             <h1 className="text-3xl font-bold font-headline text-slate-900">Portal OnFlow</h1>
             <div className="flex items-center gap-2 text-primary font-bold">
               {currentView === 'suporte' ? (
-                <><Headset className="size-4" /><span>Equipe: SUPORTE TÉCNICO</span></>
+                <><Headset className="size-4" /><span>Visualização: SUPORTE TÉCNICO</span></>
               ) : (
-                <><Briefcase className="size-4" /><span>Equipe: GESTÃO COMERCIAL</span></>
+                <><Briefcase className="size-4" /><span>Visualização: GESTÃO COMERCIAL</span></>
               )}
             </div>
           </div>
@@ -129,7 +127,7 @@ export default function AdminPage() {
 
         <Card className="bg-white">
           <CardHeader>
-            <CardTitle className="text-lg">Fluxo de Atividade RTM</CardTitle>
+            <CardTitle className="text-lg">Atividade de Onboarding</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -138,7 +136,7 @@ export default function AdminPage() {
                 <XAxis dataKey="name" />
                 <YAxis />
                 <RechartsTooltip />
-                <Bar dataKey="value" fill="#D32F2F" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

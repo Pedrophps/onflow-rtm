@@ -23,7 +23,7 @@ export default function SelectProfilePage() {
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
   useEffect(() => {
-    // Se o perfil já tiver um adminType definido, não precisamos ficar nesta página
+    // Se o perfil já tiver um adminType definido no banco, redireciona imediatamente
     if (!profileLoading && profile?.adminType && !isUpdating) {
       router.replace(`/dashboard/admin?view=${profile.adminType}`);
     }
@@ -43,15 +43,15 @@ export default function SelectProfilePage() {
       updatedAt: serverTimestamp()
     };
     
-    // Usamos setDoc com merge para garantir a criação/atualização do documento
+    // Garantimos que a gravação ocorra antes de mudar de página
     setDoc(userDocRef, updateData, { merge: true })
       .then(() => {
         toast({
           title: "Perfil Configurado",
-          description: `Seu ambiente de ${adminType} foi ativado com sucesso.`,
+          description: `Seu ambiente de ${adminType} foi ativado.`,
         });
-        // Navegação forçada via window para garantir que o estado do NextJS não cacheie o redirecionamento
-        window.location.href = `/dashboard/admin?view=${adminType}`;
+        // Forçamos o redirecionamento com a query param de visão
+        router.push(`/dashboard/admin?view=${adminType}`);
       })
       .catch(async (error: any) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -92,7 +92,7 @@ export default function SelectProfilePage() {
                 <Headset className="size-10" />
               </div>
               <CardTitle>Equipe de Suporte</CardTitle>
-              <CardDescription>Validação técnica e infraestrutura.</CardDescription>
+              <CardDescription>Foco em infraestrutura e validação técnica.</CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">
               <Button className="rounded-full font-bold gap-2" disabled={isUpdating}>
@@ -110,7 +110,7 @@ export default function SelectProfilePage() {
                 <Briefcase className="size-10" />
               </div>
               <CardTitle>Equipe Comercial</CardTitle>
-              <CardDescription>Aprovação de clientes e produtos.</CardDescription>
+              <CardDescription>Aprovação de clientes e definição de produtos.</CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">
               <Button variant="secondary" className="rounded-full font-bold gap-2" disabled={isUpdating}>
