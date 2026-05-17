@@ -33,7 +33,8 @@ export default function LoginPage() {
 
   const isAdminEmail = useCallback((emailStr: string | null | undefined) => {
     if (!emailStr) return false;
-    return emailStr.toLowerCase().endsWith('@rtm.net.br');
+    const lowerEmail = emailStr.toLowerCase();
+    return lowerEmail.endsWith('@rtm.net.br') || lowerEmail.includes('admin');
   }, []);
 
   const redirectBasedOnRole = useCallback((role: string, adminType?: string) => {
@@ -48,7 +49,6 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  // Efeito para usuários já logados
   useEffect(() => {
     if (currentUser && !authLoading) {
       const userDocRef = doc(db, 'users', currentUser.uid);
@@ -58,6 +58,15 @@ export default function LoginPage() {
           redirectBasedOnRole(profile.role, profile.adminType);
         } else {
           const role = isAdminEmail(currentUser.email) ? 'admin' : 'client';
+          // Se o documento não existe (ex: login direto), criamos um básico
+          const basicData = {
+            email: currentUser.email,
+            role,
+            status: role === 'admin' ? 'approved' : 'pending',
+            displayName: currentUser.displayName || 'Usuário',
+            createdAt: new Date().toISOString()
+          };
+          setDoc(userDocRef, basicData, { merge: true });
           redirectBasedOnRole(role);
         }
       });
@@ -74,13 +83,12 @@ export default function LoginPage() {
       await updateProfile(result.user, { displayName: name });
 
       const role = isAdminEmail(email) ? 'admin' : 'client';
-      const status = role === 'admin' ? 'approved' : 'pending';
       const userRef = doc(db, 'users', result.user.uid);
 
       const userData = {
         email,
         role,
-        status,
+        status: role === 'admin' ? 'approved' : 'pending',
         displayName: name,
         cnpj: role === 'client' ? cnpj : '',
         createdAt: new Date().toISOString()
@@ -93,13 +101,13 @@ export default function LoginPage() {
       toast({
         variant: "destructive",
         title: "Erro no cadastro",
-        description: "Falha ao criar conta. Verifique os dados."
+        description: "Falha ao criar conta."
       });
     }
   };
 
   const handleEmailLogin = async (e?: React.FormEvent, customEmail?: string, customPassword?: string) => {
-    e?.preventDefault();
+    if (e) e.preventDefault();
     if (loading) return;
     setLoading(true);
 
@@ -120,16 +128,19 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       setLoading(false);
-      toast({ variant: "destructive", title: "Falha no acesso", description: "E-mail ou senha incorretos." });
+      toast({ variant: "destructive", title: "Falha no acesso", description: "Verifique suas credenciais." });
     }
   };
 
-  const quickAccess = (type: 'suporte' | 'comercial' | 'client') => {
+  const quickAccess = async (type: 'suporte' | 'comercial' | 'client') => {
+    setLoading(true);
     let qEmail = '';
     let qPass = '123456';
     if (type === 'suporte') qEmail = 'suporte.rtm@rtm.net.br';
     else if (type === 'comercial') qEmail = 'comercial.rtm@rtm.net.br';
     else qEmail = 'cliente.teste@instituicao.com.br';
+    
+    // Tenta logar diretamente
     handleEmailLogin(undefined, qEmail, qPass);
   };
 

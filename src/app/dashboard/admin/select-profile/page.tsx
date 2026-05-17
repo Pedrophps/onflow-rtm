@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Headset, Briefcase, ArrowRight, LogOut, Loader2 } from 'lucide-react';
 import { useAuth, useUser, useFirestore, useDoc } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { UserProfile } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -23,7 +23,7 @@ export default function SelectProfilePage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Redirecionamento automático se já possuir perfil
+  // Redirecionamento automático se já possuir perfil salvo no banco
   useEffect(() => {
     if (!profileLoading && profile?.adminType && !isUpdating) {
       router.replace(`/dashboard/admin?view=${profile.adminType}`);
@@ -36,18 +36,19 @@ export default function SelectProfilePage() {
 
     const docRef = doc(db, 'users', user.uid);
     
-    // Atualização otimista: redireciona antes de confirmar a gravação para evitar lentidão
-    updateDoc(docRef, { adminType })
+    // Usamos setDoc com merge: true para garantir que o documento e o campo sejam criados/atualizados
+    setDoc(docRef, { adminType }, { merge: true })
+      .then(() => {
+        router.push(`/dashboard/admin?view=${adminType}`);
+      })
       .catch((err) => {
+        setIsUpdating(false);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: docRef.path,
-          operation: 'update',
+          operation: 'write',
           requestResourceData: { adminType }
         }));
       });
-
-    // Força o redirecionamento imediato para o dashboard com o parâmetro de visão
-    router.push(`/dashboard/admin?view=${adminType}`);
   };
 
   const handleLogout = async () => {
@@ -55,12 +56,11 @@ export default function SelectProfilePage() {
     router.push('/login');
   };
 
-  // Enquanto carrega ou se já tem perfil (o useEffect cuidará do redirecionamento), mostra o loader
-  if (profileLoading || profile?.adminType || isUpdating) {
+  if (profileLoading || (profile?.adminType && !isUpdating) || isUpdating) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="size-10 animate-spin text-primary" />
-        <p className="text-muted-foreground font-medium">Validando seu perfil...</p>
+        <p className="text-muted-foreground font-medium">Validando seu perfil de acesso...</p>
       </div>
     );
   }
@@ -71,8 +71,8 @@ export default function SelectProfilePage() {
         <div className="space-y-4 text-center">
           <h1 className="text-4xl font-bold font-headline">Seja bem-vindo, <span className="text-primary">{user?.displayName?.split(' ')[0] || 'Administrador'}</span>!</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Para começar, selecione sua equipe de atuação. 
-            <span className="block mt-2 text-sm font-semibold text-amber-600">Esta escolha será definitiva para seu perfil de acesso.</span>
+            Para configurar sua conta, selecione sua equipe de atuação. 
+            <span className="block mt-2 text-sm font-semibold text-amber-600">Esta escolha será salva e definitiva para seu perfil.</span>
           </p>
         </div>
 
