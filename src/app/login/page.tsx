@@ -34,11 +34,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
 
+  // Redirecionamento automático se já estiver logado
   useEffect(() => {
-    if (currentUser && !loading) {
+    if (currentUser && !authLoading) {
       checkUserAndRedirect(currentUser);
     }
-  }, [currentUser]);
+  }, [currentUser, authLoading]);
 
   const formatCNPJ = (value: string) => {
     return value
@@ -64,7 +65,8 @@ export default function LoginPage() {
     switch (errorCode) {
       case 'auth/email-already-in-use': return 'Este e-mail já está em uso.';
       case 'auth/invalid-credential': return 'E-mail ou senha incorretos.';
-      default: return 'Erro ao tentar acessar. Verifique sua conexão.';
+      case 'auth/network-request-failed': return 'Falha na conexão. Verifique sua internet.';
+      default: return 'Erro ao tentar acessar. Tente novamente.';
     }
   };
 
@@ -102,6 +104,7 @@ export default function LoginPage() {
         createdAt: new Date().toISOString()
       };
 
+      // Inicia a gravação em background para não travar o redirecionamento
       setDoc(userRef, userData, { merge: true }).catch(err => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: userRef.path,
@@ -111,8 +114,8 @@ export default function LoginPage() {
       });
 
       toast({
-        title: role === 'admin' ? "Conta Administrador Criada" : "Cadastro Recebido",
-        description: role === 'admin' ? "Seja bem-vindo ao painel RTM." : "Aguarde a validação do comercial."
+        title: role === 'admin' ? "Sucesso!" : "Cadastro Recebido",
+        description: "Redirecionando para o portal..."
       });
 
       redirectBasedOnRole(role);
@@ -158,14 +161,17 @@ export default function LoginPage() {
           displayName: user.displayName || user.email?.split('@')[0],
           createdAt: new Date().toISOString()
         };
-        await setDoc(userDocRef, userData);
+        // Não esperamos o setDoc terminar para ser mais rápido
+        setDoc(userDocRef, userData);
         redirectBasedOnRole(role);
       }
     } catch (err) {
+      // Fallback: se o banco falhar (offline), redireciona baseado no e-mail
       const role = isAdminEmail(user.email) ? 'admin' : 'client';
       redirectBasedOnRole(role);
     } finally {
-      setTimeout(() => setLoading(false), 1000);
+      // Importante: Não adicionar setTimeout aqui para evitar lentidão artificial
+      setLoading(false);
     }
   }
 
@@ -186,7 +192,7 @@ export default function LoginPage() {
     }
   };
 
-  if (authLoading && !currentUser) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
+  if (authLoading && !currentUser) return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary size-8" /></div>;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
@@ -231,13 +237,16 @@ export default function LoginPage() {
               <form onSubmit={handleSignUp}>
                 <CardContent className="space-y-4 pt-4">
                   <div className="space-y-2"><Label>Nome Completo</Label><Input placeholder="Seu nome" required value={name} onChange={e => setName(e.target.value)} /></div>
+                  <div className="space-y-2">
+                    <Label>E-mail Corporativo</Label>
+                    <Input type="email" placeholder="seu@rtm.net.br" required value={email} onChange={e => setEmail(e.target.value)} />
+                  </div>
                   {!isAdminEmail(email) && email.length > 5 && (
                     <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
                       <Label>CNPJ da Instituição</Label>
                       <Input placeholder="00.000.000/0000-00" value={cnpj} onChange={handleCnpjChange} required />
                     </div>
                   )}
-                  <div className="space-y-2"><Label>E-mail Corporativo</Label><Input type="email" placeholder="seu@rtm.net.br" required value={email} onChange={e => setEmail(e.target.value)} /></div>
                   <div className="space-y-2"><Label>Senha</Label><Input type="password" placeholder="Mínimo 6 caracteres" required value={password} onChange={e => setPassword(e.target.value)} /></div>
                   <Button type="submit" className="w-full font-bold h-12" disabled={loading}>Criar Conta</Button>
                 </CardContent>
