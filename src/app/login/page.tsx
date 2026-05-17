@@ -1,12 +1,9 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useAuth, useFirestore, useUser } from '@/firebase';
 import { 
   signInWithEmailAndPassword, 
-  signInWithPopup, 
-  GoogleAuthProvider,
   createUserWithEmailAndPassword,
   updateProfile,
   User as FirebaseUser
@@ -16,9 +13,9 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Chrome, Mail, Lock, Loader2, User, Building2, TestTube2 } from 'lucide-react';
+import { Mail, Lock, Loader2, Headset, Briefcase, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -165,15 +162,19 @@ export default function LoginPage() {
     }
   }
 
-  const fillTestAccount = (type: 'admin' | 'client') => {
-    if (type === 'admin') {
+  const fillTestAccount = (type: 'suporte' | 'comercial' | 'client') => {
+    if (type === 'suporte') {
+      setEmail('suporte.rtm@rtm.net.br');
+      setPassword('123456');
+      setName('Analista de Suporte RTM');
+    } else if (type === 'comercial') {
       setEmail('comercial.rtm@rtm.net.br');
       setPassword('123456');
       setName('Gestor Comercial RTM');
     } else {
-      setEmail('cliente.novo@empresa.com.br');
+      setEmail('cliente.teste@instituicao.com.br');
       setPassword('123456');
-      setName('Nova Instituição');
+      setName('Instituição Financeira');
       setCnpj('11.222.333/0001-44');
     }
   };
@@ -230,10 +231,20 @@ export default function LoginPage() {
                 </CardContent>
               </form>
             </TabsContent>
-            <CardFooter className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-3 w-full">
-                <Button variant="outline" size="sm" onClick={() => fillTestAccount('admin')}>Admin RTM</Button>
-                <Button variant="outline" size="sm" onClick={() => fillTestAccount('client')}>Cliente Novo</Button>
+            <CardFooter className="flex flex-col gap-4 border-t pt-6">
+              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider text-center w-full">Acesso Rápido para Teste</p>
+              <div className="grid grid-cols-1 gap-2 w-full">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" size="sm" className="gap-2" onClick={() => fillTestAccount('suporte')}>
+                    <Headset className="size-3.5" /> Suporte
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-2" onClick={() => fillTestAccount('comercial')}>
+                    <Briefcase className="size-3.5" /> Comercial
+                  </Button>
+                </div>
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => fillTestAccount('client')}>
+                  <User className="size-3.5" /> Cliente (Novo)
+                </Button>
               </div>
             </CardFooter>
           </Tabs>
