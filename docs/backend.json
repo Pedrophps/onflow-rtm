@@ -3,7 +3,7 @@
   "entities": {
     "UserProfile": {
       "title": "Perfil do Usuário",
-      "description": "Informações estendidas do usuário, incluindo seu papel no sistema.",
+      "description": "Informações estendidas do usuário, incluindo seu papel no sistema, CNPJ e nome do colaborador.",
       "type": "object",
       "properties": {
         "email": {
@@ -18,10 +18,14 @@
         },
         "displayName": {
           "type": "string",
-          "description": "Nome de exibição"
+          "description": "Nome de exibição ou do colaborador"
+        },
+        "cnpj": {
+          "type": "string",
+          "description": "CNPJ da empresa vinculada ao usuário"
         }
       },
-      "required": ["email", "role"]
+      "required": ["email", "role", "displayName"]
     }
   },
   "auth": {
