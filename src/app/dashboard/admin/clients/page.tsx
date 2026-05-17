@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserProfile } from "@/lib/types";
-import { UserCheck, ShieldAlert, Search, Filter, MoreHorizontal, CheckCircle2, XCircle, Building2 } from "lucide-react";
+import { UserCheck, ShieldAlert, Search, Filter, MoreHorizontal, CheckCircle2, XCircle, Building2, Loader2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from "next/navigation";
@@ -27,19 +27,20 @@ export default function ClientsAdminPage() {
   const searchParams = useSearchParams();
   
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
-  const { data: profile } = useDoc<UserProfile>(userRef);
+  const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
   
-  const currentView = searchParams.get('view') || profile?.adminType;
+  // Define a visão baseada no perfil salvo ou parâmetro da URL
+  const currentView = profile?.adminType || searchParams.get('view');
   
   const clientsQuery = useMemo(() => query(collection(db, "users"), where("role", "==", "client")), [db]);
-  const { data: clients, loading } = useCollection<UserProfile>(clientsQuery);
+  const { data: clients, loading: clientsLoading } = useCollection<UserProfile>(clientsQuery);
 
   const [selectedClient, setSelectedClient] = useState<UserProfile | null>(null);
   const [clientCode, setClientCode] = useState("");
   const [activeProduct, setActiveProduct] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const pendingClients = clients.filter(c => c.status === 'pending');
+  const pendingClients = useMemo(() => clients.filter(c => c.status === 'pending'), [clients]);
 
   const openApprovalDialog = (client: UserProfile) => {
     setSelectedClient(client);
@@ -61,12 +62,11 @@ export default function ClientsAdminPage() {
 
     updateDoc(clientRef, updateData)
       .catch(async (error) => {
-        const permissionError = new FirestorePermissionError({
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: clientRef.path,
           operation: 'update',
           requestResourceData: updateData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
+        }));
       });
 
     toast({
@@ -90,28 +90,40 @@ export default function ClientsAdminPage() {
     toast({ title: "Cliente Rejeitado", variant: "destructive" });
   };
 
+  if (profileLoading && !currentView) {
+    return (
+      <DashboardLayout role="admin">
+        <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+          <Loader2 className="size-8 animate-spin text-primary" />
+          <p className="text-muted-foreground font-medium">Carregando permissões...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout role="admin">
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
             <h1 className="text-3xl font-bold font-headline">Gestão de Clientes</h1>
-            <p className="text-muted-foreground">Valide o acesso e atribua recursos às novas instituições.</p>
+            <p className="text-muted-foreground">Administração de instituições e controle de acessos.</p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input placeholder="Buscar por CNPJ ou Nome..." className="pl-10 w-full md:w-64" />
+              <Input placeholder="Buscar instituição..." className="pl-10 w-full md:w-64 bg-white" />
             </div>
-            <Button variant="outline" size="icon"><Filter className="size-4" /></Button>
+            <Button variant="outline" size="icon" className="bg-white"><Filter className="size-4" /></Button>
           </div>
         </div>
 
+        {/* ÁREA EXCLUSIVA DO COMERCIAL PARA APROVAÇÕES */}
         {currentView === 'comercial' && (
-          <section className="space-y-4">
+          <section className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold flex items-center gap-2 text-amber-600 uppercase tracking-widest">
-                <ShieldAlert className="size-4" /> Aguardando Validação Comercial ({pendingClients.length})
+                <ShieldAlert className="size-4" /> Pendências Comercial ({pendingClients.length})
               </h3>
             </div>
             
@@ -121,30 +133,30 @@ export default function ClientsAdminPage() {
                   <Card key={client.id} className="border-amber-200 bg-amber-50/30 shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
-                        <div>
+                        <div className="space-y-1">
                           <CardTitle className="text-base">{client.displayName}</CardTitle>
-                          <CardDescription className="font-medium text-amber-700">{client.institutionName}</CardDescription>
+                          <CardDescription className="font-bold text-amber-700">{client.institutionName}</CardDescription>
                         </div>
                         <Building2 className="size-5 text-amber-400" />
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="text-[11px] space-y-1 bg-white p-2 rounded-lg border border-amber-100">
-                        <p className="text-muted-foreground">CNPJ: <span className="text-foreground font-mono">{client.cnpj}</span></p>
+                      <div className="text-[11px] space-y-1 bg-white p-3 rounded-lg border border-amber-100">
+                        <p className="text-muted-foreground">CNPJ: <span className="text-foreground font-mono font-bold">{client.cnpj}</span></p>
                         <p className="text-muted-foreground">E-mail: <span className="text-foreground">{client.email}</span></p>
                       </div>
                       <div className="flex gap-2">
                         <Button 
                           size="sm" 
-                          className="flex-1 gap-2" 
+                          className="flex-1 gap-2 font-bold" 
                           onClick={() => openApprovalDialog(client)}
                         >
-                          <UserCheck className="size-4" /> Aprovar Acesso
+                          <UserCheck className="size-4" /> Aprovar
                         </Button>
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="text-destructive hover:bg-destructive/10" 
+                          className="text-destructive hover:bg-destructive/10 border-destructive/20" 
                           onClick={() => handleReject(client)}
                         >
                           <XCircle className="size-4" />
@@ -157,16 +169,17 @@ export default function ClientsAdminPage() {
             ) : (
               <div className="p-8 text-center border-2 border-dashed rounded-xl bg-muted/20 text-muted-foreground">
                 <CheckCircle2 className="size-8 mx-auto mb-2 opacity-20" />
-                <p className="text-sm font-medium">Nenhum cliente aguardando aprovação.</p>
+                <p className="text-sm font-medium">Nenhuma instituição aguardando validação comercial.</p>
               </div>
             )}
           </section>
         )}
 
-        <Card>
+        {/* LISTAGEM GERAL DE CLIENTES */}
+        <Card className="bg-white">
           <CardHeader>
-            <CardTitle>Base de Instituições</CardTitle>
-            <CardDescription>Visualização completa de todos os usuários do tipo cliente.</CardDescription>
+            <CardTitle className="text-lg">Base de Instituições Conectadas</CardTitle>
+            <CardDescription>Visualização completa de todos os usuários corporativos.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -189,7 +202,7 @@ export default function ClientsAdminPage() {
                         <span className="text-[10px] text-muted-foreground font-mono">{client.cnpj || "-"}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm">{client.displayName}</TableCell>
+                    <TableCell className="text-sm font-medium">{client.displayName}</TableCell>
                     <TableCell>
                       <Badge 
                         variant={client.status === 'approved' ? 'default' : client.status === 'rejected' ? 'destructive' : 'secondary'} 
@@ -198,17 +211,17 @@ export default function ClientsAdminPage() {
                         {client.status === 'approved' ? 'Ativo' : client.status === 'rejected' ? 'Bloqueado' : 'Pendente'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{client.clientCode || "-"}</TableCell>
-                    <TableCell className="text-xs font-medium">{client.activeProduct || "-"}</TableCell>
+                    <TableCell className="font-mono text-xs font-bold">{client.clientCode || "-"}</TableCell>
+                    <TableCell className="text-xs font-semibold">{client.activeProduct || "-"}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon"><MoreHorizontal className="size-4" /></Button>
                     </TableCell>
                   </TableRow>
                 ))}
-                {!loading && clients.length === 0 && (
+                {!clientsLoading && clients.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                      Nenhum registro encontrado.
+                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground italic">
+                      Nenhuma instituição encontrada na base de dados.
                     </TableCell>
                   </TableRow>
                 )}
@@ -219,25 +232,29 @@ export default function ClientsAdminPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Aprovação de Nova Instituição</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCheck className="size-5 text-primary" />
+              Aprovação Institucional
+            </DialogTitle>
             <DialogDescription>
-              Configure os dados de integração para <strong>{selectedClient?.institutionName}</strong>.
+              Insira os dados técnicos para habilitar o acesso de <strong>{selectedClient?.institutionName}</strong>.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-5 py-4">
             <div className="space-y-2">
-              <Label htmlFor="code" className="text-xs uppercase font-bold text-muted-foreground">Código de Identificação (RTM ID)</Label>
+              <Label htmlFor="code" className="text-xs uppercase font-bold text-muted-foreground tracking-tight">Código de Identificação (RTM ID)</Label>
               <Input 
                 id="code" 
                 placeholder="Ex: RTM-8890-SP" 
                 value={clientCode} 
                 onChange={(e) => setClientCode(e.target.value)}
+                className="font-mono"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="product" className="text-xs uppercase font-bold text-muted-foreground">Produto para Ativação</Label>
+              <Label htmlFor="product" className="text-xs uppercase font-bold text-muted-foreground tracking-tight">Produto para Ativação</Label>
               <Select onValueChange={setActiveProduct} value={activeProduct}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o serviço contratado" />
@@ -252,10 +269,10 @@ export default function ClientsAdminPage() {
               </Select>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Voltar</Button>
-            <Button disabled={!clientCode || !activeProduct} onClick={handleApprove}>
-              Confirmar e Ativar
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">Cancelar</Button>
+            <Button disabled={!clientCode || !activeProduct} onClick={handleApprove} className="flex-1 font-bold">
+              Validar e Ativar
             </Button>
           </DialogFooter>
         </DialogContent>
