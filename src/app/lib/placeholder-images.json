@@ -3,9 +3,9 @@
   "placeholderImages": [
     {
       "id": "hero-rtm",
-      "description": "Modern financial data center and technology hub",
-      "imageUrl": "https://picsum.photos/seed/rtm-hub/1200/800",
-      "imageHint": "technology center"
+      "description": "Edifícios modernos no centro financeiro",
+      "imageUrl": "https://picsum.photos/seed/rtm-buildings/1200/800",
+      "imageHint": "modern buildings"
     },
     {
       "id": "rtm-integration",

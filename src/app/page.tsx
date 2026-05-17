@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { 
   LayoutDashboard, 
   Users, 
@@ -12,7 +13,6 @@ import {
   Globe, 
   Cpu, 
   TrendingUp, 
-  CheckCircle2,
   Building2,
   Network,
   Database,
@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 
 export default function Home() {
+  const heroImage = PlaceHolderImages.find(img => img.id === 'hero-rtm');
+
   return (
     <main className="min-h-screen bg-white selection:bg-primary/10">
       {/* Hero Section */}
@@ -55,11 +57,11 @@ export default function Home() {
             <div className="absolute inset-0 bg-primary/5 rounded-3xl -rotate-2 -translate-x-4"></div>
             <div className="absolute inset-0 bg-secondary/5 rounded-3xl rotate-1 translate-x-4"></div>
             <Image 
-              src="https://picsum.photos/seed/rtm-hub/1200/800" 
-              alt="RTM Technology Hub" 
+              src={heroImage?.imageUrl || "https://picsum.photos/seed/rtm-buildings/1200/800"} 
+              alt={heroImage?.description || "RTM Hub"} 
               fill 
               className="object-cover rounded-3xl shadow-2xl relative z-10"
-              data-ai-hint="technology center"
+              data-ai-hint={heroImage?.imageHint || "modern buildings"}
             />
           </div>
         </div>
@@ -71,6 +73,7 @@ export default function Home() {
         <div className="container mx-auto px-6">
           <div className="text-center mb-16 space-y-4">
             <h2 className="text-3xl font-bold font-headline">Nosso Posicionamento</h2>
+            <p className="text-xl opacity-90 max-w-2xl mx-auto">Identificar para integrar. Entender para atender. Conhecer para evoluir.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {[
@@ -101,6 +104,9 @@ export default function Home() {
               </p>
               <p className="text-lg text-muted-foreground leading-relaxed">
                 Fundada em 1997, como rede de comunicação crítica para o segmento financeiro, a RTM evoluiu de provedora de infraestrutura de telecomunicações para o principal hub integrador do setor no país e hoje conecta mais de <span className="text-primary font-bold">850 instituições</span>, com presença em 21 estados brasileiros.
+              </p>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Com a evolução tecnológica e a transformação digital, a oferta de soluções especializadas foi se ampliando e hoje inclui serviços de Data Center, nuvem, cibersegurança, plataforma para indústria de fundos de investimentos, conexão ao Pix, Drex e Open Finance, além de Blockchain as a Service para operações com ativos tokenizados.
               </p>
             </div>
             <div className="lg:col-span-5 space-y-8">
@@ -142,7 +148,7 @@ export default function Home() {
               { 
                 title: "NÚCLEA", 
                 icon: Database, 
-                desc: "Plataforma de cessão de crédito, nova cobrança, liquidação centralizada e cadastro positivo." 
+                desc: "Sistema de Cessão de Crédito, plataforma de nova cobrança, sistema de liquidação centralizado e cadastro positivo." 
               },
               { 
                 title: "B3", 
@@ -162,7 +168,7 @@ export default function Home() {
               { 
                 title: "Hotline / Mesa", 
                 icon: PhoneCall, 
-                desc: "Mais de 2 mil linhas privadas conectando traders para negociação em tempo real." 
+                desc: "Serviços de comunicação e negociação para traders. Atualmente com mais de 2 mil linhas privadas conectando o mercado." 
               },
               { 
                 title: "SWIFT", 
