@@ -25,7 +25,6 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useUser, useFirestore, useDoc } from "@/firebase";
@@ -51,39 +50,44 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Determina a visão atual: 1. URL (maior prioridade) | 2. Banco de Dados | 3. Default
+  // Determina a visão atual: 1. URL | 2. Perfil do Banco | 3. Default
   const currentView = searchParams.get('view') || profile?.adminType || 'suporte';
 
-  // Se o carregamento terminou e REALMENTE não temos adminType gravado no banco nem na URL, vai para seleção
   useEffect(() => {
     if (!profileLoading && profile && profile.role === 'admin' && !profile.adminType && !searchParams.get('view')) {
       router.replace('/dashboard/admin/select-profile');
     }
   }, [profile, profileLoading, router, searchParams]);
 
-  const handleTabChange = (value: string) => {
-    router.push(`/dashboard/admin?view=${value}`);
-  };
-
   return (
     <DashboardLayout role="admin">
       <div className="space-y-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 border-b pb-6">
+          <div className="space-y-1">
             <h1 className="text-3xl font-bold font-headline">Painel de Controle</h1>
-            <p className="text-muted-foreground">Monitore o progresso global de onboarding dos seus clientes.</p>
+            <div className="flex items-center gap-2 text-primary font-medium">
+              {currentView === 'suporte' ? (
+                <>
+                  <Headset className="size-4" />
+                  <span>Acessando como: <strong>Equipe de Suporte</strong></span>
+                </>
+              ) : (
+                <>
+                  <Briefcase className="size-4" />
+                  <span>Acessando como: <strong>Equipe Comercial</strong></span>
+                </>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              {currentView === 'suporte' 
+                ? "Gestão técnica e acompanhamento de implantações." 
+                : "Métricas de conversão e gestão de novos leads."}
+            </p>
           </div>
           
-          <Tabs value={currentView} onValueChange={handleTabChange} className="w-full md:w-auto">
-            <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1">
-              <TabsTrigger value="suporte" className="gap-2">
-                <Headset className="size-4" /> Suporte
-              </TabsTrigger>
-              <TabsTrigger value="comercial" className="gap-2">
-                <Briefcase className="size-4" /> Comercial
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold uppercase tracking-widest">
+            Conectado ao Hub RTM
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -139,7 +143,7 @@ export default function AdminPage() {
               <CardTitle className="text-lg">
                 {currentView === 'suporte' ? 'Fluxo de Atendimento' : 'Conversão Comercial'}
               </CardTitle>
-              <CardDescription>Métricas dos últimos 6 meses para a equipe {currentView}.</CardDescription>
+              <CardDescription>Métricas dos últimos 6 meses para a sua equipe.</CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
