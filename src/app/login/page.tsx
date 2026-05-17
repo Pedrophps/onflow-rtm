@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -18,11 +17,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Chrome, Mail, Lock, Loader2, User, Building2, AlertCircle, TestTube2 } from 'lucide-react';
+import { Chrome, Mail, Lock, Loader2, User, Building2, TestTube2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -32,7 +30,6 @@ export default function LoginPage() {
   const { user: currentUser, loading: authLoading } = useUser();
   const [loading, setLoading] = useState(false);
   const [cnpj, setCnpj] = useState('');
-  const [connectionError, setConnectionError] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -57,6 +54,11 @@ export default function LoginPage() {
   const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCNPJ(e.target.value);
     setCnpj(formatted);
+  };
+
+  const isAdminEmail = (emailStr: string | null | undefined) => {
+    if (!emailStr) return false;
+    return emailStr.toLowerCase().endsWith('@rtm.net.br');
   };
 
   const getFriendlyErrorMessage = (errorCode: string) => {
@@ -133,8 +135,7 @@ export default function LoginPage() {
         displayName: name
       });
 
-      const isTestAdmin = email.toLowerCase().includes('admin');
-      const role = isTestAdmin ? 'admin' : 'client';
+      const role = isAdminEmail(email) ? 'admin' : 'client';
       const userRef = doc(db, 'users', result.user.uid);
 
       const userData = {
@@ -145,7 +146,6 @@ export default function LoginPage() {
         createdAt: new Date().toISOString()
       };
 
-      // Gravação otimista (não aguardamos o Firestore para redirecionar)
       setDoc(userRef, userData, { merge: true })
         .catch(async (error) => {
           errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -176,7 +176,6 @@ export default function LoginPage() {
     try {
       const userDocRef = doc(db, 'users', user.uid);
       
-      // Tentativa de buscar o documento com um timeout curto
       const fetchPromise = getDoc(userDocRef);
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000));
       
@@ -186,21 +185,19 @@ export default function LoginPage() {
         if (userDoc.exists()) {
           redirectBasedOnRole(userDoc.data().role);
         } else {
-          // Fallback: Inferir papel pelo e-mail se o documento não existir
-          const role = user.email?.toLowerCase().includes('admin') ? 'admin' : 'client';
+          const role = isAdminEmail(user.email) ? 'admin' : 'client';
           const userData = { 
             email: user.email, 
             role,
             displayName: user.displayName || user.email?.split('@')[0],
             createdAt: new Date().toISOString()
           };
-          setDoc(userDocRef, userData); // Grava em background
+          setDoc(userDocRef, userData);
           redirectBasedOnRole(role);
         }
       } catch (err) {
-        // Se der timeout ou erro de offline, redirecionamos usando o fallback do e-mail
         console.warn("Firestore inacessível, usando redirecionamento de fallback.");
-        const role = user.email?.toLowerCase().includes('admin') ? 'admin' : 'client';
+        const role = isAdminEmail(user.email) ? 'admin' : 'client';
         redirectBasedOnRole(role);
       }
     } catch (error: any) {
@@ -211,7 +208,6 @@ export default function LoginPage() {
         description: "Não conseguimos carregar seu perfil agora."
       });
     } finally {
-      // Garante que o estado de loading seja limpo após um tempo para não travar a UI
       setTimeout(() => setLoading(false), 5000);
     }
   }
@@ -220,17 +216,17 @@ export default function LoginPage() {
     if (type === 'admin') {
       setEmail('admin.teste@rtm.net.br');
       setPassword('123456');
-      setName('Administrador Teste');
+      setName('Administrador RTM');
       setCnpj('12.345.678/0001-90');
     } else {
-      setEmail('cliente.teste@rtm.net.br');
+      setEmail('cliente.teste@empresa.com.br');
       setPassword('123456');
       setName('Cliente Teste');
       setCnpj('98.765.432/0001-10');
     }
     toast({
       title: "Campos Preenchidos",
-      description: `Clique em "Acessar Portal" para entrar.`
+      description: `Clique em "Acessar Portal" ou "Criar Conta".`
     });
   };
 
@@ -269,7 +265,7 @@ export default function LoginPage() {
                       <Input 
                         id="email" 
                         type="email" 
-                        placeholder="seu@email.com" 
+                        placeholder="seu@rtm.net.br" 
                         className="pl-10" 
                         required 
                         disabled={loading} 
@@ -338,11 +334,11 @@ export default function LoginPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">E-mail</Label>
+                    <Label htmlFor="signup-email">E-mail Corporativo</Label>
                     <Input 
                       id="signup-email" 
                       type="email" 
-                      placeholder="seu@email.com" 
+                      placeholder="seu@rtm.net.br" 
                       required 
                       disabled={loading} 
                       value={email}
@@ -385,7 +381,7 @@ export default function LoginPage() {
                   onClick={() => fillTestAccount('admin')}
                   disabled={loading}
                 >
-                  <TestTube2 className="size-3" /> Admin Teste
+                  <TestTube2 className="size-3" /> Admin RTM
                 </Button>
                 <Button 
                   variant="outline" 
@@ -394,7 +390,7 @@ export default function LoginPage() {
                   onClick={() => fillTestAccount('client')}
                   disabled={loading}
                 >
-                  <TestTube2 className="size-3" /> Cliente Teste
+                  <TestTube2 className="size-3" /> Cliente Externo
                 </Button>
               </div>
 
