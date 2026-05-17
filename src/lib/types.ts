@@ -16,6 +16,7 @@ export interface UserProfile {
   clientCode?: string;
   activeProduct?: string;
   createdAt: string;
+  approvedAt?: string;
 }
 
 export interface OnboardingStage {
