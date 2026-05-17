@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -37,15 +38,26 @@ export default function IntegrationTestPage() {
     if (!user) return;
     setIsElevating(true);
     try {
-      await setDoc(doc(db, 'users', user.uid), {
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, {
         role: 'admin',
         adminType: 'comercial',
         status: 'approved',
         updatedAt: serverTimestamp()
       }, { merge: true });
-      toast({ title: "Privilégios Atualizados", description: "Agora você é um administrador no Firestore." });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Erro na Elevação", description: "Verifique suas regras de segurança." });
+      
+      toast({ 
+        title: "Privilégios Atualizados", 
+        description: "Você agora é um Administrador. Tente rodar os testes novamente." 
+      });
+      // Pequeno delay para o Firestore propagar as regras antes de re-testar
+      setTimeout(() => runTests(), 1000);
+    } catch (e: any) {
+      toast({ 
+        variant: "destructive", 
+        title: "Erro na Elevação", 
+        description: "As regras do Firestore podem estar bloqueando a escrita. Verifique o console." 
+      });
     } finally {
       setIsElevating(false);
     }
@@ -71,8 +83,8 @@ export default function IntegrationTestPage() {
 
     // 1. Test Profile Write
     try {
-      const userRef = doc(db, 'users', user.uid);
-      await setDoc(userRef, {
+      const uRef = doc(db, 'users', user.uid);
+      await setDoc(uRef, {
         lastIntegrationTestAt: serverTimestamp(),
         testStatus: "online"
       }, { merge: true });
@@ -83,8 +95,8 @@ export default function IntegrationTestPage() {
 
     // 2. Test Profile Read
     try {
-      const userRef = doc(db, 'users', user.uid);
-      const snap = await getDoc(userRef);
+      const uRef = doc(db, 'users', user.uid);
+      const snap = await getDoc(uRef);
       if (snap.exists()) {
         setResults(prev => ({ ...prev, profileRead: 'success' }));
       } else {
@@ -146,11 +158,11 @@ export default function IntegrationTestPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 font-body">
       <div className="w-full max-w-2xl mb-4 flex justify-between items-center">
         <Button variant="ghost" size="sm" asChild className="gap-2">
-          <Link href="/debug"><ArrowLeft className="size-4" /> Voltar ao Debug</Link>
+          <Link href="/login"><ArrowLeft className="size-4" /> Voltar ao Login</Link>
         </Button>
-        <Badge variant={profile?.role === 'admin' ? "default" : "secondary"} className="gap-1 px-3">
+        <Badge variant={profile?.role === 'admin' ? "default" : "secondary"} className="gap-1 px-3 py-1">
           {profile?.role === 'admin' ? <ShieldCheck className="size-3" /> : <ShieldAlert className="size-3" />}
-          Role Atual: {profile?.role || 'null'}
+          Role Atual: <span className="font-bold uppercase ml-1">{profile?.role || 'null'}</span>
         </Badge>
       </div>
       
@@ -172,20 +184,30 @@ export default function IntegrationTestPage() {
             <TestRow title="Submissão" status={results.submissionWrite} icon={<FileText />} color="purple" subtitle="Acesso livre para autenticados" />
           </div>
 
-          {results.flowWrite === 'forbidden' && (
-            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium space-y-3">
-              <div className="flex items-center gap-3">
-                <ShieldAlert className="size-5" />
-                <span>O teste de fluxo falhou porque seu usuário é um "cliente".</span>
+          {(results.flowWrite === 'forbidden' || profile?.role !== 'admin') && (
+            <div className="p-6 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium space-y-4">
+              <div className="flex items-start gap-3">
+                <ShieldAlert className="size-6 text-amber-600 shrink-0 mt-1" />
+                <div className="space-y-1">
+                  <p className="font-bold text-lg">Você não é Administrador</p>
+                  <p className="text-amber-700/80 leading-relaxed">
+                    O teste de "Escrita de Fluxo" requer permissões de nível 1. Como você está em ambiente de desenvolvimento, você pode elevar sua conta agora.
+                  </p>
+                </div>
               </div>
-              <Button onClick={elevateToAdmin} disabled={isElevating} variant="outline" className="w-full bg-white border-amber-200 text-amber-700 hover:bg-amber-100 font-bold gap-2">
-                {isElevating ? <Loader2 className="animate-spin" /> : <Zap className="size-4" />}
+              <Button 
+                onClick={elevateToAdmin} 
+                disabled={isElevating} 
+                variant="default" 
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold h-12 gap-2 shadow-md"
+              >
+                {isElevating ? <Loader2 className="animate-spin" /> : <Zap className="size-5 fill-current" />}
                 Tornar meu usuário Admin agora
               </Button>
             </div>
           )}
 
-          <Button className="w-full h-12 font-bold text-base shadow-lg" onClick={runTests} disabled={isRunning}>
+          <Button className="w-full h-12 font-bold text-base shadow-lg" onClick={runTests} disabled={isRunning || isElevating}>
             {isRunning ? <Loader2 className="animate-spin mr-2" /> : "Iniciar Bateria de Testes"}
           </Button>
         </CardContent>
@@ -210,7 +232,7 @@ export default function IntegrationTestPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {badge && <Badge variant="outline" className="text-[9px] font-bold uppercase">{badge}</Badge>}
+          {badge && <Badge variant="outline" className="text-[9px] font-bold uppercase border-amber-200 bg-amber-50 text-amber-700">{badge}</Badge>}
           <StatusIcon status={status} />
         </div>
       </div>
