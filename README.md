@@ -1,6 +1,6 @@
 # OnFlow RTM - Memória Operacional de Longo Prazo
 
-Este documento é a fonte única de verdade (Single Source of Truth) para o projeto OnFlow RTM. Ele segue uma **Política de Versionamento Aditivo**: nenhuma informação é apagada, apenas acrescentada ou corrigida visualmente.
+Este documento é a fonte única de verdade (Single Source of Truth) para o projeto OnFlow RTM. Ele segue uma **Política de Versionamento Aditivo**: nenhuma informação é apagada, apenas acrescentada ou corrigida visualmente através de notações específicas.
 
 ---
 
@@ -12,59 +12,61 @@ Este documento é a fonte única de verdade (Single Source of Truth) para o proj
 
 ---
 
-## [V1.0 - ESTRUTURA INICIAL E SNAPSHOT DE CONTINUIDADE]
+## [V1.1 - SNAPSHOT DE CONTINUIDADE E ENGENHARIA REVERSA DE CONTEXTO]
 
-### 🏗️ VISÃO GERAL DO PROJETO
-O **OnFlow** é um hub integrador B2B desenvolvido para a **RTM** (Rede de Telecomunicações para o Mercado Financeiro). O sistema gerencia o onboarding de instituições financeiras, dividindo-se em:
-- **Admin (Comercial/Suporte)**: Gestão de fluxos, aprovação de documentos e monitoramento.
-- **Cliente**: Jornada de implantação, envio de evidências e conformidade.
+### 🏗️ # VISÃO GERAL DO PROJETO
+O **OnFlow** é um ecossistema digital B2B desenvolvido para a **RTM (Rede de Telecomunicações para o Mercado Financeiro)**. O sistema atua como um hub centralizador para o onboarding de instituições financeiras (Bancos, Corretoras, Fintechs). 
+A arquitetura é dividida em:
+- **Painel Administrativo (RTM)**: Segmentado entre *Comercial* (gestão de contratos e ativação) e *Suporte* (infraestrutura e redes).
+- **Portal do Cliente**: Jornada guiada para envio de evidências de conformidade e acompanhamento de implantação.
 
-### 🎯 OBJETIVOS DO USUÁRIO
-- **Principal**: Automação total do processo de onboarding RTM com persistência segura no Firestore.
-- **Secundários**: Gestão dinâmica de etapas, relatórios de progresso e integração GenAI para análise documental.
-- **Expectativa**: Sistema robusto, resiliente a falhas de rede e com regras de segurança rigorosas.
+### 🎯 # OBJETIVOS DO USUÁRIO
+- **Primário**: Automatizar o processo manual de onboarding, garantindo rastreabilidade e segurança em nível bancário.
+- **Secundário**: Implementar inteligência GenAI para pré-análise de documentos enviados.
+- **Técnico**: Estabelecer uma fundação resiliente no Firebase que suporte regras de acesso baseadas em papéis (RBAC) extremamente rígidas.
 
-### 📝 DECISÕES JÁ TOMADAS
-- **Auth**: Firebase Auth com identificação automática de admins via domínio `@rtm.net.br`.
-- **Database**: Firestore como única fonte de persistência institucional.
-- **UI**: ShadCN UI + Tailwind com paleta RTM (Vermelho #D32F2F / Bege #F5F5DC).
-- **Security Rules**: Implementação de RBAC (Role-Based Access Control) via Firestore Security Rules.
+### ✅ # DECISÕES JÁ TOMADAS
+- **Auth**: Firebase Auth como provedor de identidade. Domínios `@rtm.net.br` são promovidos a candidatos administrativos automaticamente.
+- **Database**: Firestore como única fonte de persistência. Coleções principais: `users`, `onboardingFlows`, `submissions`.
+- **UI/UX**: Estética "Modern Corporate" usando ShadCN. Cores: RTM Red (#D32F2F) e Soft Beige (#F5F5DC).
+- **Security**: Regras de segurança do Firestore aplicadas **manualmente** para contornar falhas de provisionamento automático da API.
 
-### 🛠️ CONTEXTO TÉCNICO
-- **Arquitetura**: Next.js 15 (App Router), React 19, Firebase SDK 11+.
-- **Padrão de Erros**: Custom `errorEmitter` capturando falhas de permissão do Firestore e exibindo via Toasts.
-- **Lógica de Perfil**: O campo `role` no documento do usuário define o acesso. O campo `adminType` define a visão (Comercial vs Suporte).
-- **Redirecionamento**: Fluxo de login inteligente que valida se o admin já selecionou seu ambiente de trabalho.
+### 🛠️ # CONTEXTO TÉCNICO
+- **Stack**: Next.js 15 (App Router), React 19, Firebase 11, Tailwind CSS, Lucide Icons.
+- **Tratamento de Erros**: Implementado `errorEmitter` no Firebase para capturar `FirestorePermissionError`. Isso evita que falhas de regra de segurança quebrem a aplicação silenciosamente.
+- **Persistência de Perfil**: O campo `role: admin` é o gatilho crítico para acesso às rotas `/dashboard/admin/*`.
+- **Regras de Segurança (Firestore)**: 
+  - `users/{userId}`: Somente o dono ou admins leem.
+  - `onboardingFlows`: Somente admins escrevem.
+  - `submissions`: Clientes criam, admins aprovam/rejeitam.
 
-### 🧠 CONTEXTO COMPORTAMENTAL
-- **Perfil do Usuário**: Especialista técnico, exige precisão operacional e transparência em logs de erro.
-- **Tom de Resposta**: Colaborativo, mas extremamente técnico e direto.
-- **Ponto de Satisfação**: Verificação em tempo real de conexão e testes de integridade (Página de Debug).
-- **Ponto de Irritação**: Redirecionamentos em loop ou perda de estado de autenticação.
+### 🧠 # CONTEXTO COMPORTAMENTAL
+- **Perfil do Usuário**: Especialista técnico com alto nível de exigência em integridade de dados.
+- **Expectativa**: Respostas diretas, código pronto para produção e transparência total em logs de erro.
+- **Ponto de Satisfação**: Verificação em tempo real (Páginas de Debug/Testes).
+- **Ponto de Irritação**: Redirecionamentos em loop ou perda de estado de autenticação por falta de sincronia com o Firestore.
 
-### 📜 HISTÓRICO DE TENTATIVAS
-- **TENTATIVA 1**: Provisionamento automático via `RequestFirebaseBackendTool`.
-  - **Resultado**: FALHA (Erro de `thought_signature` no modelo Gemini 3 Flash Preview).
-- **TENTATIVA 2**: Configuração manual do banco de dados e regras de segurança.
-  - **Resultado**: SUCESSO. O usuário aplicou as regras manualmente no Console do Firebase.
-- **TENTATIVA 3**: Validação de Regras via Página de Teste.
-  - **Resultado**: PARCIAL. Identificada necessidade de elevar o usuário para `role: admin` para testar fluxos.
+### 📜 # HISTÓRICO DE TENTATIVAS
+- **TENTATIVA 1 (Falha)**: Provisionamento via `RequestFirebaseBackendTool`. Erro de `thought_signature` recorrente no modelo Gemini 3 Flash Preview.
+- **TENTATIVA 2 (Sucesso)**: Configuração manual das Regras de Segurança e do banco de dados no Console do Firebase pelo usuário.
+- **TENTATIVA 3 (Validação)**: Criação de uma página de `/debug/integration-test` para validar as regras. Identificada a necessidade de um botão de "Auto-Elevação para Admin" para usuários de teste.
 
-### ⏳ PENDÊNCIAS ATUAIS
-1. Implementar o módulo real de upload para o Firebase Storage.
-2. Criar o gerador de fluxos dinâmicos para o Comercial.
-3. Desenvolver os relatórios agregados na página `/dashboard/admin/reports`.
+### ⏳ # PENDÊNCIAS ATUAIS
+1. Implementar o módulo de upload real para Firebase Storage (Evidências).
+2. Criar o gerador dinâmico de etapas para o Comercial configurar novos produtos.
+3. Desenvolver os relatórios consolidados em `/dashboard/admin/reports`.
+4. Integrar GenAI para análise de conformidade de PDFs submetidos.
 
-### 🚨 REGRAS OPERACIONAIS PARA A PRÓXIMA IA
-1. **NÃO APAGUE O README**: Siga a política de versionamento aditivo acima.
-2. **VERIFIQUE O PAPEL**: Antes de qualquer operação administrativa, verifique se o usuário tem `role: admin` no Firestore.
-3. **ERROS DE SEGURANÇA**: Se o Firestore retornar "Permission Denied", use o `errorEmitter` para informar o usuário.
+### 🚦 # REGRAS OPERACIONAIS
+1. **Prioridade de Role**: Antes de qualquer renderização administrativa, verificar `user.role == 'admin'`.
+2. **Fallback de Rede**: O app deve lidar graciosamente com estados de `offline` do Firebase (implementado via `useDoc` silencioso).
+3. **Additive Docs**: Siga a política de versionamento acima; nunca remova logs de decisão.
 
-### 💾 MEMÓRIA ESTRATÉGICA
-A RTM é um ambiente neutro. O OnFlow não deve apenas "funcionar", ele deve "passar confiança". A interface deve ser limpa, com badges de status claros e feedback imediato de cada ação do usuário.
+### 💾 # MEMÓRIA ESTRATÉGICA
+A RTM é o coração tecnológico do mercado financeiro brasileiro. O OnFlow não é apenas um portal de arquivos; é uma ferramenta de **confiança institucional**. Cada interação deve reforçar segurança e neutralidade.
 
-### 🚀 RESUMO EXECUTIVO FINAL
-O núcleo de autenticação e persistência está estabelecido. As regras de segurança do Firestore foram configuradas manualmente pelo usuário para contornar limitações da API do Google. O sistema agora está pronto para a fase de **Funcionalidades de Negócio**, começando pela gestão real de submissões e construção dinâmica de fluxos.
+### 🚀 # RESUMO EXECUTIVO FINAL
+Fundação de Auth e Firestore concluída. Regras de segurança ativas. Sistema de captura de erros operacional. O projeto está pronto para a fase de **Lógica de Negócio**: Construção de fluxos dinâmicos e gestão real de submissões. A próxima IA deve focar em transformar os modelos estáticos de onboarding em documentos reativos do Firestore.
 
 ---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*
