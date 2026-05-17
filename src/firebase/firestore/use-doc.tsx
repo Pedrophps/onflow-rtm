@@ -2,9 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { doc, onSnapshot, DocumentReference, DocumentData } from 'firebase/firestore';
-import { errorEmitter } from '../error-emitter';
-import { FirestorePermissionError } from '../errors';
+import { onSnapshot, DocumentReference, DocumentData } from 'firebase/firestore';
 
 export function useDoc<T = DocumentData>(docRef: DocumentReference<T> | null) {
   const [data, setData] = useState<T | null>(null);
@@ -23,12 +21,11 @@ export function useDoc<T = DocumentData>(docRef: DocumentReference<T> | null) {
         setData(snapshot.data() as T || null);
         setLoading(false);
       },
-      async (err) => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'get',
-        });
-        errorEmitter.emit('permission-error', permissionError);
+      (err) => {
+        // Ignora erros de "offline" para não travar a UI com toasts de erro
+        if (err.code !== 'unavailable' && err.code !== 'offline') {
+          console.warn("Firestore error in useDoc:", err);
+        }
         setError(err);
         setLoading(false);
       }

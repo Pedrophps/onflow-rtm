@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -52,7 +53,7 @@ export default function LoginPage() {
     if (currentUser && !authLoading) {
       const userDocRef = doc(db, 'users', currentUser.uid);
       
-      // Tentativa resiliente de buscar o perfil
+      // Tentativa resiliente de buscar o perfil com fallback imediato para erro de rede
       getDoc(userDocRef)
         .then((userDoc) => {
           if (userDoc.exists()) {
@@ -64,7 +65,7 @@ export default function LoginPage() {
           }
         })
         .catch(() => {
-          // Se falhar (ex: offline), usa o fallback do e-mail para não travar o usuário
+          // Se falhar (ex: offline ou timeout), usa o fallback do e-mail para não travar o usuário
           const role = isAdminEmail(currentUser.email) ? 'admin' : 'client';
           redirectBasedOnRole(role);
         });
@@ -92,8 +93,8 @@ export default function LoginPage() {
         createdAt: new Date().toISOString()
       };
 
-      // Gravação em background
-      setDoc(userRef, userData, { merge: true });
+      // Gravação em background sem await para agilizar a navegação
+      setDoc(userRef, userData, { merge: true }).catch(() => {});
       redirectBasedOnRole(role);
     } catch (error: any) {
       setLoading(false);
@@ -115,22 +116,7 @@ export default function LoginPage() {
 
     try {
       const result = await signInWithEmailAndPassword(auth, targetEmail, targetPassword);
-      const userDocRef = doc(db, 'users', result.user.uid);
-      
-      getDoc(userDocRef)
-        .then((userDoc) => {
-          if (userDoc.exists()) {
-            const profile = userDoc.data() as UserProfile;
-            redirectBasedOnRole(profile.role, profile.adminType);
-          } else {
-            const role = isAdminEmail(result.user.email) ? 'admin' : 'client';
-            redirectBasedOnRole(role);
-          }
-        })
-        .catch(() => {
-          const role = isAdminEmail(result.user.email) ? 'admin' : 'client';
-          redirectBasedOnRole(role);
-        });
+      // O useEffect acima cuidará do redirecionamento de forma resiliente
     } catch (error: any) {
       setLoading(false);
       toast({ variant: "destructive", title: "Falha no acesso", description: "Verifique suas credenciais." });
