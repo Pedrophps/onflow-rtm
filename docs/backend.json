@@ -16,6 +16,11 @@
           "enum": ["admin", "client"],
           "description": "Papel do usuário no sistema"
         },
+        "adminType": {
+          "type": "string",
+          "enum": ["suporte", "comercial"],
+          "description": "Sub-perfil administrativo (selecionado uma única vez)"
+        },
         "status": {
           "type": "string",
           "enum": ["pending", "approved", "rejected"],

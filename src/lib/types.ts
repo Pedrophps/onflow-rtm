@@ -2,11 +2,13 @@
 export type OnboardingStatus = 'pendente' | 'em_revisao' | 'concluida';
 export type UserStatus = 'pending' | 'approved' | 'rejected';
 export type UserRole = 'admin' | 'client';
+export type AdminType = 'suporte' | 'comercial';
 
 export interface UserProfile {
   id?: string;
   email: string;
   role: UserRole;
+  adminType?: AdminType;
   displayName: string;
   cnpj?: string;
   status: UserStatus;

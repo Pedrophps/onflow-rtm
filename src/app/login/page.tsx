@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,6 +20,7 @@ import { Mail, Lock, Loader2, Headset, Briefcase, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { UserProfile } from '@/lib/types';
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -66,9 +68,13 @@ export default function LoginPage() {
     }
   };
 
-  const redirectBasedOnRole = (role: string) => {
+  const redirectBasedOnRole = (role: string, adminType?: string) => {
     if (role === 'admin') {
-      router.push('/dashboard/admin/select-profile');
+      if (adminType) {
+        router.push(`/dashboard/admin?view=${adminType}`);
+      } else {
+        router.push('/dashboard/admin/select-profile');
+      }
     } else {
       router.push('/dashboard/client');
     }
@@ -92,7 +98,7 @@ export default function LoginPage() {
         role,
         status,
         displayName: name,
-        cnpj: cnpj,
+        cnpj: role === 'client' ? cnpj : '',
         createdAt: new Date().toISOString()
       };
 
@@ -140,7 +146,8 @@ export default function LoginPage() {
       const userDoc = await getDoc(userDocRef);
       
       if (userDoc.exists()) {
-        redirectBasedOnRole(userDoc.data().role);
+        const profile = userDoc.data() as UserProfile;
+        redirectBasedOnRole(profile.role, profile.adminType);
       } else {
         const role = isAdminEmail(user.email) ? 'admin' : 'client';
         const status = role === 'admin' ? 'approved' : 'pending';
@@ -158,7 +165,7 @@ export default function LoginPage() {
       const role = isAdminEmail(user.email) ? 'admin' : 'client';
       redirectBasedOnRole(role);
     } finally {
-      setTimeout(() => setLoading(false), 2000);
+      setTimeout(() => setLoading(false), 1000);
     }
   }
 
@@ -224,7 +231,12 @@ export default function LoginPage() {
               <form onSubmit={handleSignUp}>
                 <CardContent className="space-y-4 pt-4">
                   <div className="space-y-2"><Label>Nome Completo</Label><Input placeholder="Seu nome" required value={name} onChange={e => setName(e.target.value)} /></div>
-                  <div className="space-y-2"><Label>CNPJ da Instituição</Label><Input placeholder="00.000.000/0000-00" value={cnpj} onChange={handleCnpjChange} required /></div>
+                  {!isAdminEmail(email) && email.length > 5 && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+                      <Label>CNPJ da Instituição</Label>
+                      <Input placeholder="00.000.000/0000-00" value={cnpj} onChange={handleCnpjChange} required />
+                    </div>
+                  )}
                   <div className="space-y-2"><Label>E-mail Corporativo</Label><Input type="email" placeholder="seu@rtm.net.br" required value={email} onChange={e => setEmail(e.target.value)} /></div>
                   <div className="space-y-2"><Label>Senha</Label><Input type="password" placeholder="Mínimo 6 caracteres" required value={password} onChange={e => setPassword(e.target.value)} /></div>
                   <Button type="submit" className="w-full font-bold h-12" disabled={loading}>Criar Conta</Button>
@@ -236,14 +248,14 @@ export default function LoginPage() {
               <div className="grid grid-cols-1 gap-2 w-full">
                 <div className="grid grid-cols-2 gap-2">
                   <Button variant="outline" size="sm" className="gap-2" onClick={() => fillTestAccount('suporte')}>
-                    <Headset className="size-3.5" /> Suporte
+                    <Headset className="size-3.5" /> Adm Suporte
                   </Button>
                   <Button variant="outline" size="sm" className="gap-2" onClick={() => fillTestAccount('comercial')}>
-                    <Briefcase className="size-3.5" /> Comercial
+                    <Briefcase className="size-3.5" /> Adm Comercial
                   </Button>
                 </div>
                 <Button variant="outline" size="sm" className="gap-2" onClick={() => fillTestAccount('client')}>
-                  <User className="size-3.5" /> Cliente (Novo)
+                  <User className="size-3.5" /> Cliente
                 </Button>
               </div>
             </CardFooter>

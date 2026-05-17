@@ -28,6 +28,10 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useSearchParams, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useUser, useFirestore, useDoc } from "@/firebase";
+import { doc } from "firebase/firestore";
+import { useMemo, useEffect } from "react";
+import { UserProfile } from "@/lib/types";
 
 const data = [
   { name: 'Jan', value: 12 },
@@ -41,7 +45,14 @@ const data = [
 export default function AdminPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const currentView = searchParams.get('view') || 'suporte';
+  const { user } = useUser();
+  const db = useFirestore();
+  
+  const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
+  const { data: profile } = useDoc<UserProfile>(userRef);
+
+  // Prioriza o parâmetro da URL, senão usa o perfil salvo, senão 'suporte' como fallback
+  const currentView = searchParams.get('view') || profile?.adminType || 'suporte';
 
   const handleTabChange = (value: string) => {
     router.push(`/dashboard/admin?view=${value}`);
