@@ -37,7 +37,7 @@ export default function SelectProfilePage() {
     // Navegação otimista imediata para não travar o usuário
     router.push(`/dashboard/admin?view=${adminType}`);
 
-    // Gravação resiliente em background
+    // Gravação resiliente em background (sem await)
     setDoc(docRef, { 
       adminType,
       role: 'admin',

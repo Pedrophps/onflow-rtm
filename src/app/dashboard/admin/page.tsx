@@ -56,10 +56,11 @@ export default function AdminPage() {
 
   // Trava de segurança: Se o admin não selecionou o tipo de acesso, manda para a seleção
   useEffect(() => {
-    if (!profileLoading && profile && profile.role === 'admin' && !profile.adminType) {
+    // Só redirecionamos se o carregamento do perfil terminou e REALMENTE não temos o dado nem na URL nem no banco
+    if (!profileLoading && profile && profile.role === 'admin' && !profile.adminType && !searchParams.get('view')) {
       router.replace('/dashboard/admin/select-profile');
     }
-  }, [profile, profileLoading, router]);
+  }, [profile, profileLoading, router, searchParams]);
 
   const handleTabChange = (value: string) => {
     router.push(`/dashboard/admin?view=${value}`);
