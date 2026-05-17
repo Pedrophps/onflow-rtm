@@ -4,30 +4,35 @@
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, GripVertical, Edit3, Trash2, Settings2, FileText, Type, BarChart3 } from "lucide-react";
+import { Plus, GripVertical, Edit3, Trash2, Settings2, FileText, Type, BarChart3, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-
-const initialTemplates = [
-  {
-    id: "1",
-    name: "Onboarding Standard B2B",
-    stages: 6,
-    activeClients: 42,
-    lastUpdate: "Há 2 dias"
-  },
-  {
-    id: "2",
-    name: "Trial Premium",
-    stages: 3,
-    activeClients: 12,
-    lastUpdate: "Há 1 semana"
-  }
-];
+import { useFirestore, useCollection } from "@/firebase";
+import { collection, query, orderBy } from "firebase/firestore";
 
 export default function OnboardingManagement() {
-  const [selectedTemplate, setSelectedTemplate] = useState(initialTemplates[0]);
+  const db = useFirestore();
+  
+  // Query para buscar fluxos do banco de dados
+  const flowsQuery = useMemo(() => query(collection(db, "onboardingFlows")), [db]);
+  const { data: dbFlows, loading: flowsLoading } = useCollection<any>(flowsQuery);
+
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+
+  // Fallback para dados locais se o banco estiver vazio
+  const initialTemplates = [
+    {
+      id: "template-1",
+      name: "Onboarding Standard B2B",
+      stagesCount: 6,
+      activeClients: 42,
+      lastUpdate: "Há 2 dias"
+    }
+  ];
+
+  const displayFlows = dbFlows.length > 0 ? dbFlows : initialTemplates;
+  const currentFlow = selectedTemplate || displayFlows[0];
 
   return (
     <DashboardLayout role="admin">
@@ -47,12 +52,14 @@ export default function OnboardingManagement() {
             <h3 className="font-semibold text-lg flex items-center gap-2 px-1">
               Seus Modelos
             </h3>
-            {initialTemplates.map((template) => (
+            {flowsLoading ? (
+              <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
+            ) : displayFlows.map((template) => (
               <Card 
                 key={template.id} 
                 className={cn(
                   "cursor-pointer transition-all hover:border-primary/50",
-                  selectedTemplate.id === template.id ? "border-primary ring-2 ring-primary/5" : ""
+                  currentFlow?.id === template.id ? "border-primary ring-2 ring-primary/5" : ""
                 )}
                 onClick={() => setSelectedTemplate(template)}
               >
@@ -61,8 +68,8 @@ export default function OnboardingManagement() {
                     <div>
                       <h4 className="font-bold">{template.name}</h4>
                       <div className="flex gap-2 mt-2">
-                        <Badge variant="secondary" className="text-[10px]">{template.stages} etapas</Badge>
-                        <Badge variant="outline" className="text-[10px]">{template.activeClients} clientes</Badge>
+                        <Badge variant="secondary" className="text-[10px]">{template.stagesCount || 0} etapas</Badge>
+                        <Badge variant="outline" className="text-[10px]">{template.activeClients || 0} clientes</Badge>
                       </div>
                     </div>
                     <Button variant="ghost" size="icon" className="size-8"><Settings2 className="size-4" /></Button>
@@ -76,7 +83,7 @@ export default function OnboardingManagement() {
             <div className="bg-white rounded-2xl border p-6 space-y-6">
               <div className="flex items-center justify-between border-b pb-4">
                 <div>
-                  <h3 className="text-xl font-bold font-headline">{selectedTemplate.name}</h3>
+                  <h3 className="text-xl font-bold font-headline">{currentFlow?.name}</h3>
                   <p className="text-sm text-muted-foreground">Arraste para reordenar as etapas</p>
                 </div>
                 <Button variant="outline" size="sm">Editar Detalhes</Button>

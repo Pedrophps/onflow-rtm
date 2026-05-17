@@ -1,74 +1,32 @@
-# OnFlow RTM - Guia de Continuidade e Configuração Manual
 
-Este documento serve como a memória central do projeto e o guia de correção para falhas de provisionamento automático.
+# OnFlow RTM - Memória Operacional e Snapshot
 
----
-
-## 🛠 GUIA DE CORREÇÃO MANUAL (Bypass de Erro de Sistema)
-
-Se o sistema apresentar erros de `thought_signature` ou falhas ao criar coleções, siga estes passos no [Console do Firebase](https://console.firebase.google.com/):
-
-### 1. Provisionamento do Firestore
-- Vá em **Build > Firestore Database**.
-- Clique em **Create Database**.
-- Selecione **Modo de Produção**.
-- Escolha a localização: `southamerica-east1` (ou a padrão sugerida).
-
-### 2. Regras de Segurança (Firestore Rules)
-Na aba **Rules** do Firestore, cole o seguinte código:
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Perfil do Usuário
-    match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
-      // Admins podem ler todos os usuários
-      allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    
-    // Fluxos de Onboarding
-    match /onboardingFlows/{flowId} {
-      allow read: if request.auth != null;
-      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      
-      match /stages/{stageId} {
-        allow read: if request.auth != null;
-        allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      }
-    }
-    
-    // Submissões de Evidências
-    match /submissions/{submissionId} {
-      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-  }
-}
-```
+Este documento consolida toda a arquitetura e progresso do projeto para continuidade absoluta.
 
 ---
 
-## 🏗 ESTRUTURA TÉCNICA (Contexto para IA)
+## ⚡ ESTADO ATUAL: CONFIGURADO
+As regras do Firestore e o banco de dados foram provisionados manualmente via Console do Firebase. O sistema agora possui persistência total.
 
-### Visão Geral
-Sistema de gestão de onboarding B2B para a RTM, dividindo visões entre **Comercial**, **Suporte** e **Cliente**.
-
-### Decisões de Arquitetura
-- **Coleção Central**: `/users/{uid}` armazena o estado do perfil (`role`, `adminType`, `status`).
-- **RBAC Implícito**: Redirecionamento baseado no campo `adminType` (`suporte` | `comercial`) para administradores.
-- **Resiliência**: O componente `select-profile` aguarda a confirmação do Firestore antes do redirecionamento para evitar estados inconsistentes.
-
-### O que funcionou e o que falhou
-- **OK**: Lógica de redirecionamento, Tematização ShadCN (Vermelho RTM), Hooks de Firebase.
-- **FALHA**: Provisionamento automático via ferramenta (Erros de `thought_signature` no modelo Gemini 3 Flash).
+### 🏗 ESTRUTURA TÉCNICA
+- **Auth**: E-mail/Senha + RBAC (Role-Based Access Control).
+- **Firestore**: Coleções `/users`, `/onboardingFlows`, `/submissions`.
+- **RBAC**: 
+  - `admin`: Pode gerenciar fluxos e usuários.
+  - `client`: Acompanha sua própria jornada e envia evidências.
 
 ---
 
-## 🎯 RESUMO EXECUTIVO PARA PRÓXIMA IA
-Assuma o projeto focando na implementação do **Módulo de Upload de Documentos** (Firebase Storage) e na criação de **Relatórios** em `/dashboard/admin/reports`. A autenticação e a triagem de perfis administrativos já estão implementadas e testadas. Não altere o fluxo de `select-profile` sem antes verificar a persistência no Firestore.
+## 🎯 PRÓXIMOS PASSOS (PENDÊNCIAS)
+1.  **Módulo de Documentos**: Implementar o upload real para o Firebase Storage na página do cliente.
+2.  **Relatórios**: Gerar gráficos de progressão na página `/dashboard/admin/reports`.
+3.  **Gestão de Fluxos**: Permitir que o Admin crie novas etapas dinamicamente salvando em `/onboardingFlows/{id}/stages`.
+
+---
+
+## 📋 REGRAS OPERACIONAIS PARA PRÓXIMAS IAs
+- **Não alterar o fluxo de login**: O sistema identifica administradores pelo domínio `@rtm.net.br` e clientes pelo `cnpj`.
+- **Persistência**: Sempre aguarde `setDoc` ou `updateDoc` antes de redirecionar (`router.push`).
+- **Erros**: Use o `errorEmitter.emit('permission-error', ...)` para falhas de segurança.
 
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*
