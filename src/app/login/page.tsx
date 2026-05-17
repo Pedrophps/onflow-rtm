@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -30,17 +29,36 @@ export default function LoginPage() {
 
   const formatCNPJ = (value: string) => {
     return value
-      .replace(/\D/g, '') // Remove tudo que não é dígito
-      .replace(/^(\d{2})(\d)/, '$1.$2') // Coloca ponto após os dois primeiros dígitos
-      .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3') // Coloca ponto após os cinco primeiros dígitos
-      .replace(/\.(\d{3})(\d)/, '.$1/$2') // Coloca barra após os oito primeiros dígitos
-      .replace(/(\d{4})(\d)/, '$1-$2') // Coloca hífen após o décimo segundo dígito
-      .substring(0, 18); // Limita o tamanho
+      .replace(/\D/g, '') 
+      .replace(/^(\d{2})(\d)/, '$1.$2') 
+      .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3') 
+      .replace(/\.(\d{3})(\d)/, '.$1/$2') 
+      .replace(/(\d{4})(\d)/, '$1-$2') 
+      .substring(0, 18); 
   };
 
   const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCNPJ(e.target.value);
     setCnpj(formatted);
+  };
+
+  const getFriendlyErrorMessage = (errorCode: string) => {
+    switch (errorCode) {
+      case 'auth/email-already-in-use':
+        return 'Este e-mail já está sendo utilizado por outra conta.';
+      case 'auth/invalid-credential':
+        return 'E-mail ou senha incorretos. Por favor, verifique suas credenciais.';
+      case 'auth/weak-password':
+        return 'A senha deve ter pelo menos 6 caracteres.';
+      case 'auth/user-not-found':
+        return 'Usuário não encontrado. Verifique o e-mail digitado.';
+      case 'auth/wrong-password':
+        return 'Senha incorreta.';
+      case 'auth/popup-closed-by-user':
+        return 'A janela de login foi fechada antes de completar a autenticação.';
+      default:
+        return 'Ocorreu um erro inesperado. Tente novamente em instantes.';
+    }
   };
 
   async function handleSocialLogin() {
@@ -53,7 +71,7 @@ export default function LoginPage() {
       toast({
         variant: "destructive",
         title: "Erro ao entrar",
-        description: error.message
+        description: getFriendlyErrorMessage(error.code)
       });
       setLoading(false);
     }
@@ -72,8 +90,8 @@ export default function LoginPage() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Erro ao entrar",
-        description: "Verifique suas credenciais e tente novamente."
+        title: "Falha no acesso",
+        description: getFriendlyErrorMessage(error.code)
       });
       setLoading(false);
     }
@@ -92,12 +110,10 @@ export default function LoginPage() {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Atualizar perfil do Auth
       await updateProfile(result.user, {
         displayName: name
       });
 
-      // Criar perfil no Firestore
       await setDoc(doc(db, 'users', result.user.uid), {
         email,
         role,
@@ -110,8 +126,8 @@ export default function LoginPage() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Erro ao cadastrar",
-        description: error.message
+        title: "Erro no cadastro",
+        description: getFriendlyErrorMessage(error.code)
       });
       setLoading(false);
     }
@@ -123,11 +139,6 @@ export default function LoginPage() {
       const role = userDoc.data().role;
       router.push(`/dashboard/${role}`);
     } else {
-      toast({
-        title: "Perfil não encontrado",
-        description: "Redirecionando para completar seu cadastro."
-      });
-      // Para login social de novo usuário
       await setDoc(doc(db, 'users', uid), { 
         email, 
         role: 'client',
