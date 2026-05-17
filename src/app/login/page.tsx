@@ -131,9 +131,12 @@ export default function LoginPage() {
       });
 
       const userRef = doc(db, 'users', result.user.uid);
+      const isTestAdmin = email.toLowerCase().includes('admin');
+      const role = isTestAdmin ? 'admin' : 'client';
+
       const userData = {
         email,
-        role: 'client', // Default role for signup form
+        role,
         displayName: name,
         cnpj: cnpj,
         createdAt: new Date().toISOString()
@@ -153,7 +156,11 @@ export default function LoginPage() {
         description: "Seja bem-vindo ao OnFlow."
       });
 
-      router.push('/dashboard/client');
+      if (role === 'admin') {
+        router.push('/dashboard/admin/select-profile');
+      } else {
+        router.push('/dashboard/client');
+      }
     } catch (error: any) {
       setLoading(false);
       toast({
@@ -179,9 +186,12 @@ export default function LoginPage() {
           router.push('/dashboard/client');
         }
       } else {
+        const isTestAdmin = user.email?.toLowerCase().includes('admin');
+        const role = isTestAdmin ? 'admin' : 'client';
+
         const userData = { 
           email: user.email, 
-          role: 'client',
+          role,
           displayName: user.displayName || user.email?.split('@')[0],
           createdAt: new Date().toISOString()
         };
@@ -195,7 +205,11 @@ export default function LoginPage() {
             }));
           });
           
-        router.push('/dashboard/client');
+        if (role === 'admin') {
+          router.push('/dashboard/admin/select-profile');
+        } else {
+          router.push('/dashboard/client');
+        }
       }
     } catch (error: any) {
       setLoading(false);
@@ -214,8 +228,8 @@ export default function LoginPage() {
         });
       }
     } finally {
-      // Small timeout to allow redirects to happen before hiding loader
-      setTimeout(() => setLoading(false), 2000);
+      // Pequeno atraso para garantir que o router processe o redirecionamento
+      setTimeout(() => setLoading(false), 3000);
     }
   }
 
