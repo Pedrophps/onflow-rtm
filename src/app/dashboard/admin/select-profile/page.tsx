@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Headset, Briefcase, ArrowRight, Loader2 } from 'lucide-react';
-import { useAuth, useUser, useFirestore, useDoc } from '@/firebase';
+import { useUser, useFirestore, useDoc } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { UserProfile } from '@/lib/types';
@@ -23,7 +23,7 @@ export default function SelectProfilePage() {
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
   useEffect(() => {
-    // Se o perfil já estiver carregado e já tiver um tipo definido, redireciona imediatamente
+    // Se o perfil já tiver um adminType definido, não precisamos ficar nesta página
     if (!profileLoading && profile?.adminType && !isUpdating) {
       router.replace(`/dashboard/admin?view=${profile.adminType}`);
     }
@@ -39,18 +39,18 @@ export default function SelectProfilePage() {
       role: 'admin',
       status: 'approved',
       email: user.email,
-      displayName: user.displayName || 'Administrador',
+      displayName: user.displayName || 'Administrador RTM',
       updatedAt: serverTimestamp()
     };
     
-    // Forçamos o setDoc e aguardamos o sucesso antes de navegar
+    // Usamos setDoc com merge para garantir a criação/atualização do documento
     setDoc(userDocRef, updateData, { merge: true })
       .then(() => {
         toast({
           title: "Perfil Configurado",
           description: `Seu ambiente de ${adminType} foi ativado com sucesso.`,
         });
-        // Navegação forçada para garantir o estado
+        // Navegação forçada via window para garantir que o estado do NextJS não cacheie o redirecionamento
         window.location.href = `/dashboard/admin?view=${adminType}`;
       })
       .catch(async (error: any) => {
@@ -63,7 +63,7 @@ export default function SelectProfilePage() {
       });
   };
 
-  if (profileLoading || (profile?.adminType && !isUpdating)) {
+  if (profileLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="size-10 animate-spin text-primary" />

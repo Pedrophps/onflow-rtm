@@ -1,4 +1,3 @@
-
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -20,12 +19,9 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip as RechartsTooltip, 
-  ResponsiveContainer, 
-  Cell
+  ResponsiveContainer 
 } from "recharts";
-import { Progress } from "@/components/ui/progress";
 import { useSearchParams, useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { useUser, useFirestore, useDoc } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { useMemo, useEffect } from "react";
@@ -49,14 +45,18 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
+  // Priorizamos o adminType do banco, senão pegamos da URL
   const currentView = profile?.adminType || searchParams.get('view');
 
   useEffect(() => {
+    // Só redirecionamos se o carregamento do perfil terminou e REALMENTE não houver adminType definido
     if (!userLoading && !profileLoading) {
       if (!user) {
         router.push('/login');
         return;
       }
+      
+      // Se não houver adminType e nem parâmetro de visualização, forçamos a escolha
       if (!profile?.adminType && !searchParams.get('view')) {
         router.push('/dashboard/admin/select-profile');
       }
@@ -80,9 +80,9 @@ export default function AdminPage() {
             <h1 className="text-3xl font-bold font-headline text-slate-900">Portal OnFlow</h1>
             <div className="flex items-center gap-2 text-primary font-bold">
               {currentView === 'suporte' ? (
-                <><Headset className="size-4" /><span>Equipe: SUPORTE</span></>
+                <><Headset className="size-4" /><span>Equipe: SUPORTE TÉCNICO</span></>
               ) : (
-                <><Briefcase className="size-4" /><span>Equipe: COMERCIAL</span></>
+                <><Briefcase className="size-4" /><span>Equipe: GESTÃO COMERCIAL</span></>
               )}
             </div>
           </div>
@@ -95,7 +95,7 @@ export default function AdminPage() {
               <Users className="size-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{currentView === 'suporte' ? '128' : '45'}</div>
+              <div className="text-2xl font-bold">128</div>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-emerald-500 shadow-sm">
@@ -129,7 +129,7 @@ export default function AdminPage() {
 
         <Card className="bg-white">
           <CardHeader>
-            <CardTitle className="text-lg">Fluxo de Atividade</CardTitle>
+            <CardTitle className="text-lg">Fluxo de Atividade RTM</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
