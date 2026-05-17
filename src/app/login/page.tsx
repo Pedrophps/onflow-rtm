@@ -147,7 +147,6 @@ export default function LoginPage() {
         createdAt: new Date().toISOString()
       };
 
-      // Gravação otimista (não aguarda o firestore para liberar a UI)
       setDoc(userRef, userData, { merge: true })
         .catch(async (error) => {
           const permissionError = new FirestorePermissionError({
@@ -163,7 +162,6 @@ export default function LoginPage() {
         description: "Seja bem-vindo ao OnFlow."
       });
 
-      // Redirecionamento imediato baseado na role selecionada no form
       if (role === 'admin') {
         router.push('/dashboard/admin/select-profile');
       } else {
@@ -184,6 +182,8 @@ export default function LoginPage() {
     try {
       setConnectionError(false);
       const userDocRef = doc(db, 'users', user.uid);
+      
+      // Tenta buscar o documento. Se falhar por timeout/offline, o catch trata.
       const userDoc = await getDoc(userDocRef);
       
       if (userDoc.exists()) {
@@ -202,7 +202,6 @@ export default function LoginPage() {
           createdAt: new Date().toISOString()
         };
 
-        // Gravação otimista
         setDoc(userDocRef, userData)
           .catch(async () => {
             const permissionError = new FirestorePermissionError({
@@ -217,7 +216,7 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       console.error("Erro ao verificar usuário:", error);
-      setLoading(false); // Libera a UI se houver erro na busca do perfil
+      setLoading(false); 
       
       if (error.code === 'unavailable' || error.message?.includes('offline')) {
         setConnectionError(true);
