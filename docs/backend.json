@@ -19,32 +19,32 @@
         "adminType": {
           "type": "string",
           "enum": ["suporte", "comercial"],
-          "description": "Sub-perfil administrativo (selecionado uma única vez)"
+          "description": "Sub-perfil administrativo"
         },
         "status": {
           "type": "string",
           "enum": ["pending", "approved", "rejected"],
-          "description": "Status de aprovação do cliente pelo comercial"
+          "description": "Status de aprovação do cliente"
         },
         "displayName": {
           "type": "string",
-          "description": "Nome completo do colaborador"
+          "description": "Nome completo"
         },
         "institutionName": {
           "type": "string",
-          "description": "Nome da Instituição / Razão Social"
+          "description": "Nome da Instituição"
         },
         "cnpj": {
           "type": "string",
-          "description": "CNPJ da empresa vinculada ao usuário"
+          "description": "CNPJ da empresa"
         },
         "clientCode": {
           "type": "string",
-          "description": "Código identificador do cliente atribuído pelo comercial"
+          "description": "Código identificador RTM"
         },
         "activeProduct": {
           "type": "string",
-          "description": "Produto ativado para o cliente"
+          "description": "Produto ativado"
         }
       },
       "required": ["email", "role", "displayName", "status"]

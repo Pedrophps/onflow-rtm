@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -43,24 +44,22 @@ export default function SelectProfilePage() {
       updatedAt: serverTimestamp()
     };
     
-    // Garantimos que a gravação ocorra antes de mudar de página
-    setDoc(userDocRef, updateData, { merge: true })
-      .then(() => {
-        toast({
-          title: "Perfil Configurado",
-          description: `Seu ambiente de ${adminType} foi ativado.`,
-        });
-        // Forçamos o redirecionamento com a query param de visão
-        router.push(`/dashboard/admin?view=${adminType}`);
-      })
-      .catch(async (error: any) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: 'write',
-          requestResourceData: updateData
-        }));
-        setIsUpdating(false);
+    // Gravação explícita e aguardada
+    try {
+      await setDoc(userDocRef, updateData, { merge: true });
+      toast({
+        title: "Perfil Configurado",
+        description: `Seu ambiente de ${adminType} foi ativado.`,
       });
+      router.push(`/dashboard/admin?view=${adminType}`);
+    } catch (error: any) {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: userDocRef.path,
+        operation: 'write',
+        requestResourceData: updateData
+      }));
+      setIsUpdating(false);
+    }
   };
 
   if (profileLoading) {
