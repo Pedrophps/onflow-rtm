@@ -3,23 +3,34 @@
   "entities": {
     "UserProfile": {
       "title": "Perfil do Usuário",
-      "description": "Dados do usuário incluindo papel administrativo ou institucional.",
+      "description": "Dados mestre do usuário, incluindo papéis administrativos (RTM) ou institucionais (Clientes).",
       "type": "object",
       "properties": {
         "email": { "type": "string", "format": "email" },
-        "role": { "type": "string", "enum": ["admin", "client"] },
-        "adminType": { "type": "string", "enum": ["suporte", "comercial"] },
-        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "role": { "type": "string", "enum": ["admin", "client"], "description": "Define o acesso básico ao portal." },
+        "adminType": { "type": "string", "enum": ["suporte", "comercial"], "description": "Define a visão do dashboard para administradores RTM." },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "Status de conformidade do cliente." },
         "displayName": { "type": "string" },
-        "institutionName": { "type": "string" },
+        "institutionName": { "type": "string", "description": "Nome da instituição financeira." },
         "cnpj": { "type": "string" },
-        "clientCode": { "type": "string" },
-        "activeProduct": { "type": "string" },
+        "clientCode": { "type": "string", "description": "Identificador único RTM (Ex: RTM-BR-001)." },
+        "activeProduct": { "type": "string", "description": "Produto principal em implantação." },
         "updatedAt": { "type": "string" },
         "createdAt": { "type": "string" },
         "approvedAt": { "type": "string" }
       },
       "required": ["email", "role", "displayName", "status"]
+    },
+    "OnboardingStage": {
+      "title": "Etapa de Onboarding",
+      "description": "Definição de uma fase no processo de implantação.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "order": { "type": "number" },
+        "status": { "type": "string", "enum": ["pendente", "em_revisao", "concluida"] }
+      }
     }
   },
   "auth": {
@@ -28,7 +39,7 @@
   "firestore": {
     "/users/{userId}": {
       "schema": { "$ref": "#/backend/entities/UserProfile" },
-      "description": "Perfis de usuários administradores e clientes institucionais."
+      "description": "Repositório central de identidades e progresso institucional."
     }
   }
 }

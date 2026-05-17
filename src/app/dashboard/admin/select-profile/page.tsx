@@ -23,7 +23,7 @@ export default function SelectProfilePage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Redireciona se o perfil já estiver configurado
+  // Redireciona se o perfil já estiver configurado para evitar loops
   useEffect(() => {
     if (!profileLoading && profile?.adminType && !isUpdating) {
       router.replace(`/dashboard/admin?view=${profile.adminType}`);
@@ -44,23 +44,24 @@ export default function SelectProfilePage() {
       updatedAt: serverTimestamp()
     };
     
-    // Await explícito para garantir a persistência antes do redirecionamento
-    try {
-      await setDoc(userDocRef, updateData, { merge: true });
-      toast({
-        title: "Perfil Configurado",
-        description: `Ambiente de ${adminType} ativado com sucesso no Firestore.`,
+    // Escrevemos no Firestore e aguardamos a conclusão antes do redirecionamento
+    setDoc(userDocRef, updateData, { merge: true })
+      .then(() => {
+        toast({
+          title: "Ambiente Ativado",
+          description: `Perfil de ${adminType} configurado com sucesso.`,
+        });
+        // Usamos replace para garantir que o histórico não volte para esta tela
+        router.replace(`/dashboard/admin?view=${adminType}`);
+      })
+      .catch(async (error) => {
+        setIsUpdating(false);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: userDocRef.path,
+          operation: 'write',
+          requestResourceData: updateData
+        }));
       });
-      // Forçamos o redirecionamento via URL para resetar estados de cache
-      window.location.href = `/dashboard/admin?view=${adminType}`;
-    } catch (error: any) {
-      setIsUpdating(false);
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: userDocRef.path,
-        operation: 'write',
-        requestResourceData: updateData
-      }));
-    }
   };
 
   if (profileLoading) {
@@ -92,7 +93,7 @@ export default function SelectProfilePage() {
                 <Headset className="size-10" />
               </div>
               <CardTitle>Suporte Técnico</CardTitle>
-              <CardDescription>Infraestrutura e redes críticas.</CardDescription>
+              <CardDescription>Infraestrutura, redes críticas e monitoramento.</CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">
               <Button className="rounded-full font-bold gap-2 px-8" disabled={isUpdating}>
@@ -110,7 +111,7 @@ export default function SelectProfilePage() {
                 <Briefcase className="size-10" />
               </div>
               <CardTitle>Gestão Comercial</CardTitle>
-              <CardDescription>Onboarding e ativação de clientes.</CardDescription>
+              <CardDescription>Onboarding, contratos e ativação de clientes.</CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">
               <Button variant="secondary" className="rounded-full font-bold gap-2 px-8" disabled={isUpdating}>
