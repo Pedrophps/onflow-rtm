@@ -57,11 +57,8 @@ export default function ClientPage() {
     );
   }
 
-  // Lógica Rigorosa de Validação: 
-  // O usuário só é considerado "validado" se:
-  // 1. Status for 'approved'
-  // 2. Tiver um Código de Identificação (clientCode)
-  // 3. Tiver um Produto Ativo (activeProduct)
+  // LOGICA RIGOROSA: 
+  // O acesso SÓ é liberado se status for approved E tiver RTM ID E tiver Produto.
   const isFullyValidated = profile?.status === 'approved' && profile?.clientCode && profile?.activeProduct;
 
   if (!isFullyValidated && profile?.status !== 'rejected') {
@@ -72,37 +69,45 @@ export default function ClientPage() {
             <Clock className="size-12" />
           </div>
           <div className="space-y-4">
-            <h1 className="text-3xl font-bold font-headline">Acesso em Análise</h1>
+            <h1 className="text-3xl font-bold font-headline">Acesso Restrito</h1>
             <p className="text-muted-foreground text-lg leading-relaxed">
               Olá, <span className="font-bold text-foreground">{profile?.displayName}</span>. 
-              Sua solicitação para a instituição <span className="font-semibold text-primary">{profile?.institutionName}</span> está sendo processada.
+              Seu acesso à instituição <span className="font-semibold text-primary">{profile?.institutionName}</span> ainda não foi totalmente validado pela RTM.
             </p>
           </div>
           
           <Card className="bg-white border-2 border-amber-100 shadow-sm overflow-hidden">
             <div className="bg-amber-50 px-6 py-3 border-b border-amber-100 flex items-center gap-2">
               <ShieldAlert className="size-4 text-amber-600" />
-              <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">Aguardando Validação e Ativação</span>
+              <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">Pendências de Validação RTM</span>
             </div>
             <CardContent className="p-6 text-left space-y-4">
               <p className="text-sm text-muted-foreground">
-                Para liberar as ferramentas do Hub RTM, seu cadastro precisa ser validado pelo comercial e o produto configurado pelo suporte.
+                Para liberar as ferramentas do Hub OnFlow, seu cadastro precisa cumprir os requisitos abaixo:
               </p>
-              <div className="grid gap-3">
-                <div className="flex items-center gap-3 text-sm">
-                  <div className={cn("size-1.5 rounded-full", profile?.status ? "bg-emerald-500" : "bg-slate-300")} />
-                  <span className={cn("font-medium", profile?.status ? "text-emerald-700" : "text-muted-foreground")}>Cadastro Recebido</span>
+              <div className="grid gap-4">
+                <div className="flex items-center gap-3 text-sm p-3 rounded-lg border bg-emerald-50/50 border-emerald-100">
+                  <CheckCircle2 className="size-5 text-emerald-500" />
+                  <span className="font-medium text-emerald-800">Cadastro Recebido com Sucesso</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div className={cn("size-1.5 rounded-full", (profile?.status === 'approved' && profile?.clientCode) ? "bg-emerald-500" : "bg-amber-500 animate-pulse")} />
-                  <span className={cn("font-medium", (profile?.status === 'approved' && profile?.clientCode) ? "text-emerald-700" : "text-foreground")}>
-                    Atribuição de Código RTM (Comercial)
+                
+                <div className={cn(
+                  "flex items-center gap-3 text-sm p-3 rounded-lg border",
+                  profile?.clientCode ? "bg-emerald-50 border-emerald-100" : "bg-muted/50 border-dashed"
+                )}>
+                  {profile?.clientCode ? <CheckCircle2 className="size-5 text-emerald-500" /> : <Clock className="size-5 text-amber-500 animate-pulse" />}
+                  <span className={cn("font-medium", profile?.clientCode ? "text-emerald-800" : "text-foreground")}>
+                    {profile?.clientCode ? `ID RTM Atribuído: ${profile.clientCode}` : "Aguardando ID de Identificação (Comercial)"}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div className={cn("size-1.5 rounded-full", profile?.activeProduct ? "bg-emerald-500" : "bg-slate-300")} />
-                  <span className={cn("font-medium", profile?.activeProduct ? "text-emerald-700" : "text-muted-foreground")}>
-                    Ativação do Produto e Onboarding
+
+                <div className={cn(
+                  "flex items-center gap-3 text-sm p-3 rounded-lg border",
+                  profile?.activeProduct ? "bg-emerald-50 border-emerald-100" : "bg-muted/50 border-dashed"
+                )}>
+                  {profile?.activeProduct ? <CheckCircle2 className="size-5 text-emerald-500" /> : <Clock className="size-5 text-amber-500 animate-pulse" />}
+                  <span className={cn("font-medium", profile?.activeProduct ? "text-emerald-800" : "text-foreground")}>
+                    {profile?.activeProduct ? `Produto Vinculado: ${profile.activeProduct}` : "Aguardando Ativação de Produto (Comercial)"}
                   </span>
                 </div>
               </div>
@@ -145,7 +150,7 @@ export default function ClientPage() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1 px-3">
-                  <CheckCircle2 className="size-3" /> Acesso Validado e Ativo
+                  <CheckCircle2 className="size-3" /> Acesso Ativo
                 </Badge>
               </div>
               <h1 className="text-2xl font-bold font-headline">Olá, {profile?.displayName?.split(' ')[0]}! 👋</h1>

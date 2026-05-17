@@ -45,29 +45,31 @@ const chartData = [
 export default function AdminPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const db = useFirestore();
   
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // A visão atual depende EXCLUSIVAMENTE do que está no perfil ou no parâmetro da URL
   const currentView = searchParams.get('view') || profile?.adminType;
 
   useEffect(() => {
-    // Se o perfil carregou e não temos um adminType definido nem na URL nem no banco, 
-    // forçamos a seleção manual de perfil.
-    if (!profileLoading && profile && profile.role === 'admin' && !currentView) {
-      router.replace('/dashboard/admin/select-profile');
+    if (!userLoading && user && !profileLoading) {
+      const isAdminByEmail = user.email?.endsWith('@rtm.net.br') || user.email?.includes('admin');
+      
+      // Se é admin e não tem visão definida (no banco ou URL), vai selecionar perfil
+      if (isAdminByEmail && !currentView) {
+        router.replace('/dashboard/admin/select-profile');
+      }
     }
-  }, [profile, profileLoading, router, currentView]);
+  }, [profile, profileLoading, user, userLoading, router, currentView]);
 
-  if (profileLoading || !currentView) {
+  if (userLoading || profileLoading || !currentView) {
     return (
       <DashboardLayout role="admin">
         <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
           <Loader2 className="size-8 animate-spin text-primary" />
-          <p className="text-muted-foreground font-medium">Preparando seu painel...</p>
+          <p className="text-muted-foreground font-medium">Sincronizando ambiente administrativo...</p>
         </div>
       </DashboardLayout>
     );
@@ -95,12 +97,12 @@ export default function AdminPage() {
             <p className="text-sm text-muted-foreground mt-2">
               {currentView === 'suporte' 
                 ? "Gestão técnica e acompanhamento de implantações." 
-                : "Métricas de conversão e gestão de novos leads."}
+                : "Métricas de conversão e gestão de novos clientes."}
             </p>
           </div>
           
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold uppercase tracking-widest">
-            Conectado ao Hub RTM
+            Hub RTM Conectado
           </div>
         </div>
 
@@ -108,45 +110,45 @@ export default function AdminPage() {
           <Card className="border-l-4 border-l-primary shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                {currentView === 'suporte' ? 'Chamados Ativos' : 'Novas Leads'}
+                {currentView === 'suporte' ? 'Implantações' : 'Novos Negócios'}
               </CardTitle>
               <Users className="size-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{currentView === 'suporte' ? '128' : '45'}</div>
               <p className="text-xs text-emerald-600 flex items-center mt-1">
-                <TrendingUp className="size-3 mr-1" /> +12% desde o mês passado
+                <TrendingUp className="size-3 mr-1" /> +12% no mês
               </p>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-emerald-500 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Concluídos</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Finalizados</CardTitle>
               <CheckCircle2 className="size-4 text-emerald-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">84</div>
-              <Progress value={65.6} className="h-1 mt-3" />
+              <Progress value={65} className="h-1 mt-3" />
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-amber-500 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Em Progresso</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Em Onboarding</CardTitle>
               <Clock className="size-4 text-amber-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">32</div>
-              <p className="text-xs text-muted-foreground mt-1">Média de 14 dias para conclusão</p>
+              <p className="text-xs text-muted-foreground mt-1">SLA médio: 14 dias</p>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-destructive shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Aguardando Revisão</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Bloqueados</CardTitle>
               <AlertCircle className="size-4 text-destructive" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-destructive font-medium mt-1">Requer atenção imediata</p>
+              <p className="text-xs text-destructive font-medium mt-1">Ação requerida</p>
             </CardContent>
           </Card>
         </div>
@@ -155,9 +157,9 @@ export default function AdminPage() {
           <Card className="md:col-span-4">
             <CardHeader>
               <CardTitle className="text-lg">
-                {currentView === 'suporte' ? 'Fluxo de Atendimento' : 'Conversão Comercial'}
+                Performance Mensal
               </CardTitle>
-              <CardDescription>Métricas dos últimos 6 meses para a sua equipe.</CardDescription>
+              <CardDescription>Fluxo de trabalho dos últimos 6 meses.</CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -188,10 +190,10 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               {[
-                { name: "Empresa ABC", task: currentView === 'suporte' ? "Enviou Contrato Social" : "Nova Proposta Enviada", time: "Há 10 min", status: "em_revisao" },
-                { name: "João Pereira", task: "Concluiu etapa de Boas Vindas", time: "Há 45 min", status: "concluida" },
-                { name: "Tech Solutions", task: currentView === 'suporte' ? "Aguardando upload de Logo" : "Lead em Negociação", time: "Há 2 horas", status: "pendente" },
-                { name: "Maria Clara", task: "Enviou comprovante de residência", time: "Há 4 horas", status: "em_revisao" },
+                { name: "Banco Digital Beta", task: currentView === 'suporte' ? "Aguardando config VPN" : "Novo ID RTM gerado", time: "Agora", status: "em_revisao" },
+                { name: "Invest Corp", task: "Concluiu Boas Vindas", time: "Há 45 min", status: "concluida" },
+                { name: "Global Payments", task: "Aguardando ID Comercial", time: "Há 2 horas", status: "pendente" },
+                { name: "Tech Finance", task: "Documento Rejeitado", time: "Há 4 horas", status: "em_revisao" },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-4">
                   <div className={cn(
