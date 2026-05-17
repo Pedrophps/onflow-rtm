@@ -1,7 +1,7 @@
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Users, 
   CheckCircle2, 
@@ -44,7 +44,6 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  // Define a visão atual baseada no perfil salvo ou na URL
   const currentView = profile?.adminType || searchParams.get('view');
 
   useEffect(() => {
@@ -54,7 +53,6 @@ export default function AdminPage() {
         return;
       }
       
-      // Se não houver adminType e nem parâmetro de visualização, redireciona para a escolha de perfil
       if (!profile?.adminType && !searchParams.get('view')) {
         router.push('/dashboard/admin/select-profile');
       }
