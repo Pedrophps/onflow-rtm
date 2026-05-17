@@ -14,7 +14,14 @@ import {
   TrendingUp, 
   CheckCircle2,
   Building2,
-  Network
+  Network,
+  Database,
+  BarChart3,
+  FileCheck,
+  Lock,
+  PhoneCall,
+  CreditCard,
+  ExternalLink
 } from 'lucide-react';
 
 export default function Home() {
@@ -62,6 +69,9 @@ export default function Home() {
       {/* Positioning Section */}
       <section className="py-24 bg-primary text-white">
         <div className="container mx-auto px-6">
+          <div className="text-center mb-16 space-y-4">
+            <h2 className="text-3xl font-bold font-headline">Nosso Posicionamento</h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {[
               { title: "Identificar para integrar", desc: "Mapeamos necessidades para conexões precisas.", icon: Network },
@@ -90,7 +100,7 @@ export default function Home() {
                 Empresa da <span className="font-bold text-foreground">ANBIMA</span> e da <span className="font-bold text-foreground">B3</span>, a RTM é o principal hub integrador do setor financeiro. Atuando como agente neutro de tecnologia, ouve o mercado com propósito de viabilizar o desenvolvimento de soluções que facilitem o dia a dia operacional das instituições.
               </p>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                Fundada em 1997, evoluiu de provedora de infraestrutura de telecomunicações para o principal hub integrador do setor no país e hoje conecta mais de <span className="text-primary font-bold">850 instituições</span>, com presença em 21 estados brasileiros.
+                Fundada em 1997, como rede de comunicação crítica para o segmento financeiro, a RTM evoluiu de provedora de infraestrutura de telecomunicações para o principal hub integrador do setor no país e hoje conecta mais de <span className="text-primary font-bold">850 instituições</span>, com presença em 21 estados brasileiros.
               </p>
             </div>
             <div className="lg:col-span-5 space-y-8">
@@ -115,6 +125,70 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Serviços Críticos Section */}
+      <section className="py-24 bg-background">
+        <div className="container mx-auto px-6">
+          <div className="text-center space-y-4 mb-16">
+            <h2 className="text-4xl font-bold font-headline">Serviços Críticos</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">Conectividade e sistemas essenciais para o funcionamento do mercado.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { 
+                title: "RSFN", 
+                icon: Network, 
+                desc: "Rede do Sistema Financeiro Nacional do SPB em consórcio com a Embratel." 
+              },
+              { 
+                title: "NÚCLEA", 
+                icon: Database, 
+                desc: "Plataforma de cessão de crédito, nova cobrança, liquidação centralizada e cadastro positivo." 
+              },
+              { 
+                title: "B3", 
+                icon: BarChart3, 
+                desc: "Sistema de negociação, compensação, liquidação, depósito e registro para títulos privados." 
+              },
+              { 
+                title: "COMPE ABBC", 
+                icon: FileCheck, 
+                desc: "Compensação de cheques por imagem digital." 
+              },
+              { 
+                title: "SELIC", 
+                icon: Lock, 
+                desc: "Sistema Especial de Liquidação e Custódia para títulos públicos." 
+              },
+              { 
+                title: "Hotline / Mesa", 
+                icon: PhoneCall, 
+                desc: "Mais de 2 mil linhas privadas conectando traders para negociação em tempo real." 
+              },
+              { 
+                title: "SWIFT", 
+                icon: Globe, 
+                desc: "Acesso aos serviços SWIFT para remessas e pagamentos internacionais." 
+              },
+              { 
+                title: "TECBAN", 
+                icon: CreditCard, 
+                desc: "Movimentação bancária das transações de rede de atendimento 24 horas." 
+              },
+            ].map((serv, i) => (
+              <Card key={i} className="hover:shadow-md transition-all border-muted">
+                <CardHeader>
+                  <div className="size-10 rounded-lg bg-primary/5 flex items-center justify-center text-primary mb-2">
+                    <serv.icon className="size-5" />
+                  </div>
+                  <CardTitle className="text-lg font-bold">{serv.title}</CardTitle>
+                  <CardDescription className="text-sm leading-relaxed">{serv.desc}</CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Solutions Section */}
       <section className="py-24 bg-muted/30">
         <div className="container mx-auto px-6">
@@ -122,14 +196,14 @@ export default function Home() {
             <h2 className="text-4xl font-bold font-headline">Soluções Especializadas</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">Tecnologia de ponta para atender as demandas críticas do setor financeiro.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { title: "Data Center & Cloud", icon: Cloud, desc: "Infraestrutura robusta e segura." },
-              { title: "Cibersegurança", icon: ShieldCheck, desc: "Proteção contra ameaças digitais." },
-              { title: "Fundos de Investimentos", icon: Building2, desc: "Plataforma para gestão de ativos." },
-              { title: "Pix, Drex & Open Finance", icon: Globe, desc: "Conexão com novos ecossistemas." },
-              { title: "Blockchain as a Service", icon: Cpu, desc: "Tokenização de ativos com segurança." },
-              { title: "Rede Crítica", icon: Network, desc: "Conectividade de alto desempenho." },
+              { title: "Data Center & Cloud", icon: Cloud, desc: "Infraestrutura robusta e segura para aplicações críticas." },
+              { title: "Cibersegurança", icon: ShieldCheck, desc: "Proteção avançada contra ameaças digitais complexas." },
+              { title: "Indústria de Fundos", icon: Building2, desc: "Plataforma integrada para gestão de ativos e investimentos." },
+              { title: "Pix, Drex & Open Finance", icon: ExternalLink, desc: "Conexão direta com os novos ecossistemas de inovação." },
+              { title: "Blockchain as a Service", icon: Cpu, desc: "Tokenização de ativos com segurança e conformidade." },
+              { title: "Rede Crítica", icon: Network, desc: "Conectividade de altíssima disponibilidade e baixa latência." },
             ].map((sol, i) => (
               <Card key={i} className="hover:border-primary transition-all group border-muted shadow-sm">
                 <CardHeader>
@@ -145,7 +219,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Access Section (Existing functionality) */}
+      {/* Access Section */}
       <section className="py-24">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
