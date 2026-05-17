@@ -28,6 +28,9 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet";
 
 export default function Home() {
@@ -68,6 +71,12 @@ export default function Home() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                <SheetHeader className="text-left">
+                  <SheetTitle className="font-headline text-primary">Navegação</SheetTitle>
+                  <SheetDescription>
+                    Acesse as principais seções do portal RTM OnFlow.
+                  </SheetDescription>
+                </SheetHeader>
                 <nav className="flex flex-col gap-6 mt-10">
                   <Link href="#sobre" className="text-lg font-bold font-headline hover:text-primary transition-colors">Sobre a RTM</Link>
                   <Link href="#servicos" className="text-lg font-bold font-headline hover:text-primary transition-colors">Serviços Críticos</Link>
