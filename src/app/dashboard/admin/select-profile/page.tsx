@@ -24,7 +24,7 @@ export default function SelectProfilePage() {
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
   useEffect(() => {
-    // Se já carregou e tem perfil, vai para o dashboard
+    // Se o perfil já tem adminType no Firestore, não permite ficar nesta tela
     if (!profileLoading && profile?.adminType && !isUpdating) {
       router.replace(`/dashboard/admin?view=${profile.adminType}`);
     }
@@ -40,23 +40,23 @@ export default function SelectProfilePage() {
       role: 'admin',
       status: 'approved',
       email: user.email,
-      displayName: user.displayName || 'Administrador'
+      displayName: user.displayName || 'Administrador',
+      updatedAt: new Date().toISOString()
     };
     
-    // Gravamos primeiro, garantindo a persistência
-    setDoc(userDocRef, updateData, { merge: true })
-      .then(() => {
-        // Só navegamos após o sucesso da gravação para evitar loops
-        router.push(`/dashboard/admin?view=${adminType}`);
-      })
-      .catch(async (error) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: 'write',
-          requestResourceData: updateData
-        }));
-        setIsUpdating(false);
-      });
+    // Gravamos no Firestore e aguardamos o sucesso antes de redirecionar
+    try {
+      await setDoc(userDocRef, updateData, { merge: true });
+      // Redirecionamento forçado para a visão escolhida
+      router.push(`/dashboard/admin?view=${adminType}`);
+    } catch (error: any) {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: userDocRef.path,
+        operation: 'write',
+        requestResourceData: updateData
+      }));
+      setIsUpdating(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -68,7 +68,7 @@ export default function SelectProfilePage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="size-10 animate-spin text-primary" />
-        <p className="text-muted-foreground font-medium">Sincronizando seu perfil corporativo...</p>
+        <p className="text-muted-foreground font-medium">Sincronizando seu perfil RTM...</p>
       </div>
     );
   }
@@ -79,9 +79,11 @@ export default function SelectProfilePage() {
         <div className="space-y-4 text-center">
           <h1 className="text-4xl font-bold font-headline text-slate-900">Seja bem-vindo, <span className="text-primary">{user?.displayName?.split(' ')[0] || 'Administrador'}</span>!</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Para configurar sua conta OnFlow, selecione sua equipe de atuação na RTM.
-            <span className="block mt-2 text-sm font-semibold text-amber-600">Esta escolha será salva permanentemente no seu perfil.</span>
+            Selecione sua equipe de atuação para configurar sua visão do Hub OnFlow.
           </p>
+          <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2 rounded-lg inline-block text-sm font-semibold">
+            Esta escolha será vinculada permanentemente ao seu usuário corporativo.
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
@@ -95,12 +97,12 @@ export default function SelectProfilePage() {
               </div>
               <CardTitle className="text-2xl font-headline">Equipe de Suporte</CardTitle>
               <CardDescription className="text-base px-6 mt-2">
-                Gerencie o atendimento técnico, valide documentos e acompanhe etapas de implantação.
+                Acompanhe implantações, valide documentos técnicos e gerencie tickets.
               </CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">
               <Button className="rounded-full px-8 font-bold gap-2 group-hover:bg-primary/90 transition-all">
-                Escolher Suporte <ArrowRight className="size-4" />
+                Acessar Suporte <ArrowRight className="size-4" />
               </Button>
             </CardContent>
           </Card>
@@ -115,12 +117,12 @@ export default function SelectProfilePage() {
               </div>
               <CardTitle className="text-2xl font-headline">Equipe Comercial</CardTitle>
               <CardDescription className="text-base px-6 mt-2">
-                Aprove novos clientes, atribua IDs RTM e selecione os produtos contratados.
+                Aprove instituições, atribua IDs RTM e defina produtos contratados.
               </CardDescription>
             </CardHeader>
             <CardContent className="pb-10 text-center">
               <Button variant="secondary" className="rounded-full px-8 font-bold gap-2 transition-all">
-                Escolher Comercial <ArrowRight className="size-4" />
+                Acessar Comercial <ArrowRight className="size-4" />
               </Button>
             </CardContent>
           </Card>
