@@ -121,7 +121,7 @@ export default function Home() {
             <div className="absolute inset-0 bg-primary/5 rounded-3xl -rotate-2 -translate-x-4"></div>
             <div className="absolute inset-0 bg-secondary/5 rounded-3xl rotate-1 translate-x-4"></div>
             <Image 
-              src={heroImage?.imageUrl || "https://picsum.photos/seed/rtm-buildings/1200/800"} 
+              src={heroImage?.imageUrl || "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"} 
               alt={heroImage?.description || "RTM Hub"} 
               fill 
               className="object-cover rounded-3xl shadow-2xl relative z-10"

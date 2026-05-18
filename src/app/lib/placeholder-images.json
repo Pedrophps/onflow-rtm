@@ -9,21 +9,51 @@
     },
     {
       "id": "rtm-integration",
-      "description": "Digital connectivity and network integration",
+      "description": "Conectividade digital e integração de rede",
       "imageUrl": "https://picsum.photos/seed/rtm-conn/800/600",
       "imageHint": "network connection"
     },
     {
       "id": "avatar-admin",
-      "description": "Admin user profile picture",
+      "description": "Foto de perfil do administrador",
       "imageUrl": "https://picsum.photos/seed/admin/200/200",
       "imageHint": "profile avatar man"
     },
     {
       "id": "avatar-client",
-      "description": "Client user profile picture",
+      "description": "Foto de perfil do cliente",
       "imageUrl": "https://picsum.photos/seed/client/200/200",
       "imageHint": "profile avatar woman"
+    },
+    {
+      "id": "rtm-datacenter",
+      "description": "Sala de servidores moderna com luzes azuis",
+      "imageUrl": "https://picsum.photos/seed/rtm-server/1000/600",
+      "imageHint": "server room"
+    },
+    {
+      "id": "rtm-cybersecurity",
+      "description": "Escudo digital e cadeados brilhantes",
+      "imageUrl": "https://picsum.photos/seed/rtm-shield/800/500",
+      "imageHint": "digital security"
+    },
+    {
+      "id": "rtm-onboarding-success",
+      "description": "Equipe celebrando conquista de negócios",
+      "imageUrl": "https://picsum.photos/seed/rtm-success/1200/700",
+      "imageHint": "business success"
+    },
+    {
+      "id": "rtm-financial-data",
+      "description": "Gráficos do mercado financeiro em telas",
+      "imageUrl": "https://picsum.photos/seed/rtm-charts/900/600",
+      "imageHint": "financial data"
+    },
+    {
+      "id": "rtm-support-analyst",
+      "description": "Analista técnico trabalhando em estação",
+      "imageUrl": "https://picsum.photos/seed/rtm-support/800/600",
+      "imageHint": "tech professional"
     }
   ]
 }
