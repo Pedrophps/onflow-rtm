@@ -3,25 +3,24 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Função auxiliar otimizada para obter dados do perfil
+    // Função auxiliar para obter dados do perfil do usuário logado
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    // Verifica se o usuário tem papel de admin (Comercial ou Suporte)
+    // Verifica se o usuário é um administrador
     function isAdmin() {
       return request.auth != null && getUserData().role == 'admin';
     }
 
-    // Verifica se o usuário é especificamente do Suporte Técnico
+    // Verifica se o usuário é do suporte
     function isSupportAdmin() {
       let data = getUserData();
       return request.auth != null && data.role == 'admin' && data.adminType == 'suporte';
     }
 
     match /users/{userId} {
-      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
 
     match /products/{productId} {
@@ -40,18 +39,19 @@ service cloud.firestore {
     }
 
     match /onboardingInstances/{instanceId} {
-      allow list: if request.auth != null && (resource.data.clientId == request.auth.uid || isAdmin());
-      allow get: if request.auth != null && (resource.data.clientId == request.auth.uid || isAdmin());
+      allow read: if request.auth != null && (resource.data.clientId == request.auth.uid || isAdmin());
       allow write: if isAdmin();
     }
 
     match /interactions/{interactionId} {
-      // Cláusula para Administradores: Acesso total para auditoria e suporte
-      allow list, get: if isAdmin();
+      // Regra de Leitura (Get e List)
+      // Administradores podem ler tudo; Clientes apenas o que lhes pertence.
+      allow read: if request.auth != null && (
+        isAdmin() || 
+        resource.data.clientId == request.auth.uid
+      );
       
-      // Cláusula para Clientes: Acesso apenas às suas próprias interações
-      allow list, get: if request.auth != null && resource.data.clientId == request.auth.uid;
-      
+      // Regra de Criação
       allow create: if request.auth != null && (
         isAdmin() || 
         request.resource.data.clientId == request.auth.uid
@@ -63,8 +63,7 @@ service cloud.firestore {
     }
 
     match /submissions/{submissionId} {
-      allow list: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
-      allow get: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if request.auth != null;
       allow update, delete: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
     }
