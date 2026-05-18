@@ -4,8 +4,28 @@
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { FlowStep, UserProfile, Product, ActivationFlow, OnboardingInstance } from "@/lib/types";
-import { CheckCircle2, ChevronDown, ChevronUp, FileUp, Send, Clock, ShieldAlert, Loader2, Zap, Lock, Circle, ArrowRight, Package, LayoutGrid } from "lucide-react";
+import { FlowStep, UserProfile, Product, OnboardingInstance } from "@/lib/types";
+import { 
+  CheckCircle2, 
+  ChevronDown, 
+  ChevronUp, 
+  FileUp, 
+  Send, 
+  Clock, 
+  ShieldAlert, 
+  Loader2, 
+  Zap, 
+  Lock, 
+  Circle, 
+  ArrowRight, 
+  Package, 
+  LayoutGrid,
+  Headset,
+  User,
+  HardDrive,
+  ShieldCheck,
+  FileEdit
+} from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,7 +39,7 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 
 export default function ActivationsPage() {
-  const { user } = useUser();
+  const { user } = userUser();
   const db = useFirestore();
   const { toast } = useToast();
   
@@ -100,6 +120,18 @@ export default function ActivationsPage() {
       }));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const getResponsibleIcon = (role: string) => {
+    const iconClass = "size-3.5 text-slate-500";
+    switch (role) {
+      case 'suporte': return <Headset className={iconClass} />;
+      case 'comercial': return <ShieldCheck className={iconClass} />;
+      case 'cliente': return <User className={iconClass} />;
+      case 'infraestrutura': return <HardDrive className={iconClass} />;
+      case 'compliance': return <CheckCircle2 className={iconClass} />;
+      default: return <User className={iconClass} />;
     }
   };
 
@@ -194,6 +226,16 @@ export default function ActivationsPage() {
               <div className="space-y-8">
                 {/* Header do Produto Selecionado */}
                 <div className="bg-white rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
+                  {!selectedInstance.flowId && (
+                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-12 text-center space-y-4">
+                      <Settings2 className="size-12 text-amber-500 animate-spin-slow" />
+                      <div className="space-y-1">
+                        <h3 className="text-xl font-bold">Aguardando Configuração do Suporte</h3>
+                        <p className="text-sm text-muted-foreground max-w-md">Nossa equipe técnica está definindo o roteiro de etapas para este produto. Em breve você poderá acompanhar a jornada completa aqui.</p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="absolute top-0 right-0 p-8 opacity-5">
                     <Zap className="size-32 text-primary" />
                   </div>
@@ -216,11 +258,11 @@ export default function ActivationsPage() {
 
                 {/* Lista de Etapas */}
                 <div className="space-y-6">
-                  <h3 className="text-lg font-bold font-headline flex items-center gap-2">Fluxo de Trabalho</h3>
+                  <h3 className="text-lg font-bold font-headline flex items-center gap-2">Fluxo de Trabalho Técnico</h3>
                   
                   {stepsLoading ? (
                     <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" /></div>
-                  ) : (
+                  ) : steps.length > 0 ? (
                     <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
                       {steps.map((step) => {
                         const isCompleted = step.order < currentStepOrder;
@@ -260,7 +302,8 @@ export default function ActivationsPage() {
                                       "text-base font-bold",
                                       isCompleted ? "text-slate-400" : "text-slate-800"
                                     )}>{step.name}</CardTitle>
-                                    <Badge variant="secondary" className="text-[9px] uppercase font-black bg-slate-100">
+                                    <Badge variant="secondary" className="text-[9px] uppercase font-bold bg-slate-50 text-slate-600 gap-1">
+                                      {getResponsibleIcon(step.responsible)}
                                       {step.responsible}
                                     </Badge>
                                   </div>
@@ -273,12 +316,23 @@ export default function ActivationsPage() {
                               {isExpanded && !isFuture && (
                                 <CardContent className="p-5 pt-0 border-t bg-slate-50/30">
                                   <div className="mt-5 space-y-6">
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                       <div className="space-y-1">
+                                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SLA Estimado</p>
+                                          <p className="text-xs font-bold flex items-center gap-2"><Clock className="size-3" /> {step.estimatedTimeInHours} horas úteis</p>
+                                       </div>
+                                       <div className="space-y-1">
+                                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Tipo de Interação</p>
+                                          <p className="text-xs font-bold flex items-center gap-2"><FileEdit className="size-3" /> {step.type === 'upload' ? 'Upload de Evidência' : 'Formulário Técnico'}</p>
+                                       </div>
+                                    </div>
+
                                     {!isClientResponsible ? (
                                       <div className="p-4 rounded-2xl bg-white border border-slate-200 flex gap-3 items-center">
                                         <Loader2 className="size-5 text-primary animate-spin shrink-0" />
                                         <div className="space-y-0.5">
-                                          <p className="text-xs font-bold text-slate-600 uppercase">Processamento RTM</p>
-                                          <p className="text-[11px] text-slate-500">Esta etapa está sendo tratada internamente pela RTM. Notificaremos você ao concluir.</p>
+                                          <p className="text-xs font-bold text-slate-600 uppercase">Processamento RTM ({step.responsible})</p>
+                                          <p className="text-[11px] text-slate-500">Esta etapa está sendo tratada internamente. Notificaremos você ao concluir.</p>
                                         </div>
                                       </div>
                                     ) : isCompleted ? (
@@ -299,11 +353,7 @@ export default function ActivationsPage() {
                                             <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold tracking-tighter">PDF, PNG ou JPG</p>
                                           </div>
                                         </div>
-                                        <div className="flex justify-between items-center pt-2">
-                                          <div className="flex items-center gap-2 text-amber-600">
-                                            <Clock className="size-4" />
-                                            <span className="text-[10px] font-bold uppercase">SLA: {step.estimatedTimeInHours}h</span>
-                                          </div>
+                                        <div className="flex justify-end pt-2">
                                           <Button 
                                             size="sm" 
                                             className="gap-2 rounded-full px-8 font-bold shadow-md"
@@ -323,6 +373,11 @@ export default function ActivationsPage() {
                           </div>
                         );
                       })}
+                    </div>
+                  ) : (
+                    <div className="p-10 text-center border-2 border-dashed rounded-3xl bg-slate-50/50">
+                      <Settings2 className="size-8 mx-auto text-slate-300 mb-2" />
+                      <p className="text-sm text-muted-foreground">O roteiro técnico ainda não possui etapas cadastradas.</p>
                     </div>
                   )}
                 </div>

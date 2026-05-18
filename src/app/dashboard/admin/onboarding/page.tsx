@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ClipboardList, 
   CheckCircle2, 
@@ -23,13 +24,17 @@ import {
   UserCheck,
   Info,
   ChevronRight,
-  Phone
+  Phone,
+  Settings2,
+  GitFork
 } from "lucide-react";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
-import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, limit } from "firebase/firestore";
+import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, limit, getDocs } from "firebase/firestore";
 import { useMemo, useState } from "react";
-import { UserProfile, OnboardingInstance, ActivationFlow } from "@/lib/types";
+import { UserProfile, OnboardingInstance, ActivationFlow, Product } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function OnboardingManagement() {
   const db = useFirestore();
@@ -43,6 +48,12 @@ export default function OnboardingManagement() {
   const [activeTab, setActiveTab] = useState("available");
   const [selectedClientForFicha, setSelectedClientForFicha] = useState<UserProfile | null>(null);
   const [isFichaOpen, setIsFichaOpen] = useState(false);
+  
+  const [isFlowSelectionOpen, setIsFlowSelectionOpen] = useState(false);
+  const [targetInstance, setTargetInstance] = useState<OnboardingInstance | null>(null);
+  const [availableFlows, setAvailableFlows] = useState<ActivationFlow[]>([]);
+  const [selectedFlowId, setSelectedFlowId] = useState("");
+  const [isSavingFlow, setIsSavingFlow] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
 
   // 1. Buscar Clientes Aprovados
@@ -54,12 +65,10 @@ export default function OnboardingManagement() {
   const { data: approvedClients, loading: clientsLoading } = useCollection<UserProfile>(clientsQuery);
 
   // 2. Buscar Instâncias de Onboarding
-  const instancesQuery = useMemo(() => query(
-    collection(db, "onboardingInstances")
-  ), [db]);
+  const instancesQuery = useMemo(() => query(collection(db, "onboardingInstances")), [db]);
   const { data: instances, loading: instancesLoading } = useCollection<OnboardingInstance>(instancesQuery);
 
-  // 3. Cruzamento para Suporte: Disponíveis
+  // 3. Cruzamento para Suporte: Disponíveis (Não assumidos)
   const availableActivities = useMemo(() => {
     return approvedClients.filter(client => {
       const instance = instances.find(inst => inst.clientId === client.id);
@@ -80,8 +89,10 @@ export default function OnboardingManagement() {
         ...client,
         activationStatus: instance ? (instance.techId ? 'assumido' : 'aguardando') : 'pendente_inicio',
         techId: instance?.techId || null,
+        techName: instance?.techName || null,
         instanceId: instance?.id || null,
-        currentStep: instance?.currentStepOrder || 1
+        currentStep: instance?.currentStepOrder || 0,
+        flowSet: !!instance?.flowId
       };
     });
   }, [approvedClients, instances]);
@@ -89,19 +100,10 @@ export default function OnboardingManagement() {
   const handleAssumeActivity = async (client: UserProfile) => {
     if (!user || !isSupport) return;
 
-    // Buscar o fluxo publicado para este produto
-    const flowsQuery = query(
-      collection(db, "products", client.activeProduct!, "activationFlows"),
-      where("published", "==", true),
-      limit(1)
-    );
-    
-    // Simplificando: Criamos a instância mesmo sem fluxo pronto, mas tentamos vincular o flowId
     const instanceData = {
       clientId: client.id,
       institutionName: client.institutionName || client.displayName,
       productId: client.activeProduct,
-      flowId: 'default-flow', // Em um cenário real, buscaríamos o ID dinamicamente
       techId: user.uid,
       techName: user.displayName || 'Analista Suporte',
       status: 'active',
@@ -112,7 +114,6 @@ export default function OnboardingManagement() {
 
     try {
       const existingInstance = instances.find(inst => inst.clientId === client.id);
-      
       if (existingInstance?.id) {
         await updateDoc(doc(db, "onboardingInstances", existingInstance.id), {
           techId: user.uid,
@@ -130,12 +131,47 @@ export default function OnboardingManagement() {
       });
       setActiveTab("my");
     } catch (e) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao assumir",
-        description: "Não foi possível vincular seu perfil a esta atividade."
-      });
+      toast({ variant: "destructive", title: "Erro", description: "Falha ao assumir atividade." });
     }
+  };
+
+  const openFlowSelection = async (instance: OnboardingInstance) => {
+    setTargetInstance(instance);
+    setSelectedFlowId("");
+    
+    // Buscar fluxos reais para o produto
+    const flowsRef = collection(db, "products", instance.productId, "activationFlows");
+    const q = query(flowsRef, where("published", "==", true));
+    const snapshot = await getDocs(q);
+    const flows = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ActivationFlow));
+    
+    setAvailableFlows(flows);
+    setIsFlowSelectionOpen(true);
+  };
+
+  const handleSetFlow = async () => {
+    if (!targetInstance?.id || !selectedFlowId || isSavingFlow) return;
+    setIsSavingFlow(true);
+
+    const instanceRef = doc(db, "onboardingInstances", targetInstance.id);
+    const updateData = {
+      flowId: selectedFlowId,
+      updatedAt: serverTimestamp()
+    };
+
+    updateDoc(instanceRef, updateData)
+      .then(() => {
+        toast({ title: "Fluxo Definido", description: "O onboarding agora segue o roteiro técnico selecionado." });
+        setIsFlowSelectionOpen(false);
+      })
+      .catch((e) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: instanceRef.path,
+          operation: 'update',
+          requestResourceData: updateData
+        }));
+      })
+      .finally(() => setIsSavingFlow(false));
   };
 
   const handleAdvanceStep = async (instanceId: string, currentStep: number) => {
@@ -148,16 +184,9 @@ export default function OnboardingManagement() {
         currentStepOrder: currentStep + 1,
         updatedAt: serverTimestamp()
       });
-      toast({
-        title: "Etapa Avançada",
-        description: `O processo evoluiu para a etapa ${currentStep + 1}.`
-      });
+      toast({ title: "Etapa Avançada" });
     } catch (e) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao avançar",
-        description: "Não foi possível atualizar o progresso."
-      });
+      toast({ variant: "destructive", title: "Erro ao avançar" });
     } finally {
       setIsAdvancing(false);
     }
@@ -172,14 +201,7 @@ export default function OnboardingManagement() {
   };
 
   if (clientsLoading || instancesLoading) {
-    return (
-      <DashboardLayout role="admin">
-        <div className="flex flex-col items-center justify-center p-20 gap-4">
-          <Loader2 className="animate-spin text-primary size-10" />
-          <p className="text-muted-foreground animate-pulse">Carregando ficha técnica dos clientes...</p>
-        </div>
-      </DashboardLayout>
-    );
+    return <DashboardLayout role="admin"><div className="flex flex-col items-center justify-center p-20 gap-4"><Loader2 className="animate-spin text-primary size-10" /></div></DashboardLayout>;
   }
 
   return (
@@ -188,9 +210,7 @@ export default function OnboardingManagement() {
         <div>
           <h1 className="text-3xl font-bold font-headline text-slate-900">Gestão de Onboarding</h1>
           <p className="text-muted-foreground">
-            {isSupport 
-              ? "Assuma a responsabilidade técnica de clientes aprovados pelo comercial." 
-              : "Acompanhe o início da jornada técnica dos seus clientes."}
+            {isSupport ? "Assuma e configure a jornada técnica de clientes aprovados." : "Monitore a inicialização técnica dos clientes ativados."}
           </p>
         </div>
 
@@ -231,7 +251,6 @@ export default function OnboardingManagement() {
                                 <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest">Colaborador (Contato)</p>
                                 <p className="font-bold flex items-center gap-1.5"><FileText className="size-3 text-slate-400" /> {client.displayName}</p>
                                 <p className="text-slate-500 flex items-center gap-1.5"><Mail className="size-3 text-slate-400" /> {client.email}</p>
-                                <p className="text-slate-500 flex items-center gap-1.5"><Phone className="size-3 text-slate-400" /> {client.phoneNumber || 'Pendente'}</p>
                               </div>
                               <div className="space-y-1">
                                 <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest">Aprovação Comercial</p>
@@ -262,12 +281,16 @@ export default function OnboardingManagement() {
               <div className="grid gap-4 md:grid-cols-2">
                 {myOnboardings.length > 0 ? (
                   myOnboardings.map((inst) => (
-                    <Card key={inst.id} className="hover:border-primary/40 transition-all overflow-hidden">
-                      <CardHeader className="bg-slate-50 p-4 border-b">
-                        <div className="flex justify-between items-center">
-                          <Badge className="bg-primary text-[9px] uppercase">Em Execução Técnica</Badge>
-                          <span className="text-[10px] text-muted-foreground font-bold">Etapa Atual: {inst.currentStepOrder}</span>
+                    <Card key={inst.id} className="hover:border-primary/40 transition-all overflow-hidden border-2">
+                      <CardHeader className="bg-slate-50 p-4 border-b flex flex-row justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          {inst.flowId ? (
+                             <Badge className="bg-emerald-500 text-[9px] uppercase">Roteiro Ativo</Badge>
+                          ) : (
+                             <Badge variant="destructive" className="text-[9px] uppercase animate-pulse">Pendente Seleção de Fluxo</Badge>
+                          )}
                         </div>
+                        <span className="text-[10px] text-muted-foreground font-bold">Início: {new Date(inst.startedAt).toLocaleDateString()}</span>
                       </CardHeader>
                       <CardContent className="p-6 space-y-6">
                         <div className="space-y-1">
@@ -276,22 +299,33 @@ export default function OnboardingManagement() {
                             <Briefcase className="size-3.5" /> Ativação: <strong>{inst.productId}</strong>
                           </p>
                         </div>
-                        <div className="flex gap-2">
+                        
+                        <div className="grid grid-cols-2 gap-2">
                           <Button 
                             variant="outline" 
-                            className="flex-1 rounded-xl font-bold border-2 text-xs"
+                            className="w-full rounded-xl font-bold text-xs"
                             onClick={() => handleViewFicha(inst.clientId)}
                           >
-                            Visualizar Ficha
+                            Ver Ficha
                           </Button>
-                          <Button 
-                            className="flex-1 rounded-xl font-bold text-xs gap-2"
-                            onClick={() => handleAdvanceStep(inst.id!, inst.currentStepOrder)}
-                            disabled={isAdvancing}
-                          >
-                            {isAdvancing ? <Loader2 className="size-3 animate-spin" /> : <ChevronRight className="size-3" />}
-                            Avançar Etapa
-                          </Button>
+                          {inst.flowId ? (
+                            <Button 
+                              className="w-full rounded-xl font-bold text-xs gap-2"
+                              onClick={() => handleAdvanceStep(inst.id!, inst.currentStepOrder)}
+                              disabled={isAdvancing}
+                            >
+                              {isAdvancing ? <Loader2 className="size-3 animate-spin" /> : <ChevronRight className="size-3" />}
+                              Etapa {inst.currentStepOrder + 1}
+                            </Button>
+                          ) : (
+                            <Button 
+                              className="w-full rounded-xl font-bold text-xs gap-2 bg-amber-600 hover:bg-amber-700"
+                              onClick={() => openFlowSelection(inst)}
+                            >
+                              <Settings2 className="size-3" />
+                              Definir Fluxo
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -307,7 +341,7 @@ export default function OnboardingManagement() {
         ) : (
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Monitoramento de Ativação</CardTitle>
+              <CardTitle className="text-lg">Monitoramento de Ativação (Comercial)</CardTitle>
               <CardDescription>Acompanhe se o time de suporte já iniciou o processo técnico de seus clientes.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -317,8 +351,8 @@ export default function OnboardingManagement() {
                     <TableHead>Instituição</TableHead>
                     <TableHead>Produto</TableHead>
                     <TableHead>Status Ativação</TableHead>
-                    <TableHead>Etapa Atual</TableHead>
-                    <TableHead>Analista Responsável</TableHead>
+                    <TableHead>Progresso</TableHead>
+                    <TableHead>Responsável Técnico</TableHead>
                     <TableHead className="text-right">Acompanhar</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -327,23 +361,30 @@ export default function OnboardingManagement() {
                     <TableRow key={item.id}>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="font-bold">{item.institutionName}</span>
+                          <span className="font-bold text-xs">{item.institutionName}</span>
                           <span className="text-[10px] text-muted-foreground">{item.cnpj}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-xs font-medium">{item.activeProduct}</TableCell>
+                      <TableCell className="text-[11px] font-bold text-primary">{item.activeProduct}</TableCell>
                       <TableCell>
-                        <Badge variant={item.activationStatus === 'assumido' ? 'default' : 'secondary'} className="text-[10px] uppercase">
+                        <Badge variant={item.activationStatus === 'assumido' ? 'default' : 'secondary'} className="text-[9px] uppercase">
                           {item.activationStatus === 'assumido' ? 'Em Atendimento' : 'Aguardando Suporte'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs font-bold text-slate-600">
-                        {item.activationStatus === 'assumido' ? `Etapa ${item.currentStep}` : '-'}
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                           <span className={cn(
+                             "text-[11px] font-bold",
+                             item.flowSet ? "text-emerald-600" : "text-amber-500"
+                           )}>
+                             {item.flowSet ? `Etapa ${item.currentStep}` : 'Aguardando Fluxo'}
+                           </span>
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2 text-xs">
+                        <div className="flex items-center gap-2 text-[11px]">
                           {item.techId ? (
-                            <><UserCheck className="size-3.5 text-emerald-500" /> <span className="font-medium text-slate-700">Analista Vinculado</span></>
+                            <><UserCheck className="size-3.5 text-emerald-500" /> <span className="font-medium text-slate-700">{item.techName}</span></>
                           ) : (
                             <span className="text-muted-foreground italic">Pendente</span>
                           )}
@@ -364,6 +405,57 @@ export default function OnboardingManagement() {
           </Card>
         )}
       </div>
+
+      {/* Diálogo de Seleção de Fluxo */}
+      <Dialog open={isFlowSelectionOpen} onOpenChange={setIsFlowSelectionOpen}>
+        <DialogContent className="rounded-3xl">
+          <DialogHeader>
+            <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-2">
+              <GitFork className="size-6" />
+            </div>
+            <DialogTitle>Definir Roteiro Técnico</DialogTitle>
+            <DialogDescription>
+              Selecione o fluxo de ativação que será aplicado à instituição <strong>{targetInstance?.institutionName}</strong> para o produto <strong>{targetInstance?.productId}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6 space-y-4">
+            <div className="space-y-2">
+              <Label>Fluxos Publicados Disponíveis</Label>
+              <Select value={selectedFlowId} onValueChange={setSelectedFlowId}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Selecione o roteiro de etapas..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableFlows.map(f => (
+                    <SelectItem key={f.id} value={f.id!}>
+                      <div className="flex flex-col text-left py-1">
+                        <span className="font-bold text-sm">{f.name}</span>
+                        <span className="text-[10px] text-muted-foreground truncate max-w-[300px]">{f.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  {availableFlows.length === 0 && (
+                    <div className="p-4 text-center text-xs text-muted-foreground italic">
+                      Nenhum fluxo publicado para este produto.
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="p-4 rounded-xl bg-slate-50 border text-xs text-muted-foreground flex gap-3">
+              <Info className="size-4 shrink-0 text-primary" />
+              <p>Ao selecionar um fluxo, todas as etapas pré-cadastradas ficarão visíveis para o cliente e o comercial acompanhar o progresso em tempo real.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsFlowSelectionOpen(false)}>Cancelar</Button>
+            <Button disabled={!selectedFlowId || isSavingFlow} onClick={handleSetFlow} className="font-bold px-8">
+              {isSavingFlow ? <Loader2 className="size-4 animate-spin mr-2" /> : <CheckCircle2 className="size-4 mr-2" />}
+              Ativar Roteiro
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Diálogo da Ficha Cadastral */}
       <Dialog open={isFichaOpen} onOpenChange={setIsFichaOpen}>
@@ -406,7 +498,7 @@ export default function OnboardingManagement() {
 
             <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-between">
               <div className="space-y-1">
-                <Label className="text-[10px] uppercase font-bold text-primary tracking-widest">Produto Ativo</Label>
+                <Label className="text-[10px] uppercase font-bold text-primary tracking-widest">Produto Contratado</Label>
                 <div className="flex items-center gap-2 font-black text-xl text-primary">
                   <Zap className="size-5 fill-current" />
                   {selectedClientForFicha?.activeProduct || 'Não atribuído'}
@@ -417,20 +509,6 @@ export default function OnboardingManagement() {
                 <p className="font-mono font-black text-lg bg-white px-3 py-1 rounded-lg border border-primary/20 shadow-sm">
                   {selectedClientForFicha?.clientCode || 'Pendente'}
                 </p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="text-xs font-black uppercase text-slate-400 tracking-[0.2em] border-b pb-2">Histórico Operacional</h4>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground flex items-center gap-2"><Info className="size-3" /> Cadastro Criado em</span>
-                  <span className="font-bold">{selectedClientForFicha?.createdAt ? new Date(selectedClientForFicha.createdAt).toLocaleString() : '-'}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground flex items-center gap-2"><UserCheck className="size-3" /> Aprovado Comercial em</span>
-                  <span className="font-bold">{selectedClientForFicha?.approvedAt ? new Date(selectedClientForFicha.approvedAt).toLocaleString() : '-'}</span>
-                </div>
               </div>
             </div>
           </div>
