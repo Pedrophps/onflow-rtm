@@ -1,4 +1,3 @@
-
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -25,7 +24,8 @@ import {
   HardDrive,
   ShieldCheck,
   FileEdit,
-  Settings2
+  Settings2,
+  ClipboardList
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,6 @@ export default function ActivationsPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
   
-  // 1. Buscar Todas as Instâncias de Onboarding do Cliente
   const instancesQuery = useMemo(() => 
     user ? query(
       collection(db, "onboardingInstances"),
@@ -62,16 +61,13 @@ export default function ActivationsPage() {
   [db, user]);
   const { data: instances, loading: instancesLoading } = useCollection<OnboardingInstance>(instancesQuery);
 
-  // 2. Instância Selecionada
   const selectedInstance = useMemo(() => 
     instances.find(inst => inst.id === selectedInstanceId), 
   [instances, selectedInstanceId]);
 
-  // Buscar Produtos para resolver nomes amigáveis e IDs
   const productsQuery = useMemo(() => (user ? query(collection(db, "products")) : null), [db, user]);
   const { data: dbProducts } = useCollection<Product>(productsQuery);
 
-  // 3. Resolver ID do Produto (Garante que busca na subcoleção técnica correta)
   useEffect(() => {
     if (selectedInstance && dbProducts.length > 0) {
       const productId = selectedInstance.productId;
@@ -93,7 +89,6 @@ export default function ActivationsPage() {
   const productRef = useMemo(() => realProductId ? doc(db, "products", realProductId) : null, [db, realProductId]);
   const { data: product } = useDoc<Product>(productRef);
 
-  // 4. Buscar Etapas do Fluxo (Transparência total)
   const stepsQuery = useMemo(() => 
     (realProductId && selectedInstance?.flowId) ? query(
       collection(db, "products", realProductId, "activationFlows", selectedInstance.flowId, "steps")
@@ -217,7 +212,7 @@ export default function ActivationsPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <CardTitle className="text-xl mb-1 truncate">{inst.productId}</CardTitle>
+                      <CardTitle className="text-xl mb-1 truncate">{inst.productName || inst.productId}</CardTitle>
                       <CardDescription className="text-xs">Iniciado em: {new Date(inst.startedAt).toLocaleDateString()}</CardDescription>
                     </div>
                     <Button variant="ghost" className="w-full justify-between font-bold text-xs group-hover:text-primary p-0">
@@ -237,7 +232,6 @@ export default function ActivationsPage() {
           <TabsContent value="journey" className="animate-in fade-in slide-in-from-right duration-500">
             {selectedInstance ? (
               <div className="space-y-8">
-                {/* Header do Progresso */}
                 <div className="bg-white rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
                   {!selectedInstance.flowId && (
                     <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-12 text-center space-y-4">
@@ -254,7 +248,7 @@ export default function ActivationsPage() {
                       <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 px-3 py-1 font-bold">
                         <CheckCircle2 className="size-3.5" /> JORNADA ATIVA
                       </Badge>
-                      <h2 className="text-3xl font-bold font-headline">{product?.name || selectedInstance.productId}</h2>
+                      <h2 className="text-3xl font-bold font-headline">{product?.name || selectedInstance.productName || selectedInstance.productId}</h2>
                       <p className="text-muted-foreground font-medium">Analista RTM: <span className="text-foreground font-bold">{selectedInstance.techName || 'Pendente'}</span></p>
                     </div>
                     <div className="text-right">
@@ -265,7 +259,6 @@ export default function ActivationsPage() {
                   <Progress value={progress} className="h-3 rounded-full" />
                 </div>
 
-                {/* Lista de Etapas (Transparência Total) */}
                 <div className="space-y-6">
                   <h3 className="text-lg font-bold font-headline flex items-center gap-2">
                     <ClipboardList className="size-5 text-primary" /> Etapas do Projeto
