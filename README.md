@@ -122,4 +122,10 @@ A arquitetura é dividida em:
 - **Garantia**: O formulário agora valida se o e-mail não é `@rtm.net.br` para exigir os dados institucionais.
 
 ---
+
+## [UPDATE - V1.11 - AUTO-PREENCHIMENTO INSTITUCIONAL]
+- **Melhoria**: Atualização da função `fillFields` na tela de Login.
+- **Lógica**: Agora os botões de atalho preenchem também **Nome do Usuário**, **Instituição** e **CNPJ**.
+- **Objetivo**: Garantir que o teste do formulário de Cadastro seja tão fluido quanto o de Login, sem perda de campos críticos.
+---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*

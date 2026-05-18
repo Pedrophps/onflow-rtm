@@ -66,10 +66,12 @@ export default function LoginPage() {
     }
   }, [currentUser, authLoading, fastRedirect]);
 
-  const fillFields = (e: string, p: string) => {
+  const fillFields = (e: string, p: string, n: string = '', i: string = '', c: string = '') => {
     setEmail(e);
     setPassword(p);
-    setActiveTab('login');
+    setName(n);
+    setInstitutionName(i);
+    setCnpj(c);
   };
 
   const handleSignUp = async (e?: React.FormEvent) => {
@@ -260,7 +262,7 @@ export default function LoginPage() {
                 variant="outline" 
                 size="sm" 
                 className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-primary/50 transition-colors"
-                onClick={() => fillFields('suporte@rtm.net.br', '123456')}
+                onClick={() => fillFields('suporte@rtm.net.br', '123456', 'Analista Suporte', 'RTM', '')}
               >
                 <Headset className="size-3" />
                 Suporte
@@ -269,7 +271,7 @@ export default function LoginPage() {
                 variant="outline" 
                 size="sm" 
                 className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-primary/50 transition-colors"
-                onClick={() => fillFields('comercial@rtm.net.br', '123456')}
+                onClick={() => fillFields('comercial@rtm.net.br', '123456', 'Gerente Comercial', 'RTM', '')}
               >
                 <ShieldCheck className="size-3" />
                 Comercial
@@ -278,7 +280,7 @@ export default function LoginPage() {
                 variant="outline" 
                 size="sm" 
                 className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-primary/50 transition-colors"
-                onClick={() => fillFields('cliente@exemplo.com.br', '123456')}
+                onClick={() => fillFields('cliente@exemplo.com.br', '123456', 'João da Silva', 'Banco Exemplo S.A.', '12.345.678/0001-90')}
               >
                 <UserCircle className="size-3" />
                 Cliente
