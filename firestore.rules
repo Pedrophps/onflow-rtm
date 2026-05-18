@@ -3,17 +3,23 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    function isSupportAdmin() {
-      return request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.adminType == 'suporte';
+    // Função auxiliar para obter dados do perfil do usuário logado
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
+    // Verifica se o usuário é um Administrador (Suporte ou Comercial)
     function isAdmin() {
-      return request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return request.auth != null && getUserData().role == 'admin';
+    }
+
+    // Verifica se o usuário é especificamente do Suporte Técnico
+    function isSupportAdmin() {
+      return request.auth != null && getUserData().adminType == 'suporte';
     }
 
     match /users/{userId} {
+      // Admins podem listar e ler qualquer usuário. Clientes leem apenas seu próprio perfil.
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
       allow write: if request.auth != null && request.auth.uid == userId;
     }
@@ -34,16 +40,22 @@ service cloud.firestore {
     }
 
     match /onboardingInstances/{instanceId} {
-      allow read: if request.auth != null && (resource.data.clientId == request.auth.uid || isAdmin());
-      allow write: if isSupportAdmin();
+      // Listagem: Admins veem tudo. Clientes precisam filtrar por seu próprio ID (regra implícita do Firestore).
+      allow list: if request.auth != null && (isAdmin() || resource.data.clientId == request.auth.uid);
+      // Get: Leitura individual permitida para o dono ou admins.
+      allow get: if request.auth != null && (isAdmin() || resource.data.clientId == request.auth.uid);
+      // Escrita: Qualquer Admin pode interagir/assumir/avançar conforme a nova regra.
+      allow write: if isAdmin();
     }
 
     match /submissions/{submissionId} {
+      // Submissões seguem a mesma lógica: visíveis para o dono e para admins.
       allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if request.auth != null;
       allow update, delete: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
+    // Regra legado para compatibilidade de testes
     match /onboardingFlows/{flowId} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
