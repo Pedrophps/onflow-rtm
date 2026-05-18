@@ -1,4 +1,3 @@
-
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,8 @@ import {
   ExternalLink,
   Menu,
   Wifi,
-  ShieldAlert
+  ShieldAlert,
+  Terminal
 } from 'lucide-react';
 import {
   Sheet,
@@ -348,6 +348,16 @@ export default function Home() {
               <span>Diagnóstico de Rede</span>
             </Link>
             
+            <Link 
+              href="/debug/suite" 
+              className="group flex flex-col items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary transition-colors"
+            >
+              <div className="size-8 rounded-full bg-slate-50 group-hover:bg-primary/5 flex items-center justify-center transition-colors">
+                <Terminal className="size-4" />
+              </div>
+              <span>Test Suite & Seeding</span>
+            </Link>
+
             <Link 
               href="/debug/integration-test" 
               className="group flex flex-col items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors"
