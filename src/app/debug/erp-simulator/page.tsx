@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -9,9 +10,10 @@ import { Label } from '@/components/ui/label';
 import { parseERPEmail, type ParseERPEmailOutput } from '@/ai/flows/parse-erp-email-flow';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, query, where, getDocs, addDoc, setDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { Loader2, Mail, Zap, CheckCircle2, AlertTriangle, ArrowRight, Database } from 'lucide-react';
+import { Loader2, Mail, Zap, CheckCircle2, AlertTriangle, ArrowRight, Database, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 export default function ERPSimulatorPage() {
   const db = useFirestore();
@@ -42,24 +44,21 @@ ERP OnFlow`);
     setExtractedData(null);
 
     try {
-      // 1. IA extrai os dados do e-mail
       const result = await parseERPEmail({ emailSubject: subject, emailBody: body });
       setExtractedData(result);
 
-      // 2. Busca ou Cria o Usuário/Instituição
       const usersRef = collection(db, "users");
       const q = query(usersRef, where("cnpj", "==", result.cnpj));
       const querySnapshot = await getDocs(q);
       
       let clientId = "";
       if (querySnapshot.empty) {
-        // Cria usuário pendente se não existir
         const newClientRef = doc(collection(db, "users"));
         clientId = newClientRef.id;
         await setDoc(newClientRef, {
           institutionName: result.institutionName,
           displayName: "Responsável Alpha",
-          email: `contato@${result.cnpj}.com.br`,
+          email: `contato@${result.cnpj.replace(/\D/g, '')}.com.br`,
           cnpj: result.cnpj,
           role: "client",
           status: "pending",
@@ -69,7 +68,6 @@ ERP OnFlow`);
         clientId = querySnapshot.docs[0].id;
       }
 
-      // 3. Cria a Instância de Onboarding
       const instancesRef = collection(db, "onboardingInstances");
       await addDoc(instancesRef, {
         clientId: clientId,
@@ -84,7 +82,6 @@ ERP OnFlow`);
         priority: result.priority
       });
 
-      // 4. Log do Sistema
       await addDoc(collection(db, "system_logs"), {
         message: `Nova ativação automática via ERP: ${result.institutionName}`,
         type: 'success',
@@ -113,16 +110,24 @@ ERP OnFlow`);
             <h1 className="text-3xl font-bold font-headline text-slate-900 flex items-center gap-3">
               <Mail className="size-8 text-primary" /> Simulador de Entrada ERP
             </h1>
-            <p className="text-muted-foreground">Teste como a IA transforma um e-mail desestruturado em um processo OnFlow.</p>
+            <p className="text-muted-foreground text-sm">Converta e-mails em processos automatizados usando Genkit IA.</p>
           </div>
-          <Button variant="ghost" asChild><Link href="/debug/suite">Voltar</Link></Button>
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex flex-col items-end">
+              <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest flex items-center gap-1">
+                <ShieldCheck className="size-3" /> IA Free Tier Active
+              </span>
+              <span className="text-[9px] text-muted-foreground italic">Gemini 1.5 Flash</span>
+            </div>
+            <Button variant="ghost" asChild><Link href="/debug/suite">Voltar</Link></Button>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
           <Card className="shadow-lg border-none">
             <CardHeader className="bg-slate-900 text-white rounded-t-xl">
               <CardTitle className="text-sm uppercase tracking-widest flex items-center gap-2">
-                <Mail className="size-4" /> Conteúdo do E-mail
+                <Mail className="size-4" /> Conteúdo do E-mail (Raw Text)
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
@@ -133,18 +138,18 @@ ERP OnFlow`);
               <div className="space-y-2">
                 <Label>Corpo do E-mail</Label>
                 <Textarea 
-                  className="min-h-[300px] font-mono text-xs" 
+                  className="min-h-[300px] font-mono text-xs leading-relaxed" 
                   value={body} 
                   onChange={e => setBody(e.target.value)} 
                 />
               </div>
               <Button 
-                className="w-full h-12 font-bold gap-2" 
+                className="w-full h-12 font-bold gap-2 shadow-lg" 
                 onClick={handleSimulate}
                 disabled={isProcessing}
               >
                 {isProcessing ? <Loader2 className="animate-spin" /> : <Zap className="size-4 fill-current" />}
-                Processar e Criar Ativação
+                Processar com IA RTM
               </Button>
             </CardContent>
           </Card>
@@ -153,13 +158,13 @@ ERP OnFlow`);
             <Card className="border-2 border-dashed bg-white">
               <CardHeader>
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <Database className="size-4 text-primary" /> Resultado da Extração (IA)
+                  <Database className="size-4 text-primary" /> Extração de Dados
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {extractedData ? (
                   <div className="space-y-4 animate-in fade-in zoom-in">
-                    <div className="p-4 rounded-xl bg-slate-50 space-y-3">
+                    <div className="p-4 rounded-xl bg-slate-50 border space-y-3">
                       <div className="flex justify-between border-b pb-2">
                         <span className="text-[10px] font-bold text-muted-foreground uppercase">Instituição</span>
                         <span className="text-sm font-bold">{extractedData.institutionName}</span>
@@ -173,20 +178,20 @@ ERP OnFlow`);
                         <span className="text-sm font-bold">{extractedData.productName}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Prioridade</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Prioridade IA</span>
                         <span className={cn(
                           "text-[10px] font-black uppercase px-2 py-0.5 rounded",
                           extractedData.priority === 'high' ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
                         )}>{extractedData.priority}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs">
-                      <CheckCircle2 className="size-4" /> Instância criada com sucesso no Firestore
+                    <div className="p-3 bg-emerald-50 rounded-lg flex items-center gap-2 text-emerald-700 font-bold text-[11px]">
+                      <CheckCircle2 className="size-4" /> Ativação registrada no OnFlow
                     </div>
                   </div>
                 ) : (
                   <div className="py-20 text-center text-muted-foreground italic text-sm">
-                    Aguardando processamento...
+                    A IA aguarda a entrada do e-mail para triagem...
                   </div>
                 )}
               </CardContent>
@@ -195,9 +200,9 @@ ERP OnFlow`);
             <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10 flex gap-4">
               <AlertTriangle className="size-6 text-primary shrink-0" />
               <div className="space-y-1">
-                <p className="text-xs font-bold text-primary uppercase">Nota de Integração</p>
+                <p className="text-xs font-bold text-primary uppercase">Nota de Escalabilidade</p>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Em produção, este processo seria disparado por um <strong>Webhook Inbound</strong>. A IA garante que mesmo que o ERP mude o formato do e-mail, os dados continuem sendo extraídos corretamente.
+                  Esta funcionalidade utiliza <strong>Gemini 1.5 Flash</strong>, permitindo automação de baixo custo e alta precisão. Em produção, os dados fluiriam via Webhooks diretamente para este motor de IA.
                 </p>
               </div>
             </div>
