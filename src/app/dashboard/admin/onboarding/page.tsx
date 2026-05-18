@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { 
   ClipboardList, 
   Users, 
@@ -20,7 +21,9 @@ import {
   Mail,
   FileText,
   Search,
-  UserCheck
+  UserCheck,
+  Info,
+  ExternalLink
 } from "lucide-react";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc } from "firebase/firestore";
@@ -39,6 +42,8 @@ export default function OnboardingManagement() {
   const isSupport = profile?.adminType === 'suporte';
 
   const [activeTab, setActiveTab] = useState("available");
+  const [selectedClientForFicha, setSelectedClientForFicha] = useState<UserProfile | null>(null);
+  const [isFichaOpen, setIsFichaOpen] = useState(false);
 
   // 1. Buscar Clientes Aprovados pelo Comercial
   const clientsQuery = useMemo(() => query(
@@ -120,6 +125,14 @@ export default function OnboardingManagement() {
         title: "Erro ao assumir",
         description: "Não foi possível vincular seu perfil a esta atividade."
       });
+    }
+  };
+
+  const handleViewFicha = (clientId: string) => {
+    const client = approvedClients.find(c => c.id === clientId);
+    if (client) {
+      setSelectedClientForFicha(client);
+      setIsFichaOpen(true);
     }
   };
 
@@ -228,7 +241,13 @@ export default function OnboardingManagement() {
                           </p>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" className="flex-1 rounded-xl font-bold border-2 text-xs">Visualizar Ficha</Button>
+                          <Button 
+                            variant="outline" 
+                            className="flex-1 rounded-xl font-bold border-2 text-xs"
+                            onClick={() => handleViewFicha(inst.clientId)}
+                          >
+                            Visualizar Ficha
+                          </Button>
                           <Button className="flex-1 rounded-xl font-bold text-xs">Avançar Etapa</Button>
                         </div>
                       </CardContent>
@@ -298,6 +317,80 @@ export default function OnboardingManagement() {
           </Card>
         )}
       </div>
+
+      {/* Diálogo da Ficha Cadastral */}
+      <Dialog open={isFichaOpen} onOpenChange={setIsFichaOpen}>
+        <DialogContent className="max-w-2xl overflow-hidden rounded-3xl p-0">
+          <DialogHeader className="p-8 bg-slate-900 text-white relative">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="size-12 rounded-2xl bg-primary flex items-center justify-center">
+                <Building2 className="size-6" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-headline">Ficha Cadastral OnFlow</DialogTitle>
+                <DialogDescription className="text-slate-400">Dados técnicos e institucionais do cliente.</DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+            <div className="grid grid-cols-2 gap-8">
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Instituição</Label>
+                <p className="font-bold text-lg text-slate-900">{selectedClientForFicha?.institutionName || '-'}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">CNPJ</Label>
+                <p className="font-mono text-slate-700">{selectedClientForFicha?.cnpj || '-'}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Colaborador Responsável</Label>
+                <p className="font-bold text-slate-900">{selectedClientForFicha?.displayName || '-'}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">E-mail Corporativo</Label>
+                <p className="text-slate-700 flex items-center gap-2"><Mail className="size-3.5 text-slate-400" /> {selectedClientForFicha?.email || '-'}</p>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-between">
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-primary tracking-widest">Produto Ativo</Label>
+                <div className="flex items-center gap-2 font-black text-xl text-primary">
+                  <Zap className="size-5 fill-current" />
+                  {selectedClientForFicha?.activeProduct || 'Não atribuído'}
+                </div>
+              </div>
+              <div className="text-right space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-primary tracking-widest">ID RTM</Label>
+                <p className="font-mono font-black text-lg bg-white px-3 py-1 rounded-lg border border-primary/20 shadow-sm">
+                  {selectedClientForFicha?.clientCode || 'Pendente'}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-xs font-black uppercase text-slate-400 tracking-[0.2em] border-b pb-2">Histórico Operacional</h4>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground flex items-center gap-2"><Info className="size-3" /> Cadastro Criado em</span>
+                  <span className="font-bold">{selectedClientForFicha?.createdAt ? new Date(selectedClientForFicha.createdAt).toLocaleString() : '-'}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground flex items-center gap-2"><UserCheck className="size-3" /> Aprovado Comercial em</span>
+                  <span className="font-bold">{selectedClientForFicha?.approvedAt ? new Date(selectedClientForFicha.approvedAt).toLocaleString() : '-'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="p-6 bg-slate-50 border-t">
+            <Button className="w-full gap-2 font-bold" onClick={() => setIsFichaOpen(false)}>
+              Fechar Ficha Técnica
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
