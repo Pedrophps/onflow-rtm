@@ -68,6 +68,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
       ...currentStep,
       order: nextOrder,
       status: 'active',
+      type: 'upload', // Padrão agora que o campo foi removido
       createdAt: new Date().toISOString(),
       updatedAt: serverTimestamp()
     };
@@ -98,7 +99,6 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
       description: currentStep.description,
       responsible: currentStep.responsible,
       estimatedTimeInHours: currentStep.estimatedTimeInHours,
-      type: currentStep.type,
       required: currentStep.required,
       updatedAt: serverTimestamp()
     };
@@ -486,16 +486,6 @@ function StepFormFields({ step, setStep }: { step: Partial<FlowStep>, setStep: (
             setStep({...step, estimatedTimeInHours: isNaN(val) ? 0 : val});
           }} 
         />
-      </div>
-      <div className="space-y-2">
-        <Label>Tipo de Atividade</Label>
-        <Select value={step.type || 'upload'} onValueChange={(val: any) => setStep({...step, type: val})}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="upload">Upload de Evidência</SelectItem>
-            <SelectItem value="form">Formulário Interno</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
       <div className="flex items-center space-x-2 pt-8">
         <input 
