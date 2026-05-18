@@ -12,22 +12,14 @@ Este documento é a fonte única de verdade (Single Source of Truth) para o proj
 
 ---
 
-## [UPDATE - V1.15 - CORREÇÃO DE PERMISSÕES FIRESTORE]
-- **Problema**: Usuários com perfil 'suporte' enfrentavam erro de permissão ao tentar criar produtos/fluxos devido à falta de regras de segurança explícitas.
-- **Solução**: Implementação de `firestore.rules` com funções auxiliares `isSupportAdmin()` e `isAdmin()`.
-- **Lógica de Proteção**:
-  - Escrita em `/products/**` restrita a `adminType == 'suporte'`.
-  - Leitura global de produtos para usuários autenticados.
-  - Usuários podem ler seus próprios perfis para garantir a resolução do RBAC no frontend.
-
-## [UPDATE - V1.16 - REFINAMENTO DE ETAPAS E SLA]
-- **Mudança de Requisito**: Removida a opção "Apenas Informação" do tipo de interação em etapas de workflow, pois toda etapa deve gerar um output (Upload ou Form).
-- **Ajuste de Métrica**: Alteração da unidade de SLA de "Dias" para "Horas" para refletir a agilidade necessária em processos críticos RTM.
-- **Impacto Técnico**: Atualização da interface `FlowStep` e dos componentes de criação e listagem de etapas.
-
 ## [UPDATE - V1.17 - SIMPLIFICAÇÃO DO WORKFLOW]
-- **Mudança de Requisito**: Remoção completa do seletor "Tipo de Interação" na interface de criação de etapas para agilizar o processo de configuração do suporte.
-- **Lógica Padrão**: As etapas agora assumem o comportamento padrão de coleta de evidências (Upload) por definição inicial.
+- **Mudança de Requisito**: Remoção completa do seletor "Tipo de Interação" na interface de criação de etapas.
+- **Lógica Padrão**: As etapas agora assumem o comportamento padrão de coleta de evidências (Upload).
+
+## [UPDATE - V1.18 - REGRAS DE INTERAÇÃO POR RESPONSABILIDADE]
+- **Nova Regra de Negócio**: Admins podem interagir com qualquer etapa. Clientes interagem apenas nas etapas onde são o `responsible`.
+- **Implementação Técnica**: Atualização do `firestore.rules` para permitir CRUD em `submissions` baseado em UID ou cargo admin.
+- **Dinamicidade**: Dashboard do Cliente agora consome etapas reais do produto vinculado no perfil, filtrando permissões de edição localmente.
 
 ---
-*Identificando para integrar. Enender para atender. Conhecer para evoluir.*
+*Identificando para integrar. Entender para atender. Conhecer para evoluir.*

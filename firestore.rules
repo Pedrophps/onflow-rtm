@@ -17,18 +17,13 @@ service cloud.firestore {
 
     // Regras para Perfis de Usuário
     match /users/{userId} {
-      // Qualquer usuário autenticado pode ler seu próprio perfil
-      // Admins podem ler perfis de outros para gestão de clientes
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      // Usuários só podem escrever em seus próprios documentos
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
     // Regras para o Catálogo de Produtos e Hierarquia de Workflows
     match /products/{productId} {
-      // Leitura permitida para todos os autenticados (Suporte, Comercial e Clientes em Onboarding)
       allow read: if request.auth != null;
-      // Escrita (Criar, Editar, Deletar) restrita exclusivamente ao Suporte
       allow write: if isSupportAdmin();
 
       match /activationFlows/{flowId} {
@@ -42,14 +37,16 @@ service cloud.firestore {
       }
     }
 
-    // Regras para Submissões de Onboarding
+    // Regras para Submissões de Onboarding (Interações)
     match /submissions/{submissionId} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      // Admins podem ler e gerenciar tudo
+      // Clientes podem ler e gerenciar apenas suas próprias submissões
+      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if request.auth != null;
-      allow update: if isAdmin();
+      allow update, delete: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
-    // Regras para Testes de Integração (Debug)
+    // Regras para OnboardingFlows (Templates Legados/Debug)
     match /onboardingFlows/{flowId} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
