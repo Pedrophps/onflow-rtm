@@ -1,4 +1,3 @@
-
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -13,7 +12,6 @@ import {
   Headset, 
   Mail, 
   Phone, 
-  MessageCircle, 
   Clock, 
   ShieldCheck, 
   ExternalLink,
@@ -52,7 +50,7 @@ export default function ClientSupportPage() {
           <p className="text-muted-foreground">Estamos aqui para garantir a estabilidade da sua infraestrutura financeira.</p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2">
           <Card className="hover:shadow-md transition-all border-2 border-slate-100">
             <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
               <div className="size-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary">
@@ -64,21 +62,6 @@ export default function ClientSupportPage() {
               </div>
               <Button variant="ghost" className="text-primary font-bold text-xs" asChild>
                 <a href="mailto:suporte@rtm.net.br">Enviar E-mail</a>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-all border-2 border-slate-100">
-            <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
-              <div className="size-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-                <MessageCircle className="size-6" />
-              </div>
-              <div className="space-y-1">
-                <p className="font-bold text-slate-900">WhatsApp</p>
-                <p className="text-xs text-muted-foreground">(11) 99999-0000</p>
-              </div>
-              <Button variant="ghost" className="text-emerald-600 font-bold text-xs">
-                Iniciar Chat
               </Button>
             </CardContent>
           </Card>
