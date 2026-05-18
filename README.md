@@ -5,19 +5,19 @@ O **OnFlow RTM** é a plataforma central de orquestração para ativação de se
 
 ---
 
-## 🚀 INTEGRAÇÃO VIA POSTMAN (IMPORTANTE)
+## 🚀 COMO TESTAR VIA POSTMAN (IMPORTANTE)
 
-Como este projeto está rodando em um ambiente de nuvem, você **não pode** usar `localhost` no seu Postman local.
+Como este projeto está rodando em um ambiente de nuvem, o endereço `localhost` ou `127.0.0.1` **não funcionará** no seu Postman local.
 
-### 1. Como obter a URL correta
-1. No painel do seu editor, procure pelo ícone de **Preview** ou abra a URL que o sistema gerou para visualizar o app.
-2. A URL será algo como `https://9002-port-xxxxxxxx.googleusercontent.com`.
-3. Use esta URL base para suas chamadas de API.
+### 1. Obtenha a URL Pública
+1. No seu editor, clique no ícone de **Preview** (ou veja a URL na aba onde o aplicativo está rodando).
+2. A URL correta será algo como: `https://9002-port-xxxxxxxx.googleusercontent.com`
+3. Copie esta URL base.
 
-### 2. Configuração do Request no Postman
+### 2. Configuração no Postman
 - **Método**: `POST`
-- **URL**: `https://SUA-URL-GERADA/api/erp/process`
-- **Auth**: `Bearer Token`
+- **URL**: `https://SUA-URL-BASE/api/erp/process`
+- **Auth**: Selecione `Bearer Token`
 - **Token**: `RTM-TEST-TOKEN-2024`
 
 ### 3. Body (Raw JSON)
@@ -44,7 +44,7 @@ Como este projeto está rodando em um ambiente de nuvem, você **não pode** usa
 
 ---
 
-## 💰 CUSTOS E ESCALABILIDADE (FREE TIER FRIENDLY)
+## 💰 CUSTOS E ESCALABILIDADE
 - **IA (OpenRouter + NVIDIA)**: Processamento de e-mails e automação de triagem.
 - **Database & Auth (Firebase)**: Roda sobre o plano Spark (gratuito).
 
