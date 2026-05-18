@@ -3,7 +3,7 @@
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
-import { collection, query, addDoc, serverTimestamp, doc } from "firebase/firestore";
+import { collection, query, addDoc, serverTimestamp, doc, deleteDoc } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,8 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Product, UserProfile } from "@/lib/types";
-import { Plus, Package, ArrowRight, Loader2, Info } from "lucide-react";
+import { Plus, Package, ArrowRight, Loader2, Info, Trash2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -61,11 +62,23 @@ export default function ProductsPage() {
     }
   };
 
+  const handleDeleteProduct = async (productId: string) => {
+    if (!user || !isSupport) return;
+    
+    const productRef = doc(db, "products", productId);
+    try {
+      await deleteDoc(productRef);
+      toast({ title: "Produto Excluído", description: "O serviço foi removido do catálogo com sucesso." });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Erro ao excluir", description: "Não foi possível remover o produto." });
+    }
+  };
+
   return (
     <DashboardLayout role="admin">
       <div className="space-y-8">
         <div className="flex justify-between items-start">
-          <div>
+          <div className="space-y-1">
             <h1 className="text-3xl font-bold font-headline text-slate-900">Catálogo de Produtos</h1>
             <p className="text-muted-foreground">Gerencie os ativos financeiros e seus fluxos de ativação.</p>
           </div>
@@ -77,7 +90,7 @@ export default function ProductsPage() {
                   <Plus className="size-4" /> Novo Produto
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="bg-card text-card-foreground border-border">
                 <DialogHeader>
                   <DialogTitle>Novo Produto RTM</DialogTitle>
                   <DialogDescription>Cadastre um novo serviço financeiro no ecossistema.</DialogDescription>
@@ -85,11 +98,11 @@ export default function ProductsPage() {
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label>Nome do Produto</Label>
-                    <Input placeholder="Ex: Mensageria SWIFT" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+                    <Input placeholder="Ex: Mensageria SWIFT" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="bg-background" />
                   </div>
                   <div className="space-y-2">
                     <Label>Descrição Curta</Label>
-                    <Textarea placeholder="Finalidade do produto no mercado..." value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} />
+                    <Textarea placeholder="Finalidade do produto no mercado..." value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="bg-background min-h-[100px]" />
                   </div>
                 </div>
                 <DialogFooter>
@@ -116,23 +129,48 @@ export default function ProductsPage() {
             <div className="col-span-full flex justify-center py-20"><Loader2 className="size-10 animate-spin text-primary" /></div>
           ) : products.length > 0 ? (
             products.map((product) => (
-              <Card key={product.id} className="group hover:border-primary/50 transition-all bg-white shadow-sm overflow-hidden flex flex-col">
-                <CardHeader className="pb-3 border-b bg-slate-50/50">
+              <Card key={product.id} className="group hover:border-primary/50 transition-all bg-card shadow-sm overflow-hidden flex flex-col border-border">
+                <CardHeader className="pb-3 border-b bg-muted/30">
                   <div className="flex justify-between items-start mb-2">
                     <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                       <Package className="size-5" />
                     </div>
-                    <Badge variant={product.published ? "default" : "secondary"} className="uppercase text-[10px] font-bold">
-                      {product.published ? "Publicado" : "Draft"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={product.published ? "default" : "secondary"} className="uppercase text-[10px] font-bold">
+                        {product.published ? "Publicado" : "Draft"}
+                      </Badge>
+                      {isSupport && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-card text-card-foreground border-border">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir Produto?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação removerá o produto <strong>{product.name}</strong> e todos os fluxos de ativação associados a ele. Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteProduct(product.id!)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Excluir Produto
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
                   </div>
-                  <CardTitle className="text-xl">{product.name}</CardTitle>
+                  <CardTitle className="text-xl text-card-foreground">{product.name}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-4 flex-1 flex flex-col justify-between space-y-4">
                   <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed italic">
                     {product.description || "Sem descrição disponível."}
                   </p>
-                  <Button asChild variant="outline" className="w-full rounded-full gap-2 border-2 hover:bg-primary hover:text-white transition-all group-hover:border-primary">
+                  <Button asChild variant="outline" className="w-full rounded-full gap-2 border-2 hover:bg-primary hover:text-primary-foreground transition-all group-hover:border-primary">
                     <Link href={`/dashboard/admin/products/${product.id}`}>
                       Configurar Fluxos <ArrowRight className="size-4" />
                     </Link>
@@ -141,10 +179,10 @@ export default function ProductsPage() {
               </Card>
             ))
           ) : (
-            <div className="col-span-full p-20 text-center border-2 border-dashed rounded-3xl space-y-4">
+            <div className="col-span-full p-20 text-center border-2 border-dashed rounded-3xl space-y-4 bg-muted/10 border-border">
               <Package className="size-12 mx-auto text-muted-foreground/20" />
               <div className="space-y-1">
-                <p className="text-lg font-bold">Nenhum produto cadastrado</p>
+                <p className="text-lg font-bold text-foreground">Nenhum produto cadastrado</p>
                 <p className="text-sm text-muted-foreground">Inicie o catálogo definindo o primeiro serviço crítico.</p>
               </div>
             </div>
