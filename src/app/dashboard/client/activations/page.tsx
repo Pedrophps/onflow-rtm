@@ -4,7 +4,7 @@
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { FlowStep, UserProfile, Product, OnboardingInstance } from "@/lib/types";
+import { FlowStep, UserProfile, Product, OnboardingInstance, ActivationFlow } from "@/lib/types";
 import { 
   CheckCircle2, 
   ChevronDown, 
@@ -24,7 +24,8 @@ import {
   User,
   HardDrive,
   ShieldCheck,
-  FileEdit
+  FileEdit,
+  Settings2
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 
 export default function ActivationsPage() {
-  const { user } = userUser();
+  const { user } = useUser();
   const db = useFirestore();
   const { toast } = useToast();
   
@@ -91,7 +92,7 @@ export default function ActivationsPage() {
   };
 
   const handleSendEvidence = async (step: FlowStep) => {
-    if (!user || isSubmitting || !selectedInstance) return;
+    if (!user || isSubmitting || !selectedInstance || !selectedInstance.flowId) return;
     setIsSubmitting(true);
 
     const submissionData = {
@@ -214,7 +215,7 @@ export default function ActivationsPage() {
                   <ShieldAlert className="size-12 mx-auto text-amber-500/20" />
                   <div className="space-y-1">
                     <p className="text-lg font-bold">Nenhum produto em ativação</p>
-                    <p className="text-sm text-muted-foreground max-w-sm mx-auto">Sua conta institucional ainda não possui processos técnicos iniciados pelo suporte RTM.</p>
+                    <p className="text-sm text-muted-foreground max-sm mx-auto">Sua conta institucional ainda não possui processos técnicos iniciados pelo suporte RTM.</p>
                   </div>
                 </div>
               )}
@@ -228,7 +229,7 @@ export default function ActivationsPage() {
                 <div className="bg-white rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
                   {!selectedInstance.flowId && (
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-12 text-center space-y-4">
-                      <Settings2 className="size-12 text-amber-500 animate-spin-slow" />
+                      <Settings2 className="size-12 text-amber-500 animate-spin" />
                       <div className="space-y-1">
                         <h3 className="text-xl font-bold">Aguardando Configuração do Suporte</h3>
                         <p className="text-sm text-muted-foreground max-w-md">Nossa equipe técnica está definindo o roteiro de etapas para este produto. Em breve você poderá acompanhar a jornada completa aqui.</p>
@@ -304,7 +305,7 @@ export default function ActivationsPage() {
                                     )}>{step.name}</CardTitle>
                                     <Badge variant="secondary" className="text-[9px] uppercase font-bold bg-slate-50 text-slate-600 gap-1">
                                       {getResponsibleIcon(step.responsible)}
-                                      {step.responsible}
+                                      <span className="text-slate-900">{step.responsible}</span>
                                     </Badge>
                                   </div>
                                   <CardDescription className="text-sm line-clamp-1">{step.description}</CardDescription>
