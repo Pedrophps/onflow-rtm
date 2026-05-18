@@ -3,9 +3,9 @@
   "placeholderImages": [
     {
       "id": "hero-rtm",
-      "description": "Edifícios modernos no centro financeiro",
-      "imageUrl": "https://picsum.photos/seed/rtm-buildings/1200/800",
-      "imageHint": "modern buildings"
+      "description": "Vista de baixo ângulo de edifícios altos da cidade",
+      "imageUrl": "https://picsum.photos/seed/city-skyscrapers/1200/800",
+      "imageHint": "tall buildings"
     },
     {
       "id": "rtm-integration",
