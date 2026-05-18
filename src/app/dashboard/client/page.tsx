@@ -1,11 +1,10 @@
-
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { UserProfile, Product, OnboardingInstance } from "@/lib/types";
-import { CheckCircle2, Clock, ShieldAlert, Loader2, Zap, LayoutDashboard, Building2, UserCheck, ArrowRight, Phone, AlertCircle, Save } from "lucide-react";
+import { CheckCircle2, Clock, ShieldAlert, Loader2, Zap, LayoutDashboard, Building2, UserCheck, ArrowRight, Phone, AlertCircle, Save, Info, MessageSquare } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
@@ -102,6 +101,7 @@ export default function ClientDashboardPage() {
           <p className="text-muted-foreground">Bem-vindo ao OnFlow, {profile?.displayName}. Aqui está o resumo da sua jornada.</p>
         </div>
 
+        {/* Alerta de Telefone Faltante */}
         {isPhoneMissing && (
           <Card className="border-l-4 border-l-amber-500 bg-amber-50 shadow-sm animate-in slide-in-from-top duration-500">
             <CardContent className="p-6">
@@ -133,6 +133,23 @@ export default function ClientDashboardPage() {
                   </Button>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Notas do Comercial */}
+        {profile?.commercialNotes && (
+          <Card className="border-none bg-blue-50 shadow-sm border-l-4 border-l-blue-500">
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2 text-blue-800">
+                <MessageSquare className="size-4" />
+                <CardTitle className="text-sm font-bold uppercase tracking-widest">Observações do Comercial</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-blue-900 leading-relaxed font-medium italic">
+                "{profile.commercialNotes}"
+              </p>
             </CardContent>
           </Card>
         )}

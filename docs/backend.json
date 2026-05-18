@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "UserProfile": {
@@ -16,6 +15,7 @@
         "clientCode": { "type": "string" },
         "activeProduct": { "type": "string" },
         "phoneNumber": { "type": "string" },
+        "commercialNotes": { "type": "string", "description": "Notas ou observações inseridas pelo comercial durante a ativação." },
         "updatedAt": { "type": "string" },
         "createdAt": { "type": "string" }
       },

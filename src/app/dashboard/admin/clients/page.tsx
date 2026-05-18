@@ -1,4 +1,3 @@
-
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -11,9 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserProfile, Product } from "@/lib/types";
-import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal, Package, Phone } from "lucide-react";
+import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal, Package, Phone, FileText } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -44,6 +44,7 @@ export default function ClientsAdminPage() {
   const [clientCode, setClientCode] = useState("");
   const [activeProductId, setActiveProductId] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [commercialNotes, setCommercialNotes] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const productsMap = useMemo(() => {
@@ -59,6 +60,7 @@ export default function ClientsAdminPage() {
     setClientCode(client.clientCode || "");
     setActiveProductId(client.activeProduct || "");
     setPhoneNumber(client.phoneNumber || "");
+    setCommercialNotes(client.commercialNotes || "");
     setIsDialogOpen(true);
   };
 
@@ -69,8 +71,9 @@ export default function ClientsAdminPage() {
     const updateData = {
       status: 'approved',
       clientCode: clientCode,
-      activeProduct: activeProductId, // Agora armazena o ID
+      activeProduct: activeProductId,
       phoneNumber: phoneNumber,
+      commercialNotes: commercialNotes,
       approvedAt: new Date().toISOString(),
       updatedAt: serverTimestamp()
     };
@@ -201,12 +204,12 @@ export default function ClientsAdminPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Configuração de Acesso RTM</DialogTitle>
             <DialogDescription>Defina os parâmetros institucionais para {selectedClient?.institutionName}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="grid grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
               <Label>ID RTM do Cliente</Label>
               <Input value={clientCode} onChange={(e) => setClientCode(e.target.value)} placeholder="Ex: RTM-BR-001" />
@@ -218,7 +221,7 @@ export default function ClientsAdminPage() {
                 <Input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="(00) 00000-0000" className="pl-10" />
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="col-span-2 space-y-2">
               <Label>Produto Contratado</Label>
               <Select onValueChange={setActiveProductId} value={activeProductId}>
                 <SelectTrigger>
@@ -239,6 +242,18 @@ export default function ClientsAdminPage() {
                   )}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="col-span-2 space-y-2">
+              <Label className="flex items-center gap-2">
+                <FileText className="size-4 text-primary" />
+                Informações Adicionais para o Cliente
+              </Label>
+              <Textarea 
+                value={commercialNotes} 
+                onChange={(e) => setCommercialNotes(e.target.value)} 
+                placeholder="Insira boas-vindas, orientações iniciais ou avisos específicos para este cliente..."
+                className="min-h-[120px]"
+              />
             </div>
           </div>
           <DialogFooter>

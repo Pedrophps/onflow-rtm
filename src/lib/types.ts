@@ -1,4 +1,3 @@
-
 export type OnboardingStatus = 'pendente' | 'em_revisao' | 'concluida';
 export type UserStatus = 'pending' | 'approved' | 'rejected';
 export type UserRole = 'admin' | 'client';
@@ -19,8 +18,10 @@ export interface UserProfile {
   clientCode?: string;
   activeProduct?: string;
   phoneNumber?: string;
+  commercialNotes?: string;
   createdAt: string;
   approvedAt?: string;
+  updatedAt?: any;
 }
 
 export interface Product {
