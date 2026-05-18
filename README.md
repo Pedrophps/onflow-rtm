@@ -25,5 +25,9 @@ Este documento é a fonte única de verdade (Single Source of Truth) para o proj
 - **Ajuste de Métrica**: Alteração da unidade de SLA de "Dias" para "Horas" para refletir a agilidade necessária em processos críticos RTM.
 - **Impacto Técnico**: Atualização da interface `FlowStep` e dos componentes de criação e listagem de etapas.
 
+## [UPDATE - V1.17 - SIMPLIFICAÇÃO DO WORKFLOW]
+- **Mudança de Requisito**: Remoção completa do seletor "Tipo de Interação" na interface de criação de etapas para agilizar o processo de configuração do suporte.
+- **Lógica Padrão**: As etapas agora assumem o comportamento padrão de coleta de evidências (Upload) por definição inicial.
+
 ---
 *Identificando para integrar. Enender para atender. Conhecer para evoluir.*

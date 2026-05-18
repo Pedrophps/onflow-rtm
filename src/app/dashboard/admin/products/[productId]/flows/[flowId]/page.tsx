@@ -143,16 +143,6 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Tipo de Interação</Label>
-                      <Select value={newStep.type} onValueChange={(val: any) => setNewStep({...newStep, type: val})}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="upload">Upload de Evidência</SelectItem>
-                          <SelectItem value="form">Formulário de Dados</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
                       <Label>SLA Estimado (Horas)</Label>
                       <Input type="number" value={newStep.estimatedTimeInHours} onChange={e => setNewStep({...newStep, estimatedTimeInHours: parseInt(e.target.value)})} />
                     </div>
