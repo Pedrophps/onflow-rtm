@@ -10,7 +10,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Critical Root Error:", error);
+    console.error("Critical Runtime Error:", error);
   }, [error]);
 
   return (

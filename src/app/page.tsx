@@ -49,7 +49,6 @@ import { HeroBackground } from '@/components/hero-background';
 export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Lógica para alternar o tema manipulando a classe .dark no HTML
   const toggleTheme = () => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
@@ -80,7 +79,6 @@ export default function Home() {
             </nav>
             
             <div className="flex items-center gap-2">
-              {/* Botão de Tema (Dark/Light) */}
               <Button 
                 variant="ghost" 
                 size="icon" 
