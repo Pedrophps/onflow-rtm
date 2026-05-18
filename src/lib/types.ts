@@ -4,7 +4,7 @@ export type UserStatus = 'pending' | 'approved' | 'rejected';
 export type UserRole = 'admin' | 'client';
 export type AdminType = 'suporte' | 'comercial';
 export type ResponsibleRole = 'suporte' | 'comercial' | 'cliente' | 'infraestrutura' | 'compliance';
-export type StepType = 'info' | 'upload' | 'form';
+export type StepType = 'upload' | 'form';
 
 export interface UserProfile {
   id?: string;
@@ -56,7 +56,7 @@ export interface FlowStep {
   name: string;
   description: string;
   responsible: ResponsibleRole;
-  estimatedTimeInDays: number;
+  estimatedTimeInHours: number;
   required: boolean;
   type: StepType;
   status: 'active' | 'inactive';

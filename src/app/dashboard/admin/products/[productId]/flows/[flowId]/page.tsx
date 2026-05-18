@@ -46,8 +46,8 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
     name: '', 
     description: '', 
     responsible: 'suporte', 
-    type: 'info',
-    estimatedTimeInDays: 2,
+    type: 'upload',
+    estimatedTimeInHours: 24,
     required: true 
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,7 +68,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
       
       toast({ title: "Etapa Adicionada", description: "O fluxo foi atualizado com sucesso." });
       setIsNewStepOpen(false);
-      setNewStep({ name: '', description: '', responsible: 'suporte', type: 'info', estimatedTimeInDays: 2, required: true });
+      setNewStep({ name: '', description: '', responsible: 'suporte', type: 'upload', estimatedTimeInHours: 24, required: true });
     } catch (e) {
       toast({ variant: "destructive", title: "Erro ao criar", description: "Verifique suas permissões de escrita." });
     } finally {
@@ -118,7 +118,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Nova Etapa do Workflow</DialogTitle>
-                    <DialogDescription>Defina uma ação obrigatória ou informativa para a jornada.</DialogDescription>
+                    <DialogDescription>Defina uma ação obrigatória para a jornada.</DialogDescription>
                   </DialogHeader>
                   <div className="grid grid-cols-2 gap-4 py-4">
                     <div className="col-span-2 space-y-2">
@@ -147,15 +147,14 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                       <Select value={newStep.type} onValueChange={(val: any) => setNewStep({...newStep, type: val})}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="info">Apenas Informação</SelectItem>
                           <SelectItem value="upload">Upload de Evidência</SelectItem>
                           <SelectItem value="form">Formulário de Dados</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>SLA Estimado (Dias)</Label>
-                      <Input type="number" value={newStep.estimatedTimeInDays} onChange={e => setNewStep({...newStep, estimatedTimeInDays: parseInt(e.target.value)})} />
+                      <Label>SLA Estimado (Horas)</Label>
+                      <Input type="number" value={newStep.estimatedTimeInHours} onChange={e => setNewStep({...newStep, estimatedTimeInHours: parseInt(e.target.value)})} />
                     </div>
                   </div>
                   <DialogFooter>
@@ -222,13 +221,13 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                           <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Tipo</span>
                           <span className="text-xs font-medium flex items-center gap-1.5">
                             <FileEdit className="size-3.5 text-primary" />
-                            {step.type === 'info' ? 'Info' : step.type === 'upload' ? 'Upload' : 'Form'}
+                            {step.type === 'upload' ? 'Upload' : 'Form'}
                           </span>
                         </div>
 
                         <div className="flex flex-col items-end gap-1 border-l pl-6">
                           <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SLA</span>
-                          <span className="text-xs font-bold text-slate-900">{step.estimatedTimeInDays} dias</span>
+                          <span className="text-xs font-bold text-slate-900">{step.estimatedTimeInHours} horas</span>
                         </div>
                       </div>
                     </CardContent>

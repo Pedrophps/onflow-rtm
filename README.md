@@ -20,5 +20,10 @@ Este documento é a fonte única de verdade (Single Source of Truth) para o proj
   - Leitura global de produtos para usuários autenticados.
   - Usuários podem ler seus próprios perfis para garantir a resolução do RBAC no frontend.
 
+## [UPDATE - V1.16 - REFINAMENTO DE ETAPAS E SLA]
+- **Mudança de Requisito**: Removida a opção "Apenas Informação" do tipo de interação em etapas de workflow, pois toda etapa deve gerar um output (Upload ou Form).
+- **Ajuste de Métrica**: Alteração da unidade de SLA de "Dias" para "Horas" para refletir a agilidade necessária em processos críticos RTM.
+- **Impacto Técnico**: Atualização da interface `FlowStep` e dos componentes de criação e listagem de etapas.
+
 ---
-*Identificando para integrar. Entender para atender. Conhecer para evoluir.*
+*Identificando para integrar. Enender para atender. Conhecer para evoluir.*
