@@ -7,7 +7,6 @@ import { collection, query, where, orderBy, addDoc, serverTimestamp } from 'fire
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Send, Paperclip, FileText, Loader2, MessageSquare } from 'lucide-react';
 import { StepInteraction } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -36,15 +35,17 @@ export function StepInteractions({
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
 
+  // A query deve sempre incluir o clientId para satisfazer as Security Rules do Firestore de forma eficiente
   const interactionsQuery = useMemo(() => {
-    if (!instanceId || !stepId) return null;
+    if (!instanceId || !stepId || !clientId || !user) return null;
     return query(
       collection(db, 'interactions'),
+      where('clientId', '==', clientId),
       where('instanceId', '==', instanceId),
       where('stepId', '==', stepId),
       orderBy('createdAt', 'asc')
     );
-  }, [db, instanceId, stepId]);
+  }, [db, instanceId, stepId, clientId, user]);
 
   const { data: interactions, loading } = useCollection<StepInteraction>(interactionsQuery);
 

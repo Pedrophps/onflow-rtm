@@ -3,19 +3,22 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Função auxiliar para obter dados do perfil do usuário logado
+    // Função auxiliar para obter dados do perfil do usuário logado de forma segura
     function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      let path = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(path) ? get(path).data : null;
     }
 
     // Verifica se o usuário é um Administrador (Suporte ou Comercial)
     function isAdmin() {
-      return request.auth != null && getUserData().role == 'admin';
+      let data = getUserData();
+      return request.auth != null && data != null && data.role == 'admin';
     }
 
     // Verifica se o usuário é especificamente do Suporte Técnico
     function isSupportAdmin() {
-      return request.auth != null && getUserData().adminType == 'suporte';
+      let data = getUserData();
+      return request.auth != null && data != null && data.adminType == 'suporte';
     }
 
     match /users/{userId} {
@@ -44,22 +47,23 @@ service cloud.firestore {
       // Listagem: Administradores podem listar tudo. Clientes apenas o que lhes pertence.
       allow list: if request.auth != null && (isAdmin() || (resource != null && resource.data.clientId == request.auth.uid));
       // Get: Permite leitura individual para o dono ou admins.
-      allow get: if request.auth != null && (isAdmin() || resource.data.clientId == request.auth.uid);
+      allow get: if request.auth != null && (isAdmin() || (resource != null && resource.data.clientId == request.auth.uid));
       // Escrita: Administradores gerenciam a operação técnica.
       allow write: if isAdmin();
     }
 
     match /submissions/{submissionId} {
-      allow list: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
-      allow get: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow list: if request.auth != null && (isAdmin() || (resource != null && resource.data.userId == request.auth.uid));
+      allow get: if request.auth != null && (isAdmin() || (resource != null && resource.data.userId == request.auth.uid));
       allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow update, delete: if request.auth != null && (isAdmin() || (resource != null && resource.data.userId == request.auth.uid));
     }
 
     match /interactions/{interactionId} {
-      // Leitura permitida para Admins ou para o cliente dono da instância vinculada
-      allow read: if request.auth != null && (isAdmin() || resource.data.clientId == request.auth.uid);
-      // Criação permitida para qualquer usuário autenticado (validação lógica no front)
+      // Admins leem tudo. Clientes apenas o que lhes pertence. 
+      // Para consultas (list), o filtro clientId deve estar presente na query.
+      allow read: if request.auth != null && (isAdmin() || (resource != null && resource.data.clientId == request.auth.uid));
+      // Criação permitida para qualquer usuário autenticado
       allow create: if request.auth != null;
     }
 
