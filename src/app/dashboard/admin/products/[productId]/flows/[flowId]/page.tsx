@@ -13,11 +13,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Product, ActivationFlow, FlowStep, UserProfile } from "@/lib/types";
-import { Plus, GripVertical, ArrowLeft, Loader2, GitFork, CheckCircle2, ShieldCheck, User, Headset, HardDrive, FileEdit } from "lucide-react";
+import { Plus, GripVertical, ArrowLeft, Loader2, GitFork, CheckCircle2, ShieldCheck, User, Headset, HardDrive, FileEdit, Save } from "lucide-react";
 import { useState, useMemo, use } from "react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function FlowDetailsPage({ params }: { params: Promise<{ productId: string, flowId: string }> }) {
   const { productId, flowId } = use(params);
@@ -47,7 +49,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
     description: '', 
     responsible: 'suporte', 
     type: 'upload',
-    estimatedTimeInHours: 24,
+    estimatedTimeInHours: 8,
     required: true 
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,24 +58,31 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
     if (!user || isSubmitting) return;
     setIsSubmitting(true);
     
-    try {
-      const nextOrder = steps.length + 1;
-      await addDoc(collection(db, "products", productId, "activationFlows", flowId, "steps"), {
-        ...newStep,
-        order: nextOrder,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        updatedAt: serverTimestamp()
+    const nextOrder = steps.length + 1;
+    const stepData = {
+      ...newStep,
+      order: nextOrder,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      updatedAt: serverTimestamp()
+    };
+
+    addDoc(collection(db, "products", productId, "activationFlows", flowId, "steps"), stepData)
+      .then(() => {
+        toast({ title: "Etapa Adicionada", description: "O fluxo foi atualizado com sucesso." });
+        setIsNewStepOpen(false);
+        setNewStep({ name: '', description: '', responsible: 'suporte', type: 'upload', estimatedTimeInHours: 8, required: true });
+      })
+      .catch(async (error) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: `products/${productId}/activationFlows/${flowId}/steps`,
+          operation: 'create',
+          requestResourceData: stepData,
+        }));
+      })
+      .finally(() => {
+        setIsSubmitting(false);
       });
-      
-      toast({ title: "Etapa Adicionada", description: "O fluxo foi atualizado com sucesso." });
-      setIsNewStepOpen(false);
-      setNewStep({ name: '', description: '', responsible: 'suporte', type: 'upload', estimatedTimeInHours: 24, required: true });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Erro ao criar", description: "Verifique suas permissões de escrita." });
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const getResponsibleIcon = (role: string) => {
@@ -144,14 +153,21 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                     </div>
                     <div className="space-y-2">
                       <Label>SLA Estimado (Horas)</Label>
-                      <Input type="number" value={newStep.estimatedTimeInHours} onChange={e => setNewStep({...newStep, estimatedTimeInHours: parseInt(e.target.value)})} />
+                      <Input 
+                        type="number" 
+                        value={newStep.estimatedTimeInHours === undefined ? '' : newStep.estimatedTimeInHours} 
+                        onChange={e => {
+                          const val = parseInt(e.target.value);
+                          setNewStep({...newStep, estimatedTimeInHours: isNaN(val) ? 0 : val});
+                        }} 
+                      />
                     </div>
                   </div>
-                  <DialogFooter>
+                  <DialogFooter className="gap-2 sm:gap-0">
                     <Button variant="outline" onClick={() => setIsNewStepOpen(false)}>Cancelar</Button>
-                    <Button disabled={!newStep.name || isSubmitting} onClick={handleCreateStep}>
-                      {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
-                      Adicionar ao Fluxo
+                    <Button disabled={!newStep.name || isSubmitting} onClick={handleCreateStep} className="gap-2 bg-primary hover:bg-primary/90">
+                      {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                      Salvar Etapa
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -217,7 +233,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
 
                         <div className="flex flex-col items-end gap-1 border-l pl-6">
                           <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SLA</span>
-                          <span className="text-xs font-bold text-slate-900">{step.estimatedTimeInHours} horas</span>
+                          <span className="text-xs font-bold text-slate-900">{(step.estimatedTimeInHours || 0)} horas</span>
                         </div>
                       </div>
                     </CardContent>
