@@ -2,7 +2,7 @@
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
-import { collection, query, where, doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, getDocs } from "firebase/firestore";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +11,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserProfile, Product } from "@/lib/types";
-import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal, Package, Phone, FileText } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { UserProfile, Product, OnboardingInstance } from "@/lib/types";
+import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal, Package, Phone, FileText, CheckCircle2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -42,58 +42,94 @@ export default function ClientsAdminPage() {
 
   const [selectedClient, setSelectedClient] = useState<UserProfile | null>(null);
   const [clientCode, setClientCode] = useState("");
-  const [activeProductId, setActiveProductId] = useState("");
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [commercialNotes, setCommercialNotes] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const productsMap = useMemo(() => {
     return dbProducts.reduce((acc, p) => ({ ...acc, [p.id!]: p.name }), {} as Record<string, string>);
   }, [dbProducts]);
 
   const pendingClients = useMemo(() => {
-    return clients.filter(c => c.status === 'pending' || !c.clientCode || !c.activeProduct);
+    return clients.filter(c => c.status === 'pending' || !c.clientCode);
   }, [clients]);
 
   const openApprovalDialog = (client: UserProfile) => {
     setSelectedClient(client);
     setClientCode(client.clientCode || "");
-    setActiveProductId(client.activeProduct || "");
+    setSelectedProductIds(client.activeProduct ? [client.activeProduct] : []);
     setPhoneNumber(client.phoneNumber || "");
     setCommercialNotes(client.commercialNotes || "");
     setIsDialogOpen(true);
   };
 
+  const toggleProduct = (productId: string) => {
+    setSelectedProductIds(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId) 
+        : [...prev, productId]
+    );
+  };
+
   const handleApprove = async () => {
-    if (!selectedClient?.id) return;
+    if (!selectedClient?.id || isSubmitting) return;
+    setIsSubmitting(true);
     
     const clientRef = doc(db, "users", selectedClient.id);
     const updateData = {
       status: 'approved',
       clientCode: clientCode,
-      activeProduct: activeProductId,
+      activeProduct: selectedProductIds[0] || "", // Mantém o primeiro como principal por compatibilidade
       phoneNumber: phoneNumber,
       commercialNotes: commercialNotes,
       approvedAt: new Date().toISOString(),
       updatedAt: serverTimestamp()
     };
 
-    updateDoc(clientRef, updateData)
-      .then(() => {
-        toast({
-          title: "Acesso Configurado",
-          description: `O cliente ${selectedClient.institutionName} foi ativado.`
+    try {
+      // 1. Atualizar Perfil do Usuário
+      await updateDoc(clientRef, updateData);
+
+      // 2. Criar Instâncias de Onboarding para cada produto selecionado (se não existirem)
+      const instancesRef = collection(db, "onboardingInstances");
+      const existingInstancesSnap = await getDocs(query(instancesRef, where("clientId", "==", selectedClient.id)));
+      const existingProductIds = existingInstancesSnap.docs.map(d => d.data().productId);
+
+      const newInstancesPromises = selectedProductIds
+        .filter(pid => !existingProductIds.includes(pid))
+        .map(pid => {
+          const product = dbProducts.find(p => p.id === pid);
+          return addDoc(instancesRef, {
+            clientId: selectedClient.id,
+            institutionName: selectedClient.institutionName || selectedClient.displayName,
+            productId: pid,
+            productName: product?.name || pid,
+            status: 'pending',
+            currentStepOrder: 1,
+            startedAt: new Date().toISOString(),
+            updatedAt: serverTimestamp()
+          } as OnboardingInstance);
         });
-        setIsDialogOpen(false);
-        setSelectedClient(null);
-      })
-      .catch(async (error) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: clientRef.path,
-          operation: 'update',
-          requestResourceData: updateData,
-        }));
+
+      await Promise.all(newInstancesPromises);
+
+      toast({
+        title: "Acesso Configurado",
+        description: `O cliente ${selectedClient.institutionName} foi ativado com ${selectedProductIds.length} produtos.`
       });
+      setIsDialogOpen(false);
+      setSelectedClient(null);
+    } catch (error: any) {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: clientRef.path,
+        operation: 'update',
+        requestResourceData: updateData,
+      }));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -164,7 +200,6 @@ export default function ClientsAdminPage() {
                     <TableHead>Responsável</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>ID RTM</TableHead>
-                    <TableHead>Produto</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -184,16 +219,13 @@ export default function ClientsAdminPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-mono text-xs">{client.clientCode || "-"}</TableCell>
-                      <TableCell className="text-xs">
-                        {productsMap[client.activeProduct!] || client.activeProduct || "-"}
-                      </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" onClick={() => openApprovalDialog(client)}><MoreHorizontal className="size-4" /></Button>
                       </TableCell>
                     </TableRow>
                   )) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhum cliente cadastrado.</TableCell>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhum cliente cadastrado.</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -209,7 +241,7 @@ export default function ClientsAdminPage() {
             <DialogTitle>Configuração de Acesso RTM</DialogTitle>
             <DialogDescription>Defina os parâmetros institucionais para {selectedClient?.institutionName}</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-4">
+          <div className="grid grid-cols-2 gap-6 py-4">
             <div className="space-y-2">
               <Label>ID RTM do Cliente</Label>
               <Input value={clientCode} onChange={(e) => setClientCode(e.target.value)} placeholder="Ex: RTM-BR-001" />
@@ -221,28 +253,32 @@ export default function ClientsAdminPage() {
                 <Input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="(00) 00000-0000" className="pl-10" />
               </div>
             </div>
-            <div className="col-span-2 space-y-2">
-              <Label>Produto Contratado</Label>
-              <Select onValueChange={setActiveProductId} value={activeProductId}>
-                <SelectTrigger>
-                  <SelectValue placeholder={productsLoading ? "Carregando produtos..." : "Selecione o produto principal"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {dbProducts.length > 0 ? dbProducts.map((prod) => (
-                    <SelectItem key={prod.id} value={prod.id!}>
-                      <div className="flex items-center gap-2">
-                        <Package className="size-3 text-primary/60" />
-                        {prod.name}
-                      </div>
-                    </SelectItem>
-                  )) : (
-                    <div className="p-4 text-center text-xs text-muted-foreground italic">
-                      Nenhum produto cadastrado pelo suporte.
+
+            <div className="col-span-2 space-y-4 border-t pt-4">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Produtos para Ativação</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {productsLoading ? (
+                  <div className="col-span-2 py-4 text-center"><Loader2 className="size-4 animate-spin mx-auto text-primary" /></div>
+                ) : dbProducts.length > 0 ? dbProducts.map((prod) => (
+                  <div 
+                    key={prod.id} 
+                    className={`flex items-center space-x-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${selectedProductIds.includes(prod.id!) ? 'border-primary bg-primary/5' : 'border-slate-100 hover:border-slate-200'}`}
+                    onClick={() => toggleProduct(prod.id!)}
+                  >
+                    <Checkbox checked={selectedProductIds.includes(prod.id!)} />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold leading-none">{prod.name}</span>
+                      <span className="text-[10px] text-muted-foreground truncate w-40">{prod.description}</span>
                     </div>
-                  )}
-                </SelectContent>
-              </Select>
+                  </div>
+                )) : (
+                  <div className="col-span-2 p-4 text-center text-xs text-muted-foreground italic bg-slate-50 rounded-lg">
+                    Nenhum produto cadastrado pelo suporte.
+                  </div>
+                )}
+              </div>
             </div>
+
             <div className="col-span-2 space-y-2">
               <Label className="flex items-center gap-2">
                 <FileText className="size-4 text-primary" />
@@ -252,13 +288,16 @@ export default function ClientsAdminPage() {
                 value={commercialNotes} 
                 onChange={(e) => setCommercialNotes(e.target.value)} 
                 placeholder="Insira boas-vindas, orientações iniciais ou avisos específicos para este cliente..."
-                className="min-h-[120px]"
+                className="min-h-[100px]"
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-            <Button disabled={!clientCode || !activeProductId || productsLoading} onClick={handleApprove}>Confirmar Ativação</Button>
+            <Button disabled={!clientCode || selectedProductIds.length === 0 || isSubmitting} onClick={handleApprove}>
+              {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
+              Confirmar Ativação
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
