@@ -32,7 +32,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
+import { useUser, useAuth, useFirestore, useDoc, useCollection } from "@/firebase";
 import { doc, collection, query, where, addDoc, serverTimestamp } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -48,7 +48,6 @@ export default function ActivationsPage() {
   const [activeTab, setActiveTab] = useState("selection");
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   const [expandedStage, setExpandedStage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [realProductId, setRealProductId] = useState<string | null>(null);
 
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
@@ -114,7 +113,7 @@ export default function ActivationsPage() {
   };
 
   const getResponsibleIcon = (role: string) => {
-    const iconClass = "size-3.5 text-slate-500";
+    const iconClass = "size-3.5 text-slate-600";
     switch (role) {
       case 'suporte': return <Headset className={iconClass} />;
       case 'comercial': return <ShieldCheck className={iconClass} />;
@@ -314,12 +313,12 @@ export default function ActivationsPage() {
                                       )}
                                     </div>
                                     <div className="lg:col-span-2">
-                                      {/* Log de Interação - Clientes só interagem em SUAS etapas */}
+                                      {/* Log de Interação - Clientes interagem em SUAS etapas, mesmo que concluídas */}
                                       <StepInteractions 
                                         instanceId={selectedInstance.id!}
                                         stepId={step.id!}
                                         clientId={selectedInstance.clientId}
-                                        canInteract={isCurrent && step.responsible === 'cliente'}
+                                        canInteract={(isCurrent || isCompleted) && step.responsible === 'cliente'}
                                         userName={profile?.displayName}
                                         userRole="cliente"
                                       />
