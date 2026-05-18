@@ -419,7 +419,7 @@ export default function OnboardingManagement() {
             {selectedJourneyInstance ? (
               <div className="space-y-8">
                 <div className="bg-card rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
-                  {!selectedInstance?.flowId && (
+                  {!selectedJourneyInstance?.flowId && (
                     <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-12 text-center space-y-4">
                       <Settings2 className="size-12 text-amber-500 animate-spin" />
                       <div className="space-y-1">
