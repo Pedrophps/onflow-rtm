@@ -190,6 +190,7 @@ export default function OnboardingManagement() {
     setJourneyInstance(instance);
     setIsFetchingSteps(true);
     setJourneySteps([]);
+    setExpandedStepId(null);
     
     let productId = instance.productId;
     const productById = dbProducts.find(p => p.id === productId);
@@ -285,6 +286,12 @@ export default function OnboardingManagement() {
     }
   };
 
+  const journeyProgress = useMemo(() => {
+    if (!journeySteps.length) return 0;
+    const currentOrder = journeyInstance?.currentStepOrder || 1;
+    return Math.min(100, Math.round(((currentOrder - 1) / journeySteps.length) * 100));
+  }, [journeySteps, journeyInstance]);
+
   if (clientsLoading || instancesLoading) {
     return <DashboardLayout role="admin"><div className="flex flex-col items-center justify-center p-20 gap-4"><Loader2 className="animate-spin text-primary size-10" /></div></DashboardLayout>;
   }
@@ -365,69 +372,72 @@ export default function OnboardingManagement() {
             <TabsContent value="my" className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 {myOnboardings.length > 0 ? (
-                  myOnboardings.map((inst) => (
-                    <Card key={inst.id} className="hover:border-primary/40 transition-all overflow-hidden border-2">
-                      <CardHeader className="bg-slate-50 p-4 border-b flex flex-row justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          {inst.flowId ? (
-                             <Badge className="bg-emerald-500 text-[9px] uppercase">Fluxo em Execução</Badge>
-                          ) : (
-                             <Badge variant="destructive" className="text-[9px] uppercase animate-pulse">Pendente Seleção de Roteiro</Badge>
-                          )}
-                        </div>
-                        <span className="text-[10px] text-muted-foreground font-bold">{new Date(inst.startedAt).toLocaleDateString()}</span>
-                      </CardHeader>
-                      <CardContent className="p-6 space-y-6">
-                        <div className="space-y-1">
-                          <h4 className="font-bold text-xl">{inst.institutionName}</h4>
-                          <p className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Briefcase className="size-3.5" /> Produto: <strong>{productsMap[inst.productId] || inst.productId}</strong>
-                          </p>
-                        </div>
+                  myOnboardings.map((inst) => {
+                    const activeProduct = dbProducts.find(p => p.id === inst.productId || p.name === inst.productId);
+                    return (
+                      <Card key={inst.id} className="hover:border-primary/40 transition-all overflow-hidden border-2">
+                        <CardHeader className="bg-slate-50 p-4 border-b flex flex-row justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            {inst.flowId ? (
+                               <Badge className="bg-emerald-500 text-[9px] uppercase">Fluxo em Execução</Badge>
+                            ) : (
+                               <Badge variant="destructive" className="text-[9px] uppercase animate-pulse">Pendente Seleção de Roteiro</Badge>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground font-bold">{new Date(inst.startedAt).toLocaleDateString()}</span>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-6">
+                          <div className="space-y-1">
+                            <h4 className="font-bold text-xl">{inst.institutionName}</h4>
+                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                              <Briefcase className="size-3.5" /> Produto: <strong>{productsMap[inst.productId] || inst.productId}</strong>
+                            </p>
+                          </div>
 
-                        {inst.flowId && (
-                           <div className="bg-primary/5 p-3 rounded-xl border border-primary/10">
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="text-[10px] font-bold text-primary uppercase">Progresso Atual</span>
-                                <span className="text-xs font-black text-primary">Etapa {inst.currentStepOrder}</span>
-                              </div>
-                              <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-primary" style={{ width: '30%' }} />
-                              </div>
-                           </div>
-                        )}
-                        
-                        <div className="grid grid-cols-2 gap-2">
-                          <Button 
-                            variant="outline" 
-                            className="w-full rounded-xl font-bold text-xs"
-                            onClick={() => handleViewFicha(inst.clientId)}
-                          >
-                            Ver Ficha
-                          </Button>
-                          {inst.flowId ? (
-                            <Button 
-                              className="w-full rounded-xl font-bold text-xs gap-2"
-                              onClick={() => openJourneyView(inst)}
-                              disabled={isFetchingSteps}
-                            >
-                              {isFetchingSteps ? <Loader2 className="size-3 animate-spin" /> : <ChevronRight className="size-3" />}
-                              Ver Jornada
-                            </Button>
-                          ) : (
-                            <Button 
-                              className="w-full rounded-xl font-bold text-xs gap-2 bg-amber-600 hover:bg-amber-700"
-                              onClick={() => openFlowSelection(inst)}
-                              disabled={isFetchingFlows}
-                            >
-                              {isFetchingFlows ? <Loader2 className="size-3 animate-spin" /> : <Settings2 className="size-3" />}
-                              Definir Fluxo
-                            </Button>
+                          {inst.flowId && (
+                             <div className="bg-primary/5 p-3 rounded-xl border border-primary/10">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="text-[10px] font-bold text-primary uppercase">Progresso Atual</span>
+                                  <span className="text-xs font-black text-primary">Etapa {inst.currentStepOrder}</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                  <div className="h-full bg-primary" style={{ width: '30%' }} />
+                                </div>
+                             </div>
                           )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button 
+                              variant="outline" 
+                              className="w-full rounded-xl font-bold text-xs"
+                              onClick={() => handleViewFicha(inst.clientId)}
+                            >
+                              Ver Ficha
+                            </Button>
+                            {inst.flowId ? (
+                              <Button 
+                                className="w-full rounded-xl font-bold text-xs gap-2"
+                                onClick={() => openJourneyView(inst)}
+                                disabled={isFetchingSteps}
+                              >
+                                {isFetchingSteps ? <Loader2 className="size-3 animate-spin" /> : <ChevronRight className="size-3" />}
+                                Ver Jornada
+                              </Button>
+                            ) : (
+                              <Button 
+                                className="w-full rounded-xl font-bold text-xs gap-2 bg-amber-600 hover:bg-amber-700"
+                                onClick={() => openFlowSelection(inst)}
+                                disabled={isFetchingFlows}
+                              >
+                                {isFetchingFlows ? <Loader2 className="size-3 animate-spin" /> : <Settings2 className="size-3" />}
+                                Definir Fluxo
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })
                 ) : (
                   <div className="col-span-full p-20 text-center border-2 border-dashed rounded-3xl">
                     <p className="text-muted-foreground">Você ainda não assumiu atendimentos para ativação.</p>
@@ -623,154 +633,145 @@ export default function OnboardingManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de Visão da Jornada */}
+      {/* Diálogo de Visão da Jornada (Unificado com visão do cliente) */}
       <Dialog open={isJourneyOpen} onOpenChange={setIsJourneyOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 px-3 py-1 font-bold">
-                  <CheckCircle2 className="size-3.5" /> JORNADA TÉCNICA
-                </Badge>
-                <DialogTitle className="text-3xl font-bold font-headline">
-                  {journeyInstance?.institutionName} - {productsMap[journeyInstance?.productId!] || journeyInstance?.productId}
-                </DialogTitle>
-                <p className="text-muted-foreground font-medium">Analista RTM: <span className="text-foreground font-bold">{journeyInstance?.techName || 'Pendente'}</span></p>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0">
+          <div className="p-8 space-y-8">
+            <div className="bg-white rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
+              {!journeyInstance?.flowId && (
+                <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-12 text-center space-y-4">
+                  <Settings2 className="size-12 text-amber-500 animate-spin" />
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-bold text-slate-900">Roteiro em Definição</h3>
+                    <p className="text-sm text-muted-foreground max-w-md">O analista de suporte <strong>{journeyInstance?.techName || 'técnico'}</strong> está configurando o roteiro de ativação.</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
+                <div className="space-y-2 text-left">
+                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 px-3 py-1 font-bold">
+                    <CheckCircle2 className="size-3.5" /> JORNADA TÉCNICA
+                  </Badge>
+                  <h2 className="text-3xl font-bold font-headline">{journeyInstance?.institutionName} - {productsMap[journeyInstance?.productId!] || journeyInstance?.productId}</h2>
+                  <p className="text-muted-foreground font-medium">Analista RTM: <span className="text-foreground font-bold">{journeyInstance?.techName || 'Pendente'}</span></p>
+                </div>
+                <div className="text-right">
+                  <span className="text-5xl font-black text-primary">{journeyProgress}%</span>
+                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Concluído</p>
+                </div>
               </div>
-              <div className="text-right">
-                {journeySteps.length > 0 && (
-                  <>
-                    <span className="text-5xl font-black text-primary">
-                      {Math.min(100, Math.round(((Math.max(0, (journeyInstance?.currentStepOrder || 1) - 1)) / journeySteps.length) * 100))}%
-                    </span>
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Concluído</p>
-                  </>
-                )}
-              </div>
+              <Progress value={journeyProgress} className="h-3 rounded-full" />
             </div>
-          </DialogHeader>
 
-          <div className="py-8 space-y-10">
-            {journeySteps.length > 0 ? (
-              <>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-bold text-muted-foreground uppercase">
-                    <span>Progresso do Projeto</span>
-                    <span>Etapa {journeyInstance?.currentStepOrder} de {journeySteps.length}</span>
-                  </div>
-                  <Progress 
-                    value={Math.min(100, ((Math.max(0, (journeyInstance?.currentStepOrder || 1) - 1)) / journeySteps.length) * 100)} 
-                    className="h-3 rounded-full" 
-                  />
-                </div>
+            <div className="space-y-6 text-left">
+              <h3 className="text-lg font-bold font-headline flex items-center gap-2">
+                <ClipboardList className="size-5 text-primary" /> Etapas do Roteiro Técnico
+              </h3>
+              
+              {isFetchingSteps ? (
+                <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" /></div>
+              ) : journeySteps.length > 0 ? (
+                <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
+                  {journeySteps.map((step) => {
+                    const isCompleted = step.order < (journeyInstance?.currentStepOrder || 1);
+                    const isCurrent = step.order === (journeyInstance?.currentStepOrder || 1);
+                    const isFuture = step.order > (journeyInstance?.currentStepOrder || 1);
+                    const isExpanded = expandedStepId === step.id;
 
-                <div className="space-y-6">
-                  <h3 className="text-lg font-bold font-headline flex items-center gap-2">
-                    <ClipboardList className="size-5 text-primary" /> Etapas do Roteiro Técnico
-                  </h3>
-                  
-                  <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
-                    {journeySteps.map((step) => {
-                      const isCompleted = step.order < (journeyInstance?.currentStepOrder || 1);
-                      const isCurrent = step.order === (journeyInstance?.currentStepOrder || 1);
-                      const isFuture = step.order > (journeyInstance?.currentStepOrder || 1);
-                      const isExpanded = expandedStepId === step.id;
-
-                      return (
-                        <div key={step.id} className="relative">
-                          <div className={cn(
-                            "absolute -left-[29px] top-1 size-6 rounded-full border-2 flex items-center justify-center transition-all z-10 bg-white",
-                            isCompleted ? "border-emerald-500 bg-emerald-500 text-white" : 
-                            isCurrent ? "border-primary bg-primary text-white animate-pulse" : 
-                            "border-slate-200 text-slate-400"
-                          )}>
-                            {isCompleted ? <CheckCircle2 className="size-3.5" /> : 
-                             <span className="text-[10px] font-bold">{step.order}</span>}
-                          </div>
-                          
-                          <Card className={cn(
-                            "transition-all duration-300",
-                            isCurrent ? "ring-2 ring-primary/20 shadow-lg border-primary/40" : 
-                            isFuture ? "opacity-60" : "hover:border-primary/30"
-                          )}>
-                            <CardHeader 
-                              className="p-5 flex flex-row items-center justify-between cursor-pointer"
-                              onClick={() => setExpandedStepId(isExpanded ? null : step.id || null)}
-                            >
-                              <div className="flex-1 space-y-1">
-                                <div className="flex items-center gap-3">
-                                  <CardTitle className={cn(
-                                    "text-base font-bold",
-                                    isCompleted ? "text-slate-400" : "text-slate-800"
-                                  )}>{step.name}</CardTitle>
-                                  <Badge variant="secondary" className="text-[9px] uppercase font-bold bg-slate-100 gap-1">
-                                    {getResponsibleIcon(step.responsible)}
-                                    {step.responsible}
-                                  </Badge>
-                                </div>
-                                <CardDescription className="text-sm line-clamp-1">{step.description}</CardDescription>
-                              </div>
-                              {isExpanded ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
-                            </CardHeader>
-
-                            {isExpanded && (
-                              <CardContent className="p-5 pt-0 border-t bg-slate-50/30">
-                                <div className="mt-5 space-y-6">
-                                  <div className="grid md:grid-cols-2 gap-4">
-                                     <div className="space-y-1">
-                                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SLA de Atendimento</p>
-                                        <p className="text-xs font-bold flex items-center gap-2"><Clock className="size-3" /> {step.estimatedTimeInHours}h Úteis</p>
-                                     </div>
-                                     <div className="space-y-1">
-                                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Ação</p>
-                                        <p className="text-xs font-bold flex items-center gap-2"><FileText className="size-3" /> {step.type === 'upload' ? 'Evidência Requerida' : 'Formulário Interno'}</p>
-                                     </div>
-                                  </div>
-                                  
-                                  <div className="p-4 rounded-xl bg-white border border-slate-200">
-                                    <p className="text-sm text-slate-700 leading-relaxed font-medium">
-                                      {step.description}
-                                    </p>
-                                  </div>
-
-                                  {isSupport && isCurrent && (
-                                    <div className="flex justify-end gap-3 pt-4 border-t">
-                                      <Button 
-                                        className="font-bold gap-2"
-                                        onClick={() => handleAdvanceStep(journeyInstance?.id!, step.order)}
-                                        disabled={isAdvancing}
-                                      >
-                                        {isAdvancing ? <Loader2 className="size-4 animate-spin" /> : <ChevronRight className="size-4" />}
-                                        Concluir Etapa {step.order}
-                                      </Button>
-                                    </div>
-                                  )}
-                                </div>
-                              </CardContent>
-                            )}
-                          </Card>
+                    return (
+                      <div key={step.id} className="relative">
+                        <div className={cn(
+                          "absolute -left-[29px] top-1 size-6 rounded-full border-2 flex items-center justify-center transition-all z-10 bg-white",
+                          isCompleted ? "border-emerald-500 bg-emerald-500 text-white" : 
+                          isCurrent ? "border-primary bg-primary text-white animate-pulse" : 
+                          "border-slate-200 text-slate-400"
+                        )}>
+                          {isCompleted ? <CheckCircle2 className="size-3.5" /> : 
+                           <span className="text-[10px] font-bold">{step.order}</span>}
                         </div>
-                      );
-                    })}
+                        
+                        <Card className={cn(
+                          "transition-all duration-300",
+                          isCurrent ? "ring-2 ring-primary/20 shadow-lg border-primary/40" : 
+                          isFuture ? "opacity-60" : "hover:border-primary/30"
+                        )}>
+                          <CardHeader 
+                            className="p-5 flex flex-row items-center justify-between cursor-pointer"
+                            onClick={() => setExpandedStepId(isExpanded ? null : step.id || null)}
+                          >
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center gap-3">
+                                <CardTitle className={cn(
+                                  "text-base font-bold",
+                                  isCompleted ? "text-slate-400" : "text-slate-800"
+                                )}>{step.name}</CardTitle>
+                                <Badge variant="secondary" className="text-[9px] uppercase font-bold bg-slate-100 gap-1">
+                                  {getResponsibleIcon(step.responsible)}
+                                  {step.responsible}
+                                </Badge>
+                              </div>
+                              <CardDescription className="text-sm line-clamp-1">{step.description}</CardDescription>
+                            </div>
+                            {isExpanded ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
+                          </CardHeader>
+
+                          {isExpanded && (
+                            <CardContent className="p-5 pt-0 border-t bg-slate-50/30">
+                              <div className="mt-5 space-y-6">
+                                <div className="grid md:grid-cols-2 gap-4">
+                                   <div className="space-y-1">
+                                      <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SLA de Atendimento</p>
+                                      <p className="text-xs font-bold flex items-center gap-2"><Clock className="size-3" /> {step.estimatedTimeInHours}h Úteis</p>
+                                   </div>
+                                   <div className="space-y-1">
+                                      <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Ação</p>
+                                      <p className="text-xs font-bold flex items-center gap-2"><FileText className="size-3" /> {step.type === 'upload' ? 'Evidência Requerida' : 'Formulário Interno'}</p>
+                                   </div>
+                                </div>
+                                
+                                <div className="p-4 rounded-xl bg-white border border-slate-200">
+                                  <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                                    {step.description}
+                                  </p>
+                                </div>
+
+                                {isSupport && isCurrent && (
+                                  <div className="flex justify-end gap-3 pt-4 border-t">
+                                    <Button 
+                                      className="font-bold gap-2 rounded-full px-8"
+                                      onClick={() => handleAdvanceStep(journeyInstance?.id!, step.order)}
+                                      disabled={isAdvancing}
+                                    >
+                                      {isAdvancing ? <Loader2 className="size-4 animate-spin" /> : <ChevronRight className="size-4" />}
+                                      Concluir Etapa {step.order}
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          )}
+                        </Card>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-20 text-center border-2 border-dashed rounded-3xl bg-slate-50/50 space-y-4">
+                  <AlertTriangle className="size-12 mx-auto text-amber-500/20" />
+                  <div className="space-y-1">
+                    <p className="font-bold text-slate-900">Nenhum roteiro técnico ativo</p>
+                    <p className="text-sm text-muted-foreground">O analista de suporte ainda não selecionou um fluxo para esta instituição.</p>
                   </div>
                 </div>
-              </>
-            ) : (
-              <div className="p-20 text-center border-2 border-dashed rounded-3xl bg-slate-50/50 space-y-4">
-                <AlertTriangle className="size-12 mx-auto text-amber-500/20" />
-                <div className="space-y-1">
-                  <p className="font-bold text-slate-900">Nenhum roteiro técnico ativo</p>
-                  <p className="text-sm text-muted-foreground">O analista de suporte ainda não selecionou um fluxo para esta instituição.</p>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-          <DialogFooter className="border-t pt-4">
-            <Button className="w-full font-bold h-12" onClick={() => setIsJourneyOpen(false)}>Fechar Visualização</Button>
+          <DialogFooter className="p-6 bg-slate-50 border-t">
+            <Button className="w-full font-bold h-12 rounded-xl" onClick={() => setIsJourneyOpen(false)}>Fechar Visualização</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>
   );
 }
-
