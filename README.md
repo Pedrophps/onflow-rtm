@@ -115,4 +115,11 @@ A arquitetura é dividida em:
 - **Motivo**: Alinhamento com a estrutura de diretórios padrão do ShadCN e correção de erro de build reportado pelo usuário.
 
 ---
+
+## [UPDATE - V1.10 - RESTAURAÇÃO DE CAMPOS DE CADASTRO]
+- **Correção**: Restauração dos campos de **Instituição** e **CNPJ** no formulário de cadastro (Sign Up).
+- **Motivo**: Os campos são essenciais para o perfil `client` e foram omitidos acidentalmente em iterações anteriores.
+- **Garantia**: O formulário agora valida se o e-mail não é `@rtm.net.br` para exigir os dados institucionais.
+
+---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*
