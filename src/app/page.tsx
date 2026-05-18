@@ -17,7 +17,6 @@ import {
   Server,
   TrendingUp,
   MapPin,
-  PieChart,
   LayoutGrid,
   History,
   Cloud,
@@ -40,7 +39,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import Image from 'next/image';
+import { HeroBackground } from '@/components/hero-background';
 
 export default function Home() {
   return (
@@ -89,14 +88,15 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center bg-slate-50 pt-20">
-        <div className="container mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-8 animate-in fade-in slide-in-from-left duration-700">
-            <h1 className="text-5xl lg:text-7xl font-bold tracking-tighter text-foreground font-headline leading-tight">
+      <section className="relative min-h-[90vh] flex items-center bg-slate-950 overflow-hidden pt-20">
+        <HeroBackground />
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-left duration-700">
+            <h1 className="text-5xl lg:text-7xl font-bold tracking-tighter text-white font-headline leading-tight">
               Somos a <span className="text-primary border-b-4 border-primary/20">RTM.</span><br />
               <span className="text-3xl lg:text-5xl opacity-80 block mt-2 font-medium">O Hub integrador do mercado financeiro.</span>
             </h1>
-            <p className="text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-xl font-light">
+            <p className="text-xl lg:text-2xl text-slate-300 leading-relaxed max-w-2xl font-light">
               Integramos o mercado financeiro brasileiro. Nossas soluções e ferramentas potencializam os resultados dos nossos clientes.
             </p>
             <div className="flex gap-4">
@@ -105,18 +105,8 @@ export default function Home() {
               </Button>
             </div>
           </div>
-          <div className="relative h-[550px] hidden lg:block animate-in fade-in slide-in-from-right duration-1000">
-             <div className="absolute inset-0 bg-primary/10 rounded-[3rem] -rotate-3 transform translate-x-4 translate-y-4"></div>
-             <Image 
-              src="https://picsum.photos/seed/rtm-hub/1200/800" 
-              alt="RTM Hub" 
-              fill 
-              className="object-cover rounded-[3rem] shadow-2xl relative z-10"
-              priority
-              data-ai-hint="financial building"
-            />
-          </div>
         </div>
+        <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white to-transparent"></div>
       </section>
 
       {/* Sobre Section */}
@@ -179,7 +169,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Serviços Críticos */}
+      {/* Serviços Críticos Section */}
       <section id="servicos" className="py-32 bg-slate-50">
         <div className="container mx-auto px-6 text-foreground">
           <div className="text-center mb-20 space-y-4">
