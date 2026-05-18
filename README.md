@@ -5,12 +5,11 @@ O **OnFlow RTM** é a plataforma central de orquestração para ativação de se
 
 ---
 
-## 🚀 COMO TESTAR VIA POSTMAN (IMPORTANTE)
+## 🚀 COMO TESTAR VIA POSTMAN (ATUALIZADO)
 
-Como este projeto está rodando em um ambiente de nuvem, você deve usar a URL pública do seu workspace.
+Utilize a URL abaixo, que é o endereço público do seu ambiente atual.
 
-### 1. Sua URL de Teste
-Baseado no seu ambiente, sua rota de API é:
+### 1. Sua URL de Endpoint
 `https://6000-firebase-studio-1779040400544.cluster-xvr5pmatm5a4gx76fmat6kxt6o.cloudworkstations.dev/api/erp/process`
 
 ### 2. Configuração no Postman
