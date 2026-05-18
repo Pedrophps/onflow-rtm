@@ -21,5 +21,10 @@ Este documento é a fonte única de verdade (Single Source of Truth) para o proj
 - **Implementação Técnica**: Atualização do `firestore.rules` para permitir CRUD em `submissions` baseado em UID ou cargo admin.
 - **Dinamicidade**: Dashboard do Cliente agora consome etapas reais do produto vinculado no perfil, filtrando permissões de edição localmente.
 
+## [UPDATE - V1.19 - FINALIZAÇÃO E PUBLICAÇÃO DO FLUXO]
+- **Melhoria de UX**: Adição de botões globais de "Salvar Rascunho" e "Publicar Fluxo" no rodapé da página de detalhes.
+- **Bug Fix**: Correção do tratamento de números no SLA para evitar a exibição de `NaN`.
+- **Lógica de Publicação**: Fluxos publicados agora alteram seu status para `active`, sinalizando prontidão para instanciamento.
+
 ---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*

@@ -3,7 +3,7 @@
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
-import { collection, query, addDoc, serverTimestamp, doc, orderBy } from "firebase/firestore";
+import { collection, query, addDoc, serverTimestamp, doc, orderBy, updateDoc } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Product, ActivationFlow, FlowStep, UserProfile } from "@/lib/types";
-import { Plus, GripVertical, ArrowLeft, Loader2, GitFork, CheckCircle2, ShieldCheck, User, Headset, HardDrive, FileEdit, Save } from "lucide-react";
+import { Plus, GripVertical, ArrowLeft, Loader2, GitFork, CheckCircle2, ShieldCheck, User, Headset, HardDrive, FileEdit, Save, Rocket } from "lucide-react";
 import { useState, useMemo, use } from "react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -85,6 +85,35 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
       });
   };
 
+  const handleUpdateFlowStatus = async (published: boolean) => {
+    if (!user || isSubmitting) return;
+    setIsSubmitting(true);
+
+    const updateData = {
+      published,
+      status: published ? 'active' : 'draft',
+      updatedAt: serverTimestamp()
+    };
+
+    updateDoc(flowRef, updateData)
+      .then(() => {
+        toast({ 
+          title: published ? "Fluxo Publicado" : "Fluxo Atualizado", 
+          description: published ? "O fluxo agora está disponível para novos onboardings." : "As alterações foram salvas como rascunho."
+        });
+      })
+      .catch(async (error) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: flowRef.path,
+          operation: 'update',
+          requestResourceData: updateData,
+        }));
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
+  };
+
   const getResponsibleIcon = (role: string) => {
     switch (role) {
       case 'suporte': return <Headset className="size-3" />;
@@ -101,7 +130,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
 
   return (
     <DashboardLayout role="admin">
-      <div className="space-y-8">
+      <div className="space-y-8 pb-24">
         <div className="flex flex-col gap-4">
           <Button variant="ghost" asChild className="w-fit -ml-4 gap-2 text-muted-foreground hover:text-primary">
             <Link href={`/dashboard/admin/products/${productId}`}><ArrowLeft className="size-4" /> Voltar ao Produto</Link>
@@ -112,7 +141,9 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
               <div className="flex items-center gap-3">
                 <GitFork className="size-8 text-primary" />
                 <h1 className="text-3xl font-bold font-headline text-slate-900">{flow.name}</h1>
-                <Badge className="bg-slate-900">{product?.name}</Badge>
+                <Badge className={cn("rounded-sm", flow.published ? "bg-emerald-500" : "bg-slate-500")}>
+                  {flow.published ? 'Publicado' : 'Rascunho'}
+                </Badge>
               </div>
               <p className="text-muted-foreground max-w-2xl">{flow.description}</p>
             </div>
@@ -155,7 +186,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                       <Label>SLA Estimado (Horas)</Label>
                       <Input 
                         type="number" 
-                        value={newStep.estimatedTimeInHours === undefined ? '' : newStep.estimatedTimeInHours} 
+                        value={newStep.estimatedTimeInHours || ''} 
                         onChange={e => {
                           const val = parseInt(e.target.value);
                           setNewStep({...newStep, estimatedTimeInHours: isNaN(val) ? 0 : val});
@@ -191,12 +222,10 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
             ) : steps.length > 0 ? (
               steps.map((step, i) => (
                 <div key={step.id} className="group relative pl-12">
-                  {/* Linha da Timeline */}
                   {i < steps.length - 1 && (
                     <div className="absolute left-[23px] top-10 bottom-0 w-[2px] bg-slate-100 group-last:hidden" />
                   )}
                   
-                  {/* Marcador da Etapa */}
                   <div className={cn(
                     "absolute left-0 top-1 size-12 rounded-2xl border-2 bg-white flex items-center justify-center transition-all z-10",
                     isSupport ? "hover:border-primary hover:shadow-md cursor-grab active:cursor-grabbing" : ""
@@ -233,7 +262,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
 
                         <div className="flex flex-col items-end gap-1 border-l pl-6">
                           <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SLA</span>
-                          <span className="text-xs font-bold text-slate-900">{(step.estimatedTimeInHours || 0)} horas</span>
+                          <span className="text-xs font-bold text-slate-900">{Number(step.estimatedTimeInHours || 0)} horas</span>
                         </div>
                       </div>
                     </CardContent>
@@ -253,6 +282,38 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
             )}
           </div>
         </div>
+
+        {/* Rodapé de Ações do Fluxo */}
+        {isSupport && (
+          <div className="fixed bottom-0 right-0 left-0 md:left-64 bg-white/80 backdrop-blur-lg border-t p-4 px-10 flex justify-end items-center gap-4 z-50">
+            <div className="mr-auto hidden md:block">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Status Atual</p>
+              <div className="flex items-center gap-2">
+                <div className={cn("size-2 rounded-full", flow.published ? "bg-emerald-500 animate-pulse" : "bg-slate-400")} />
+                <span className="text-xs font-bold">{flow.published ? 'Fluxo Ativo para Clientes' : 'Aguardando Publicação'}</span>
+              </div>
+            </div>
+            
+            <Button 
+              variant="outline" 
+              className="font-bold border-2" 
+              onClick={() => handleUpdateFlowStatus(false)}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? <Loader2 className="size-4 animate-spin mr-2" /> : <Save className="size-4 mr-2" />}
+              Salvar Rascunho
+            </Button>
+            
+            <Button 
+              className="font-bold gap-2 px-8 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90"
+              onClick={() => handleUpdateFlowStatus(true)}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Rocket className="size-4" />}
+              Publicar Fluxo
+            </Button>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
