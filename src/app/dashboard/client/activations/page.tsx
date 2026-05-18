@@ -5,13 +5,14 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { FlowStep, UserProfile, Product, ActivationFlow, OnboardingInstance } from "@/lib/types";
-import { CheckCircle2, ChevronDown, ChevronUp, FileUp, Send, Clock, ShieldAlert, Loader2, Zap, Lock, Circle } from "lucide-react";
-import { useState, useMemo } from "react";
+import { CheckCircle2, ChevronDown, ChevronUp, FileUp, Send, Clock, ShieldAlert, Loader2, Zap, Lock, Circle, ArrowRight, Package, LayoutGrid } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
-import { doc, collection, query, where, limit, addDoc, serverTimestamp } from "firebase/firestore";
+import { doc, collection, query, where, addDoc, serverTimestamp } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -22,53 +23,61 @@ export default function ActivationsPage() {
   const db = useFirestore();
   const { toast } = useToast();
   
+  const [activeTab, setActiveTab] = useState("selection");
+  const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
+  const [expandedStage, setExpandedStage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
   
-  // Buscar Instância de Onboarding Ativa
-  const instanceQuery = useMemo(() => 
+  // 1. Buscar Todas as Instâncias de Onboarding do Cliente
+  const instancesQuery = useMemo(() => 
     user ? query(
       collection(db, "onboardingInstances"),
-      where("clientId", "==", user.uid),
-      where("status", "==", "active"),
-      limit(1)
+      where("clientId", "==", user.uid)
     ) : null, 
   [db, user]);
-  const { data: instances, loading: instanceLoading } = useCollection<OnboardingInstance>(instanceQuery);
-  const instance = instances?.[0];
+  const { data: instances, loading: instancesLoading } = useCollection<OnboardingInstance>(instancesQuery);
 
-  // Buscar Produto
-  const productRef = useMemo(() => instance?.productId ? doc(db, "products", instance.productId) : null, [db, instance]);
+  // 2. Instância Selecionada
+  const selectedInstance = useMemo(() => 
+    instances.find(inst => inst.id === selectedInstanceId), 
+  [instances, selectedInstanceId]);
+
+  // 3. Buscar Dados do Produto Selecionado
+  const productRef = useMemo(() => selectedInstance?.productId ? doc(db, "products", selectedInstance.productId) : null, [db, selectedInstance]);
   const { data: product } = useDoc<Product>(productRef);
 
-  // Buscar Fluxo (a partir da instância)
-  const flowRef = useMemo(() => (instance?.productId && instance?.flowId) ? doc(db, "products", instance.productId, "activationFlows", instance.flowId) : null, [db, instance]);
-  const { data: flow } = useDoc<ActivationFlow>(flowRef);
-
-  // Buscar Etapas do Fluxo
+  // 4. Buscar Etapas do Fluxo do Produto Selecionado
   const stepsQuery = useMemo(() => 
-    (instance?.productId && instance?.flowId) ? query(
-      collection(db, "products", instance.productId, "activationFlows", instance.flowId, "steps")
+    (selectedInstance?.productId && selectedInstance?.flowId) ? query(
+      collection(db, "products", selectedInstance.productId, "activationFlows", selectedInstance.flowId, "steps")
     ) : null, 
-  [db, instance]);
+  [db, selectedInstance]);
   const { data: rawSteps, loading: stepsLoading } = useCollection<FlowStep>(stepsQuery);
   
   const steps = useMemo(() => [...rawSteps].sort((a, b) => a.order - b.order), [rawSteps]);
 
-  const [expandedStage, setExpandedStage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Efeito para mudar de aba quando um produto é selecionado
+  useEffect(() => {
+    if (selectedInstanceId) {
+      setActiveTab("journey");
+    }
+  }, [selectedInstanceId]);
 
-  // Lógica de Validação RTM
-  const isFullyValidated = profile?.status === 'approved' && profile?.clientCode && profile?.activeProduct;
+  const handleSelectInstance = (id: string) => {
+    setSelectedInstanceId(id);
+  };
 
   const handleSendEvidence = async (step: FlowStep) => {
-    if (!user || isSubmitting) return;
+    if (!user || isSubmitting || !selectedInstance) return;
     setIsSubmitting(true);
 
     const submissionData = {
       userId: user.uid,
-      productId: instance?.productId,
-      flowId: instance?.flowId,
+      productId: selectedInstance.productId,
+      flowId: selectedInstance.flowId,
       stepId: step.id,
       submittedAt: serverTimestamp(),
       status: 'pending',
@@ -94,207 +103,239 @@ export default function ActivationsPage() {
     }
   };
 
-  if (profileLoading || instanceLoading || stepsLoading) {
+  if (profileLoading || instancesLoading) {
     return (
       <DashboardLayout role="client">
         <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
           <Loader2 className="size-8 animate-spin text-primary" />
-          <p className="text-muted-foreground font-medium">Carregando sua jornada técnica...</p>
+          <p className="text-muted-foreground font-medium text-sm">Carregando seus produtos...</p>
         </div>
       </DashboardLayout>
     );
   }
 
-  if (!isFullyValidated || !instance) {
-    return (
-      <DashboardLayout role="client">
-        <div className="max-w-2xl mx-auto mt-10 md:mt-20 text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="size-24 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 mx-auto">
-            <ShieldAlert className="size-12" />
-          </div>
-          <div className="space-y-4">
-            <h1 className="text-3xl font-bold font-headline">Aguardando Habilitação Técnica</h1>
-            <p className="text-muted-foreground text-lg leading-relaxed">
-              Olá, <span className="font-bold text-foreground">{profile?.displayName}</span>. 
-              Sua conta institucional está aguardando a atribuição de um Analista de Suporte RTM para iniciar o fluxo técnico.
-            </p>
-          </div>
-          
-          <Card className="bg-white border-2 border-amber-100 shadow-sm overflow-hidden">
-            <div className="bg-amber-50 px-6 py-3 border-b border-amber-100 flex items-center gap-2">
-              <Clock className="size-4 text-amber-600" />
-              <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">Status de Conformidade RTM</span>
-            </div>
-            <CardContent className="p-6 text-left space-y-4">
-              <div className="grid gap-4">
-                <CheckItem label="Aprovação de Cadastro" checked={profile?.status === 'approved'} />
-                <CheckItem label="Atribuição de ID RTM" checked={!!profile?.clientCode} />
-                <CheckItem label="Instância de Ativação Criada" checked={!!instance} />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  const currentStepOrder = instance?.currentStepOrder || 1;
+  const currentStepOrder = selectedInstance?.currentStepOrder || 1;
   const progress = steps.length > 0 ? ((currentStepOrder - 1) / steps.length) * 100 : 0;
 
   return (
     <DashboardLayout role="client">
       <div className="max-w-4xl mx-auto space-y-8">
-        <div className="bg-white rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-5">
-            <Zap className="size-32 text-primary" />
-          </div>
-          
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
-            <div className="space-y-2">
-              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 px-3 py-1">
-                <CheckCircle2 className="size-3.5" /> Ativação em Curso
-              </Badge>
-              <h1 className="text-3xl font-bold font-headline">Ativação: {product?.name || profile?.activeProduct}</h1>
-              <p className="text-muted-foreground font-medium">{profile?.institutionName} • ID {profile?.clientCode}</p>
-            </div>
-            <div className="text-right">
-              <span className="text-5xl font-black text-primary">{Math.round(progress)}%</span>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Progresso Atual</p>
-            </div>
-          </div>
-          <Progress value={progress} className="h-3 rounded-full" />
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-bold font-headline text-slate-900">Ativações Técnicas</h1>
+          <p className="text-muted-foreground">Gerencie a jornada de ativação dos seus produtos RTM.</p>
         </div>
 
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold font-headline flex items-center gap-2">Etapas do Workflow</h2>
-            <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-tighter">Analista: {instance?.techName || 'Pendente'}</Badge>
-          </div>
-          
-          <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
-            {steps.map((step) => {
-              const isCompleted = step.order < currentStepOrder;
-              const isCurrent = step.order === currentStepOrder;
-              const isFuture = step.order > currentStepOrder;
-              const isClientResponsible = step.responsible === 'cliente';
-              const isExpanded = expandedStage === step.id;
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+          <TabsList className="bg-slate-100 p-1 h-12 rounded-xl">
+            <TabsTrigger value="selection" className="rounded-lg px-8 gap-2 data-[state=active]:bg-white">
+              <LayoutGrid className="size-4" /> Selecionar Produto
+            </TabsTrigger>
+            <TabsTrigger 
+              value="journey" 
+              disabled={!selectedInstanceId} 
+              className="rounded-lg px-8 gap-2 data-[state=active]:bg-white"
+            >
+              <Zap className="size-4" /> Jornada Técnica
+            </TabsTrigger>
+          </TabsList>
 
-              return (
-                <div key={step.id} className="relative">
-                  <div className={cn(
-                    "absolute -left-[29px] top-1 size-6 rounded-full border-2 flex items-center justify-center transition-all z-10 bg-white shadow-sm",
-                    isCompleted ? "border-emerald-500 bg-emerald-500 text-white" : 
-                    isCurrent ? "border-primary bg-primary text-white animate-pulse" : 
-                    "border-slate-200 text-slate-400"
-                  )}>
-                    {isCompleted ? <CheckCircle2 className="size-3.5" /> : 
-                     isCurrent ? <Circle className="size-2 fill-current" /> :
-                     <span className="text-[10px] font-bold">{step.order}</span>}
+          <TabsContent value="selection" className="animate-in fade-in slide-in-from-left duration-500">
+            <div className="grid gap-6 md:grid-cols-2">
+              {instances.length > 0 ? instances.map((inst) => (
+                <Card 
+                  key={inst.id} 
+                  className={cn(
+                    "cursor-pointer transition-all hover:border-primary group relative overflow-hidden",
+                    selectedInstanceId === inst.id ? "border-primary ring-2 ring-primary/10" : "border-slate-200"
+                  )}
+                  onClick={() => handleSelectInstance(inst.id!)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <div className="size-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                        <Package className="size-6" />
+                      </div>
+                      <Badge variant={inst.status === 'active' ? 'default' : 'secondary'} className="uppercase text-[10px]">
+                        {inst.status === 'active' ? 'Em Ativação' : inst.status}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <CardTitle className="text-xl mb-1">{inst.productId}</CardTitle>
+                      <CardDescription className="text-xs">ID RTM: {profile?.clientCode || 'Pendente'}</CardDescription>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase">
+                        <span>Progresso Técnico</span>
+                        <span>Etapa {inst.currentStepOrder}</span>
+                      </div>
+                      <Progress value={25} className="h-1.5" />
+                    </div>
+                    <Button variant="ghost" className="w-full justify-between font-bold text-xs group-hover:text-primary p-0">
+                      Gerenciar Ativação <ArrowRight className="size-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              )) : (
+                <div className="col-span-full p-20 text-center border-2 border-dashed rounded-3xl space-y-4 bg-white">
+                  <ShieldAlert className="size-12 mx-auto text-amber-500/20" />
+                  <div className="space-y-1">
+                    <p className="text-lg font-bold">Nenhum produto em ativação</p>
+                    <p className="text-sm text-muted-foreground max-w-sm mx-auto">Sua conta institucional ainda não possui processos técnicos iniciados pelo suporte RTM.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="journey" className="animate-in fade-in slide-in-from-right duration-500">
+            {selectedInstance ? (
+              <div className="space-y-8">
+                {/* Header do Produto Selecionado */}
+                <div className="bg-white rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 opacity-5">
+                    <Zap className="size-32 text-primary" />
                   </div>
                   
-                  <Card className={cn(
-                    "transition-all duration-300",
-                    isCurrent ? "ring-2 ring-primary/20 shadow-lg border-primary/20" : 
-                    isFuture ? "opacity-60" : "hover:border-primary/30"
-                  )}>
-                    <CardHeader 
-                      className={cn(
-                        "p-5 flex flex-row items-center justify-between space-y-0",
-                        !isFuture && "cursor-pointer"
-                      )}
-                      onClick={() => !isFuture && setExpandedStage(isExpanded ? null : step.id || null)}
-                    >
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-3">
-                          <CardTitle className={cn(
-                            "text-base font-bold",
-                            isCompleted ? "text-slate-400" : "text-slate-800"
-                          )}>{step.name}</CardTitle>
-                          <Badge variant="secondary" className="text-[9px] uppercase font-black bg-slate-100">
-                            {step.responsible}
-                          </Badge>
-                          {isCurrent && <Badge className="text-[8px] bg-primary/10 text-primary border-primary/20 uppercase font-bold">Aguardando Ação</Badge>}
-                        </div>
-                        <CardDescription className="text-sm line-clamp-1">{step.description}</CardDescription>
-                      </div>
-                      {!isFuture && (isExpanded ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />)}
-                      {isFuture && <Lock className="size-4 text-slate-300" />}
-                    </CardHeader>
-
-                    {isExpanded && !isFuture && (
-                      <CardContent className="p-5 pt-0 border-t bg-slate-50/30">
-                        <div className="mt-5 space-y-6">
-                          {!isClientResponsible ? (
-                            <div className="p-4 rounded-2xl bg-white border border-slate-200 flex gap-3 items-center">
-                              <Loader2 className="size-5 text-primary animate-spin shrink-0" />
-                              <div className="space-y-0.5">
-                                <p className="text-xs font-bold text-slate-600 uppercase">Processamento RTM</p>
-                                <p className="text-[11px] text-slate-500">Esta etapa está sendo tratada pelo time de <strong>{step.responsible}</strong>. Você será notificado ao concluir.</p>
-                              </div>
-                            </div>
-                          ) : isCompleted ? (
-                            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex gap-3 items-center">
-                              <CheckCircle2 className="size-5 text-emerald-500 shrink-0" />
-                              <div className="space-y-0.5">
-                                <p className="text-xs font-bold text-emerald-700 uppercase">Enviado com Sucesso</p>
-                                <p className="text-[11px] text-emerald-600">Sua evidência foi recebida e validada pelo suporte.</p>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Sua Ação Necessária</Label>
-                                <div className="border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center bg-white group hover:border-primary cursor-pointer transition-all">
-                                  <FileUp className="size-8 mb-3 text-primary/40 group-hover:text-primary group-hover:scale-110 transition-all" />
-                                  <p className="text-sm font-bold text-slate-700">Clique para enviar a evidência</p>
-                                  <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold tracking-tighter">Arquivos aceitos: PDF, PNG ou JPG</p>
-                                </div>
-                              </div>
-                              <div className="flex justify-between items-center pt-2">
-                                <div className="flex items-center gap-2 text-amber-600">
-                                  <Clock className="size-4" />
-                                  <span className="text-[10px] font-bold uppercase">SLA Estimado: {step.estimatedTimeInHours} Horas</span>
-                                </div>
-                                <Button 
-                                  size="sm" 
-                                  className="gap-2 rounded-full px-8 font-bold shadow-md"
-                                  onClick={() => handleSendEvidence(step)}
-                                  disabled={isSubmitting}
-                                >
-                                  {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-3.5" />}
-                                  Confirmar Envio
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    )}
-                  </Card>
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
+                    <div className="space-y-2">
+                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 px-3 py-1">
+                        <CheckCircle2 className="size-3.5" /> Ativação Selecionada
+                      </Badge>
+                      <h2 className="text-3xl font-bold font-headline">{product?.name || selectedInstance.productId}</h2>
+                      <p className="text-muted-foreground font-medium">Analista Responsável: <span className="text-foreground">{selectedInstance.techName || 'Pendente'}</span></p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-5xl font-black text-primary">{Math.round(progress)}%</span>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Conclusão</p>
+                    </div>
+                  </div>
+                  <Progress value={progress} className="h-3 rounded-full" />
                 </div>
-              );
-            })}
-          </div>
-        </div>
+
+                {/* Lista de Etapas */}
+                <div className="space-y-6">
+                  <h3 className="text-lg font-bold font-headline flex items-center gap-2">Fluxo de Trabalho</h3>
+                  
+                  {stepsLoading ? (
+                    <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" /></div>
+                  ) : (
+                    <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
+                      {steps.map((step) => {
+                        const isCompleted = step.order < currentStepOrder;
+                        const isCurrent = step.order === currentStepOrder;
+                        const isFuture = step.order > currentStepOrder;
+                        const isClientResponsible = step.responsible === 'cliente';
+                        const isExpanded = expandedStage === step.id;
+
+                        return (
+                          <div key={step.id} className="relative">
+                            <div className={cn(
+                              "absolute -left-[29px] top-1 size-6 rounded-full border-2 flex items-center justify-center transition-all z-10 bg-white shadow-sm",
+                              isCompleted ? "border-emerald-500 bg-emerald-500 text-white" : 
+                              isCurrent ? "border-primary bg-primary text-white animate-pulse" : 
+                              "border-slate-200 text-slate-400"
+                            )}>
+                              {isCompleted ? <CheckCircle2 className="size-3.5" /> : 
+                               isCurrent ? <Circle className="size-2 fill-current" /> :
+                               <span className="text-[10px] font-bold">{step.order}</span>}
+                            </div>
+                            
+                            <Card className={cn(
+                              "transition-all duration-300",
+                              isCurrent ? "ring-2 ring-primary/20 shadow-lg border-primary/20" : 
+                              isFuture ? "opacity-60" : "hover:border-primary/30"
+                            )}>
+                              <CardHeader 
+                                className={cn(
+                                  "p-5 flex flex-row items-center justify-between space-y-0",
+                                  !isFuture && "cursor-pointer"
+                                )}
+                                onClick={() => !isFuture && setExpandedStage(isExpanded ? null : step.id || null)}
+                              >
+                                <div className="flex-1 space-y-1">
+                                  <div className="flex items-center gap-3">
+                                    <CardTitle className={cn(
+                                      "text-base font-bold",
+                                      isCompleted ? "text-slate-400" : "text-slate-800"
+                                    )}>{step.name}</CardTitle>
+                                    <Badge variant="secondary" className="text-[9px] uppercase font-black bg-slate-100">
+                                      {step.responsible}
+                                    </Badge>
+                                  </div>
+                                  <CardDescription className="text-sm line-clamp-1">{step.description}</CardDescription>
+                                </div>
+                                {!isFuture && (isExpanded ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />)}
+                                {isFuture && <Lock className="size-4 text-slate-300" />}
+                              </CardHeader>
+
+                              {isExpanded && !isFuture && (
+                                <CardContent className="p-5 pt-0 border-t bg-slate-50/30">
+                                  <div className="mt-5 space-y-6">
+                                    {!isClientResponsible ? (
+                                      <div className="p-4 rounded-2xl bg-white border border-slate-200 flex gap-3 items-center">
+                                        <Loader2 className="size-5 text-primary animate-spin shrink-0" />
+                                        <div className="space-y-0.5">
+                                          <p className="text-xs font-bold text-slate-600 uppercase">Processamento RTM</p>
+                                          <p className="text-[11px] text-slate-500">Esta etapa está sendo tratada internamente pela RTM. Notificaremos você ao concluir.</p>
+                                        </div>
+                                      </div>
+                                    ) : isCompleted ? (
+                                      <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex gap-3 items-center">
+                                        <CheckCircle2 className="size-5 text-emerald-500 shrink-0" />
+                                        <div className="space-y-0.5">
+                                          <p className="text-xs font-bold text-emerald-700 uppercase">Concluído</p>
+                                          <p className="text-[11px] text-emerald-600">Sua interação nesta etapa foi validada.</p>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-4">
+                                        <div className="space-y-2">
+                                          <Label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Sua Ação Necessária</Label>
+                                          <div className="border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center bg-white group hover:border-primary cursor-pointer transition-all">
+                                            <FileUp className="size-8 mb-3 text-primary/40 group-hover:text-primary group-hover:scale-110 transition-all" />
+                                            <p className="text-sm font-bold text-slate-700">Clique para enviar a evidência</p>
+                                            <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold tracking-tighter">PDF, PNG ou JPG</p>
+                                          </div>
+                                        </div>
+                                        <div className="flex justify-between items-center pt-2">
+                                          <div className="flex items-center gap-2 text-amber-600">
+                                            <Clock className="size-4" />
+                                            <span className="text-[10px] font-bold uppercase">SLA: {step.estimatedTimeInHours}h</span>
+                                          </div>
+                                          <Button 
+                                            size="sm" 
+                                            className="gap-2 rounded-full px-8 font-bold shadow-md"
+                                            onClick={() => handleSendEvidence(step)}
+                                            disabled={isSubmitting}
+                                          >
+                                            {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-3.5" />}
+                                            Confirmar Envio
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              )}
+                            </Card>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="p-20 text-center border-2 border-dashed rounded-3xl bg-white space-y-4">
+                <Package className="size-12 mx-auto text-muted-foreground/20" />
+                <p className="text-muted-foreground">Por favor, selecione um produto na aba ao lado para visualizar as etapas.</p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
-  );
-}
-
-function CheckItem({ label, checked }: { label: string, checked: boolean }) {
-  return (
-    <div className={cn(
-      "flex items-center gap-3 text-sm p-4 rounded-xl border transition-all",
-      checked ? "bg-emerald-50 border-emerald-100" : "bg-white border-dashed shadow-sm"
-    )}>
-      {checked ? (
-        <CheckCircle2 className="size-5 text-emerald-500" />
-      ) : (
-        <Clock className="size-5 text-amber-500 animate-pulse" />
-      )}
-      <span className={cn("font-bold", checked ? "text-emerald-800" : "text-slate-600")}>
-        {label}: {checked ? 'OK' : 'Pendente'}
-      </span>
-    </div>
   );
 }
