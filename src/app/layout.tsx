@@ -5,8 +5,8 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'OnFlow - Gestão de Onboarding',
-  description: 'Acompanhe suas etapas de onboarding de forma simples e eficiente.',
+  title: 'OnFlow - Hub Integrador RTM',
+  description: 'Plataforma oficial de onboarding e ativação técnica da RTM para o mercado financeiro.',
 };
 
 export default function RootLayout({

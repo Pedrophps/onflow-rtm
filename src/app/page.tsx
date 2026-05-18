@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,8 +19,6 @@ import {
   TrendingUp,
   MapPin,
   PieChart,
-  CalendarDays,
-  CheckCircle2,
   LayoutGrid
 } from 'lucide-react';
 import {
@@ -30,6 +29,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import Image from 'next/image';
+
+/**
+ * @fileOverview Página Inicial Institucional RTM OnFlow.
+ * Conteúdo de máxima aderência conforme diretrizes do usuário.
+ */
 
 export default function Home() {
   return (
@@ -48,7 +52,6 @@ export default function Home() {
             <nav className="hidden lg:flex items-center gap-6 mr-6">
               <a href="#sobre" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Sobre</a>
               <a href="#servicos" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Serviços Críticos</a>
-              <a href="#presenca" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Presença</a>
               <a href="#trajetoria" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Trajetória</a>
             </nav>
             <Button size="sm" className="rounded-full px-6 font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary/20" asChild>
@@ -68,7 +71,6 @@ export default function Home() {
                 <nav className="flex flex-col gap-6 mt-10">
                   <a href="#sobre" className="text-lg font-bold font-headline">Sobre</a>
                   <a href="#servicos" className="text-lg font-bold font-headline">Serviços Críticos</a>
-                  <a href="#presenca" className="text-lg font-bold font-headline">Presença</a>
                   <a href="#trajetoria" className="text-lg font-bold font-headline">Trajetória</a>
                   <hr />
                   <Link href="/login" className="text-lg font-bold font-headline text-primary">Login</Link>
@@ -111,7 +113,7 @@ export default function Home() {
       </section>
 
       {/* Posicionamento & Sobre */}
-      <section id="sobre" className="py-32 bg-white">
+      <section id="sobre" className="py-32 bg-white border-b">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center space-y-8 mb-24">
             <h2 className="text-4xl lg:text-5xl font-bold font-headline text-primary tracking-tight">
@@ -138,7 +140,7 @@ export default function Home() {
                 </div>
                 <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 hover:border-primary/20 transition-all text-center group">
                   <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Valores</h4>
-                  <p className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors leading-snug">Foco no cliente, Pessoas, Confiança e Inovação</p>
+                  <p className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors leading-snug">Foco no cliente, Desenvolvimento de Pessoas e Equipe, Confiança e Inovação</p>
                 </div>
                 <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 hover:border-primary/20 transition-all text-center group">
                   <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Posicionamento</h4>
@@ -162,13 +164,15 @@ export default function Home() {
                   <div className="size-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/40"><Building2 className="text-white size-8" /></div>
                   <div>
                     <p className="text-2xl font-black">750+ Instituições</p>
-                    <p className="text-slate-400 font-medium">Conectadas com estabilidade absoluta.</p>
+                    <p className="text-slate-400 font-medium">Conectadas com estabilidade, segurança e rapidez.</p>
                   </div>
                 </div>
               </div>
               <div className="pt-8 border-t border-white/10 space-y-4">
                 <p className="text-sm font-bold text-primary uppercase tracking-widest">Infraestrutura Crítica</p>
-                <p className="text-slate-300 leading-relaxed italic">"Marcamos presença em quase todo o território brasileiro, garantindo segurança e rapidez para quem move a economia."</p>
+                <p className="text-slate-300 leading-relaxed italic opacity-80">
+                  "Marcamos presença em quase todo o território brasileiro, garantindo segurança e rapidez para quem move a economia."
+                </p>
               </div>
             </div>
           </div>
@@ -196,7 +200,7 @@ export default function Home() {
             <ServiceCard 
               icon={TrendingUp} 
               title="B3" 
-              desc="Negociação, compensação, liquidação, depósito e registro para títulos privados." 
+              desc="Sistema de negociação, compensação, liquidação, depósito e registro para títulos privados." 
             />
             <ServiceCard 
               icon={FileCheck} 
@@ -211,7 +215,7 @@ export default function Home() {
             <ServiceCard 
               icon={PhoneCall} 
               title="Hotline/Mesa" 
-              desc="Comunicação para traders com mais de 2 mil linhas privadas conectando o mercado." 
+              desc="Comunicação e negociação para traders com mais de 2 mil linhas privadas conectando o mercado." 
             />
             <ServiceCard 
               icon={Zap} 
@@ -227,31 +231,32 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Soluções e Topologia Section */}
+      {/* Segmentos e Topologia */}
       <section className="py-32 bg-white">
         <div className="container mx-auto px-6">
           <div className="grid lg:grid-cols-12 gap-16 items-center">
-            <div className="lg:col-span-7 relative h-[600px]">
-              <Image 
-                src="https://picsum.photos/seed/rtm-topo/1200/900" 
-                alt="Topologia RTM" 
-                fill 
-                className="object-contain rounded-3xl"
-                data-ai-hint="network topology"
-              />
+            <div className="lg:col-span-7 relative h-[500px]">
+              <div className="absolute inset-0 bg-slate-100 rounded-3xl flex items-center justify-center border-2 border-dashed border-slate-300">
+                <div className="text-center p-8">
+                  <LayoutGrid className="size-16 mx-auto text-slate-300 mb-4" />
+                  <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">Topologia contemplando todas as soluções RTM</p>
+                </div>
+              </div>
             </div>
             <div className="lg:col-span-5 space-y-8">
               <Badge className="bg-primary/10 text-primary border-none px-4 py-1 uppercase font-black tracking-widest text-[10px]">Arquitetura de Excelência</Badge>
-              <h2 className="text-4xl font-bold font-headline text-slate-900 leading-tight">Atendemos todos os segmentos do setor financeiro</h2>
+              <h2 className="text-4xl font-bold font-headline text-slate-900 leading-tight">Atendemos todos os segmentos do setor</h2>
               <p className="text-lg text-slate-600 leading-relaxed">
                 Nossa topologia contempla todas as soluções RTM integradas de ponta a ponta. Oferecemos um ecossistema completo para Bancos, Fintechs, Corretoras e Adquirentes.
               </p>
-              <div className="p-8 bg-primary/5 rounded-[2rem] border border-primary/10">
+              <div className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100">
                  <div className="flex items-center gap-4 mb-4">
                     <PieChart className="text-primary size-8" />
                     <h4 className="font-bold text-slate-900">Distribuição de Clientes</h4>
                  </div>
-                 <p className="text-sm text-slate-600 font-medium leading-relaxed italic">"Gráfico em pizza que mostra a distribuição dos clientes RTM de acordo com os segmentos do mercado em que se enquadram."</p>
+                 <p className="text-sm text-slate-500 font-medium leading-relaxed italic">
+                   "Gráfico em pizza que mostra a distribuição dos clientes RTM de acordo com os segmentos do mercado em que se enquadram."
+                 </p>
               </div>
             </div>
           </div>
@@ -260,7 +265,6 @@ export default function Home() {
 
       {/* Trajetória Timeline */}
       <section id="trajetoria" className="py-32 bg-slate-900 text-white overflow-hidden relative">
-        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
         <div className="container mx-auto px-6 relative z-10">
           <div className="text-center mb-24 space-y-4">
             <h2 className="text-5xl font-bold font-headline tracking-tighter">Confira os destaques da nossa trajetória</h2>
