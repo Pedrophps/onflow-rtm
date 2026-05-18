@@ -23,7 +23,8 @@ import {
   Settings, 
   LogOut,
   ChevronRight,
-  Loader2
+  Loader2,
+  Package
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -49,7 +50,8 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
   const menuItems = role === "admin" 
     ? [
         { title: "Visão Geral", icon: LayoutDashboard, href: "/dashboard/admin" },
-        { title: "Fluxos de Onboarding", icon: ClipboardList, href: "/dashboard/admin/onboarding" },
+        { title: "Produtos & Fluxos", icon: Package, href: "/dashboard/admin/products" },
+        { title: "Gestão Onboarding", icon: ClipboardList, href: "/dashboard/admin/onboarding" },
         { title: "Clientes", icon: Users, href: "/dashboard/admin/clients" },
         { title: "Relatórios", icon: BarChart3, href: "/dashboard/admin/reports" },
       ]
@@ -82,16 +84,16 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild 
-                    isActive={pathname === item.href}
+                    isActive={pathname === item.href || pathname.startsWith(item.href + '/')}
                     className={cn(
                       "py-6 px-4 rounded-xl transition-all",
-                      pathname === item.href && "bg-primary/5 text-primary font-semibold"
+                      (pathname === item.href || pathname.startsWith(item.href + '/')) && "bg-primary/5 text-primary font-semibold"
                     )}
                   >
                     <Link href={item.href}>
                       <item.icon className="size-5" />
                       <span>{item.title}</span>
-                      {pathname === item.href && <ChevronRight className="ml-auto size-4" />}
+                      {(pathname === item.href || pathname.startsWith(item.href + '/')) && <ChevronRight className="ml-auto size-4" />}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
