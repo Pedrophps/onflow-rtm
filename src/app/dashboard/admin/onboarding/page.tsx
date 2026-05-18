@@ -22,7 +22,8 @@ import {
   FileText,
   UserCheck,
   Info,
-  ChevronRight
+  ChevronRight,
+  Phone
 } from "lucide-react";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, limit } from "firebase/firestore";
@@ -230,6 +231,7 @@ export default function OnboardingManagement() {
                                 <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest">Colaborador (Contato)</p>
                                 <p className="font-bold flex items-center gap-1.5"><FileText className="size-3 text-slate-400" /> {client.displayName}</p>
                                 <p className="text-slate-500 flex items-center gap-1.5"><Mail className="size-3 text-slate-400" /> {client.email}</p>
+                                <p className="text-slate-500 flex items-center gap-1.5"><Phone className="size-3 text-slate-400" /> {client.phoneNumber || 'Pendente'}</p>
                               </div>
                               <div className="space-y-1">
                                 <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest">Aprovação Comercial</p>
@@ -395,6 +397,10 @@ export default function OnboardingManagement() {
               <div className="space-y-1">
                 <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">E-mail Corporativo</Label>
                 <p className="text-slate-700 flex items-center gap-2"><Mail className="size-3.5 text-slate-400" /> {selectedClientForFicha?.email || '-'}</p>
+              </div>
+              <div className="space-y-1 col-span-2">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Telefone de Contato</Label>
+                <p className="text-slate-700 flex items-center gap-2 font-bold"><Phone className="size-3.5 text-primary" /> {selectedClientForFicha?.phoneNumber || 'Não cadastrado'}</p>
               </div>
             </div>
 

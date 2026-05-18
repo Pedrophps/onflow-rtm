@@ -18,6 +18,7 @@ export interface UserProfile {
   status: UserStatus;
   clientCode?: string;
   activeProduct?: string;
+  phoneNumber?: string;
   createdAt: string;
   approvedAt?: string;
 }

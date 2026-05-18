@@ -1,3 +1,4 @@
+
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -12,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserProfile, Product } from "@/lib/types";
-import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal, Package } from "lucide-react";
+import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal, Package, Phone } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -42,6 +43,7 @@ export default function ClientsAdminPage() {
   const [selectedClient, setSelectedClient] = useState<UserProfile | null>(null);
   const [clientCode, setClientCode] = useState("");
   const [activeProduct, setActiveProduct] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const pendingClients = useMemo(() => {
@@ -52,6 +54,7 @@ export default function ClientsAdminPage() {
     setSelectedClient(client);
     setClientCode(client.clientCode || "");
     setActiveProduct(client.activeProduct || "");
+    setPhoneNumber(client.phoneNumber || "");
     setIsDialogOpen(true);
   };
 
@@ -63,6 +66,7 @@ export default function ClientsAdminPage() {
       status: 'approved',
       clientCode: clientCode,
       activeProduct: activeProduct,
+      phoneNumber: phoneNumber,
       approvedAt: new Date().toISOString(),
       updatedAt: serverTimestamp()
     };
@@ -200,6 +204,13 @@ export default function ClientsAdminPage() {
             <div className="space-y-2">
               <Label>ID RTM do Cliente</Label>
               <Input value={clientCode} onChange={(e) => setClientCode(e.target.value)} placeholder="Ex: RTM-BR-001" />
+            </div>
+            <div className="space-y-2">
+              <Label>Telefone de Contato</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                <Input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="(00) 00000-0000" className="pl-10" />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Produto Contratado</Label>

@@ -5,22 +5,29 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { UserProfile, Product, OnboardingInstance } from "@/lib/types";
-import { CheckCircle2, Clock, ShieldAlert, Loader2, Zap, LayoutDashboard, Building2, UserCheck, ArrowRight } from "lucide-react";
-import { useMemo } from "react";
+import { CheckCircle2, Clock, ShieldAlert, Loader2, Zap, LayoutDashboard, Building2, UserCheck, ArrowRight, Phone, AlertCircle, Save } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
-import { doc, collection, query, where, limit } from "firebase/firestore";
+import { doc, collection, query, where, limit, updateDoc, serverTimestamp } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ClientDashboardPage() {
   const { user } = useUser();
   const db = useFirestore();
+  const { toast } = useToast();
   
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
   
+  const [isUpdatingPhone, setIsUpdatingPhone] = useState(false);
+  const [newPhone, setNewPhone] = useState("");
+
   // Buscar Instância de Onboarding Ativa
   const instanceQuery = useMemo(() => 
     user ? query(
@@ -49,6 +56,31 @@ export default function ClientDashboardPage() {
   const totalSteps = steps.length || 1;
   const progress = Math.round(((currentStepOrder - 1) / totalSteps) * 100);
 
+  const handleUpdatePhone = async () => {
+    if (!user || !newPhone) return;
+    setIsUpdatingPhone(true);
+    
+    const clientRef = doc(db, "users", user.uid);
+    try {
+      await updateDoc(clientRef, {
+        phoneNumber: newPhone,
+        updatedAt: serverTimestamp()
+      });
+      toast({
+        title: "Dados Atualizados",
+        description: "Seu telefone de contato foi salvo com sucesso."
+      });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar",
+        description: "Não foi possível atualizar seus dados de contato."
+      });
+    } finally {
+      setIsUpdatingPhone(false);
+    }
+  };
+
   if (profileLoading || instanceLoading || stepsLoading) {
     return (
       <DashboardLayout role="client">
@@ -60,6 +92,8 @@ export default function ClientDashboardPage() {
     );
   }
 
+  const isPhoneMissing = !profile?.phoneNumber;
+
   return (
     <DashboardLayout role="client">
       <div className="space-y-8">
@@ -67,6 +101,41 @@ export default function ClientDashboardPage() {
           <h1 className="text-3xl font-bold font-headline text-slate-900">Visão Geral</h1>
           <p className="text-muted-foreground">Bem-vindo ao OnFlow, {profile?.displayName}. Aqui está o resumo da sua jornada.</p>
         </div>
+
+        {isPhoneMissing && (
+          <Card className="border-l-4 border-l-amber-500 bg-amber-50 shadow-sm animate-in slide-in-from-top duration-500">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="size-12 rounded-2xl bg-amber-200/50 flex items-center justify-center text-amber-700">
+                    <Phone className="size-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-amber-900">Ação Necessária: Contato Telefônico</h3>
+                    <p className="text-xs text-amber-800/80">Para agilizar sua ativação técnica, precisamos de um telefone de contato direto.</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                  <Input 
+                    placeholder="(00) 00000-0000" 
+                    value={newPhone} 
+                    onChange={(e) => setNewPhone(e.target.value)}
+                    className="bg-white border-amber-200 w-full md:w-48"
+                  />
+                  <Button 
+                    size="sm" 
+                    className="bg-amber-600 hover:bg-amber-700 font-bold gap-2"
+                    onClick={handleUpdatePhone}
+                    disabled={isUpdatingPhone || !newPhone}
+                  >
+                    {isUpdatingPhone ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                    Salvar
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid gap-6 md:grid-cols-12">
           {/* Status Card */}
@@ -165,11 +234,11 @@ export default function ClientDashboardPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="size-10 rounded-xl bg-white/10 flex items-center justify-center text-primary">
-                    <UserCheck className="size-5" />
+                    <Phone className="size-5" />
                   </div>
                   <div>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Colaborador Líder</p>
-                    <p className="text-sm font-bold">{profile?.displayName}</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Contato de Emergência</p>
+                    <p className="text-sm font-bold">{profile?.phoneNumber || "Não cadastrado"}</p>
                   </div>
                 </div>
               </div>
@@ -179,6 +248,7 @@ export default function ClientDashboardPage() {
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Conformidade Cadastral</p>
                   <div className="space-y-2">
                     <CheckItem label="Aprovação Comercial" checked={profile?.status === 'approved'} />
+                    <CheckItem label="Telefone de Contato" checked={!!profile?.phoneNumber} />
                     <CheckItem label="ID Atribuído" checked={!!profile?.clientCode} />
                     <CheckItem label="Instância Ativa" checked={!!instance} />
                   </div>
@@ -199,7 +269,7 @@ function CheckItem({ label, checked }: { label: string, checked: boolean }) {
       {checked ? (
         <CheckCircle2 className="size-3.5 text-emerald-400" />
       ) : (
-        <Clock className="size-3.5 text-amber-400" />
+        <AlertCircle className="size-3.5 text-amber-400" />
       )}
     </div>
   );
