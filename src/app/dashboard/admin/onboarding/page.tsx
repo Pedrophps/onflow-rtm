@@ -26,7 +26,8 @@ import {
   ChevronRight,
   Phone,
   Settings2,
-  GitFork
+  GitFork,
+  AlertTriangle
 } from "lucide-react";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, getDocs } from "firebase/firestore";
@@ -56,6 +57,7 @@ export default function OnboardingManagement() {
   const [selectedFlowId, setSelectedFlowId] = useState("");
   const [isSavingFlow, setIsSavingFlow] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
+  const [isFetchingFlows, setIsFetchingFlows] = useState(false);
 
   // Mapeamento de Produtos
   const productsQuery = useMemo(() => query(collection(db, "products")), [db]);
@@ -111,7 +113,7 @@ export default function OnboardingManagement() {
     const instanceData = {
       clientId: client.id,
       institutionName: client.institutionName || client.displayName,
-      productId: client.activeProduct, // Aqui deve ser o ID
+      productId: client.activeProduct, 
       techId: user.uid,
       techName: user.displayName || 'Analista Suporte',
       status: 'active',
@@ -146,20 +148,38 @@ export default function OnboardingManagement() {
   const openFlowSelection = async (instance: OnboardingInstance) => {
     setTargetInstance(instance);
     setSelectedFlowId("");
+    setIsFetchingFlows(true);
     
-    if (!instance.productId) {
+    let productId = instance.productId;
+
+    // Fallback: Se o productId for um nome (legado), resolve para o ID real
+    if (productId && !dbProducts.find(p => p.id === productId)) {
+      const foundProduct = dbProducts.find(p => p.name === productId);
+      if (foundProduct) {
+        productId = foundProduct.id!;
+      }
+    }
+
+    if (!productId) {
        toast({ variant: "destructive", title: "Erro", description: "Produto não identificado nesta instância." });
+       setIsFetchingFlows(false);
        return;
     }
 
-    // Buscar fluxos reais para o produto
-    const flowsRef = collection(db, "products", instance.productId, "activationFlows");
-    const q = query(flowsRef, where("published", "==", true));
-    const snapshot = await getDocs(q);
-    const flows = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ActivationFlow));
-    
-    setAvailableFlows(flows);
-    setIsFlowSelectionOpen(true);
+    try {
+      // Buscar TODOS os fluxos reais do produto para transparência técnica
+      const flowsRef = collection(db, "products", productId, "activationFlows");
+      const snapshot = await getDocs(flowsRef);
+      const flows = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ActivationFlow));
+      
+      setAvailableFlows(flows);
+      setIsFlowSelectionOpen(true);
+    } catch (error) {
+      console.error("Error fetching flows:", error);
+      toast({ variant: "destructive", title: "Erro", description: "Falha ao buscar roteiros técnicos." });
+    } finally {
+      setIsFetchingFlows(false);
+    }
   };
 
   const handleSetFlow = async () => {
@@ -334,8 +354,9 @@ export default function OnboardingManagement() {
                             <Button 
                               className="w-full rounded-xl font-bold text-xs gap-2 bg-amber-600 hover:bg-amber-700"
                               onClick={() => openFlowSelection(inst)}
+                              disabled={isFetchingFlows}
                             >
-                              <Settings2 className="size-3" />
+                              {isFetchingFlows ? <Loader2 className="size-3 animate-spin" /> : <Settings2 className="size-3" />}
                               Definir Fluxo
                             </Button>
                           )}
@@ -428,37 +449,44 @@ export default function OnboardingManagement() {
             </div>
             <DialogTitle>Definir Roteiro Técnico</DialogTitle>
             <DialogDescription>
-              Selecione o fluxo de ativação que será aplicado à instituição <strong>{targetInstance?.institutionName}</strong> para o produto <strong>{productsMap[targetInstance?.productId!] || targetInstance?.productId}</strong>.
+              Selecione o fluxo de ativação que será aplicado à instituição <strong>{targetInstance?.institutionName}</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="py-6 space-y-4">
             <div className="space-y-2">
-              <Label>Fluxos Publicados Disponíveis</Label>
+              <Label>Fluxos Técnicos Disponíveis</Label>
               <Select value={selectedFlowId} onValueChange={setSelectedFlowId}>
-                <SelectTrigger className="h-12">
+                <SelectTrigger className="h-14">
                   <SelectValue placeholder="Selecione o roteiro de etapas..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableFlows.map(f => (
+                  {availableFlows.length > 0 ? availableFlows.map(f => (
                     <SelectItem key={f.id} value={f.id!}>
                       <div className="flex flex-col text-left py-1">
-                        <span className="font-bold text-sm">{f.name}</span>
-                        <span className="text-[10px] text-muted-foreground truncate max-w-[300px]">{f.description}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm">{f.name}</span>
+                          {!f.published && <Badge variant="outline" className="text-[8px] h-4 uppercase font-black bg-slate-100">Rascunho</Badge>}
+                          {f.published && <Badge variant="outline" className="text-[8px] h-4 uppercase font-black bg-emerald-50 text-emerald-700 border-emerald-200">Publicado</Badge>}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground truncate max-w-[320px]">{f.description}</span>
                       </div>
                     </SelectItem>
-                  ))}
-                  {availableFlows.length === 0 && (
-                    <div className="p-4 text-center text-xs text-muted-foreground italic">
-                      Nenhum fluxo publicado para este produto.
+                  )) : (
+                    <div className="p-8 text-center space-y-2">
+                      <AlertTriangle className="size-6 mx-auto text-amber-500" />
+                      <p className="text-xs text-muted-foreground font-medium">Nenhum fluxo encontrado para este produto no caminho técnico.</p>
+                      <p className="text-[10px] text-muted-foreground italic">Verifique se o Suporte cadastrou fluxos na aba "Produtos & Fluxos".</p>
                     </div>
                   )}
                 </SelectContent>
               </Select>
             </div>
-            <div className="p-4 rounded-xl bg-slate-50 border text-xs text-muted-foreground flex gap-3">
-              <Info className="size-4 shrink-0 text-primary" />
-              <p>Ao selecionar um fluxo, todas as etapas pré-cadastradas ficarão visíveis para o cliente e o comercial acompanhar o progresso em tempo real.</p>
-            </div>
+            {availableFlows.length > 0 && (
+              <div className="p-4 rounded-xl bg-slate-50 border text-xs text-muted-foreground flex gap-3">
+                <Info className="size-4 shrink-0 text-primary" />
+                <p>O roteiro selecionado definirá as etapas que o cliente e o comercial visualizarão.</p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsFlowSelectionOpen(false)}>Cancelar</Button>
