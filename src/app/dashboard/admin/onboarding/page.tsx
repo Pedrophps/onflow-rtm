@@ -325,13 +325,13 @@ export default function OnboardingManagement() {
             <div className="grid gap-4">
               {availableActivities.length > 0 ? (
                 availableActivities.map((client) => (
-                  <Card key={client.id} className="border-l-4 border-l-amber-500 overflow-hidden group hover:shadow-md transition-all">
+                  <Card key={client.id} className="border-l-4 border-l-amber-500 overflow-hidden group hover:shadow-md transition-all bg-card">
                     <CardContent className="p-0">
                       <div className="flex flex-col md:flex-row">
                         <div className="p-6 flex-1 space-y-4">
                           <div className="flex justify-between items-start">
                             <div className="space-y-1">
-                              <h3 className="text-xl font-bold text-slate-900">{client.institutionName}</h3>
+                              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">{client.institutionName}</h3>
                               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1"><Building2 className="size-3" /> {client.cnpj}</span>
                                 <span className="flex items-center gap-1 font-bold text-primary"><Zap className="size-3" /> {productsMap[client.activeProduct!] || client.activeProduct}</span>
@@ -339,20 +339,20 @@ export default function OnboardingManagement() {
                             </div>
                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Aguardando Analista</Badge>
                           </div>
-                          <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-3 rounded-lg border">
+                          <div className="grid grid-cols-2 gap-4 text-xs bg-muted/20 p-3 rounded-lg border">
                             <div className="space-y-1">
                               <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest">Contato Cliente</p>
-                              <p className="font-bold">{client.displayName}</p>
-                              <p className="text-slate-500">{client.email}</p>
+                              <p className="font-bold text-foreground">{client.displayName}</p>
+                              <p className="text-muted-foreground">{client.email}</p>
                             </div>
                             <div className="space-y-1">
                               <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest">Aprovação</p>
-                              <p className="font-bold text-slate-700">{client.approvedAt ? new Date(client.approvedAt).toLocaleDateString() : 'N/A'}</p>
-                              <p className="text-slate-500">ID RTM: {client.clientCode || 'Pendente'}</p>
+                              <p className="font-bold text-foreground">{client.approvedAt ? new Date(client.approvedAt).toLocaleDateString() : 'N/A'}</p>
+                              <p className="text-muted-foreground">ID RTM: {client.clientCode || 'Pendente'}</p>
                             </div>
                           </div>
                         </div>
-                        <div className="bg-slate-50 md:w-48 flex items-center justify-center p-6 border-l border-t md:border-t-0">
+                        <div className="bg-muted/10 md:w-48 flex items-center justify-center p-6 border-l border-t md:border-t-0">
                           <Button className="w-full gap-2 font-bold shadow-lg" onClick={() => handleAssumeActivity(client)}>
                             <UserPlus className="size-4" /> Assumir
                           </Button>
@@ -374,8 +374,8 @@ export default function OnboardingManagement() {
             <div className="grid gap-4 md:grid-cols-2">
               {myOnboardings.length > 0 ? (
                 myOnboardings.map((inst) => (
-                  <Card key={inst.id} className="hover:border-primary/40 transition-all overflow-hidden border-2">
-                    <CardHeader className="bg-slate-50 p-4 border-b flex flex-row justify-between items-center">
+                  <Card key={inst.id} className="hover:border-primary/40 transition-all overflow-hidden border-2 bg-card">
+                    <CardHeader className="bg-muted/10 p-4 border-b flex flex-row justify-between items-center">
                       <div className="flex items-center gap-2">
                         {inst.flowId ? (
                            <Badge className="bg-emerald-500 text-[9px] uppercase">Fluxo Ativo</Badge>
@@ -387,7 +387,7 @@ export default function OnboardingManagement() {
                     </CardHeader>
                     <CardContent className="p-6 space-y-6">
                       <div className="space-y-1">
-                        <h4 className="font-bold text-xl">{inst.institutionName}</h4>
+                        <h4 className="font-bold text-xl text-foreground">{inst.institutionName}</h4>
                         <p className="text-sm text-muted-foreground flex items-center gap-2">
                           <Briefcase className="size-3.5" /> Produto: <strong>{productsMap[inst.productId] || inst.productId}</strong>
                         </p>
@@ -418,13 +418,23 @@ export default function OnboardingManagement() {
           <TabsContent value="journey" className="space-y-8 animate-in fade-in duration-500">
             {selectedJourneyInstance ? (
               <div className="space-y-8">
-                <div className="bg-white rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
+                <div className="bg-card rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
+                  {!selectedInstance?.flowId && (
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-12 text-center space-y-4">
+                      <Settings2 className="size-12 text-amber-500 animate-spin" />
+                      <div className="space-y-1">
+                        <h3 className="text-xl font-bold text-foreground">Roteiro em Definição</h3>
+                        <p className="text-sm text-muted-foreground max-w-md">Selecione um roteiro técnico para este cliente para habilitar as etapas.</p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
                     <div className="space-y-2">
                       <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 px-3 py-1 font-bold">
                         <CheckCircle2 className="size-3.5" /> JORNADA TÉCNICA
                       </Badge>
-                      <h2 className="text-3xl font-bold font-headline">{selectedJourneyInstance.institutionName} - {productsMap[selectedJourneyInstance.productId] || selectedJourneyInstance.productId}</h2>
+                      <h2 className="text-3xl font-bold font-headline text-foreground">{selectedJourneyInstance.institutionName} - {productsMap[selectedJourneyInstance.productId] || selectedJourneyInstance.productId}</h2>
                       <p className="text-muted-foreground font-medium">Analista Responsável: <span className="text-foreground font-bold">{selectedJourneyInstance.techName}</span></p>
                     </div>
                     <div className="text-right">
@@ -450,7 +460,7 @@ export default function OnboardingManagement() {
                         return (
                           <div key={step.id} className="relative">
                             <div className={cn(
-                              "absolute -left-[29px] top-1 size-6 rounded-full border-2 flex items-center justify-center transition-all z-10 bg-white",
+                              "absolute -left-[29px] top-1 size-6 rounded-full border-2 flex items-center justify-center transition-all z-10 bg-background",
                               isCompleted ? "border-emerald-500 bg-emerald-500 text-white" : 
                               isCurrent ? "border-primary bg-primary text-white animate-pulse" : 
                               "border-slate-200 text-slate-400"
@@ -458,15 +468,15 @@ export default function OnboardingManagement() {
                               {isCompleted ? <CheckCircle2 className="size-3.5" /> : <span className="text-[10px] font-bold">{step.order}</span>}
                             </div>
                             <Card className={cn(
-                              "transition-all duration-300",
+                              "transition-all duration-300 bg-card",
                               isCurrent ? "ring-2 ring-primary/20 shadow-lg border-primary/40" : 
                               step.order > (selectedJourneyInstance.currentStepOrder || 1) ? "opacity-60" : "hover:border-primary/30"
                             )}>
                               <CardHeader className="p-5 flex flex-row items-center justify-between cursor-pointer" onClick={() => setExpandedStepId(isExpanded ? null : step.id!)}>
                                 <div className="flex-1 space-y-1">
                                   <div className="flex items-center gap-3">
-                                    <CardTitle className={cn("text-base font-bold", isCompleted ? "text-slate-400" : "text-slate-800")}>{step.name}</CardTitle>
-                                    <Badge variant="outline" className="text-[9px] uppercase font-bold bg-slate-50 text-slate-600 border-slate-200 gap-1 px-2 py-0.5">
+                                    <CardTitle className={cn("text-base font-bold", isCompleted ? "text-slate-400" : "text-foreground")}>{step.name}</CardTitle>
+                                    <Badge variant="outline" className="text-[9px] uppercase font-bold bg-muted/5 text-muted-foreground border-muted/20 gap-1 px-2 py-0.5">
                                       {getResponsibleIcon(step.responsible)} {step.responsible}
                                     </Badge>
                                   </div>
@@ -475,20 +485,20 @@ export default function OnboardingManagement() {
                                 {isExpanded ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
                               </CardHeader>
                               {isExpanded && (
-                                <CardContent className="p-5 pt-0 border-t bg-slate-50/30">
+                                <CardContent className="p-5 pt-0 border-t bg-muted/5">
                                   <div className="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     <div className="lg:col-span-1 space-y-6">
                                       <div className="grid grid-cols-2 gap-4">
                                          <div className="space-y-1">
                                             <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SLA</p>
-                                            <p className="text-xs font-bold flex items-center gap-2"><Clock className="size-3" /> {step.estimatedTimeInHours}h Úteis</p>
+                                            <p className="text-xs font-bold flex items-center gap-2 text-foreground"><Clock className="size-3" /> {step.estimatedTimeInHours}h Úteis</p>
                                          </div>
                                          <div className="space-y-1">
                                             <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Ação</p>
-                                            <p className="text-xs font-bold flex items-center gap-2"><FileText className="size-3" /> {step.type === 'upload' ? 'Evidência Requerida' : 'Formulário Interno'}</p>
+                                            <p className="text-xs font-bold flex items-center gap-2 text-foreground"><FileText className="size-3" /> {step.type === 'upload' ? 'Evidência Requerida' : 'Formulário Interno'}</p>
                                          </div>
                                       </div>
-                                      <div className="p-4 rounded-xl bg-white border border-slate-200 text-sm text-slate-700 leading-relaxed font-medium">
+                                      <div className="p-4 rounded-xl bg-background border border-border text-sm text-foreground leading-relaxed font-medium">
                                         {step.description}
                                       </div>
                                       {isCurrent && isSupport && (
@@ -496,7 +506,7 @@ export default function OnboardingManagement() {
                                           {step.order > 1 && (
                                             <Button 
                                               variant="outline" 
-                                              className="flex-1 font-bold gap-2 rounded-full border-2" 
+                                              className="flex-1 font-bold gap-2 rounded-full border-2 text-foreground" 
                                               onClick={() => handleUpdateCurrentStep(selectedJourneyInstance.id!, step.order - 1)} 
                                               disabled={isUpdatingStep}
                                             >
@@ -545,7 +555,7 @@ export default function OnboardingManagement() {
                       })}
                     </div>
                   ) : (
-                    <div className="p-20 text-center border-2 border-dashed rounded-3xl bg-slate-50/50">
+                    <div className="p-20 text-center border-2 border-dashed rounded-3xl bg-muted/10">
                       <p className="text-sm text-muted-foreground">Nenhuma etapa encontrada para este fluxo.</p>
                     </div>
                   )}
@@ -562,14 +572,14 @@ export default function OnboardingManagement() {
 
       {/* Diálogos Auxiliares */}
       <Dialog open={isFlowSelectionOpen} onOpenChange={setIsFlowSelectionOpen}>
-        <DialogContent className="rounded-3xl">
+        <DialogContent className="rounded-3xl bg-background border-border">
           <DialogHeader>
-            <DialogTitle>Definir Roteiro Técnico</DialogTitle>
-            <DialogDescription>Selecione o fluxo para {targetInstance?.institutionName}.</DialogDescription>
+            <DialogTitle className="text-foreground">Definir Roteiro Técnico</DialogTitle>
+            <DialogDescription className="text-muted-foreground">Selecione o fluxo para {targetInstance?.institutionName}.</DialogDescription>
           </DialogHeader>
           <div className="py-6 space-y-4">
             <Select value={selectedFlowId} onValueChange={setSelectedFlowId}>
-              <SelectTrigger className="h-14"><SelectValue placeholder="Selecione o roteiro..." /></SelectTrigger>
+              <SelectTrigger className="h-14 bg-card text-foreground border-border"><SelectValue placeholder="Selecione o roteiro..." /></SelectTrigger>
               <SelectContent>
                 {availableFlows.map(f => (
                   <SelectItem key={f.id} value={f.id!}>
@@ -580,27 +590,27 @@ export default function OnboardingManagement() {
             </Select>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsFlowSelectionOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setIsFlowSelectionOpen(false)} className="text-foreground">Cancelar</Button>
             <Button disabled={!selectedFlowId || isSavingFlow} onClick={handleSetFlow} className="font-bold px-8">Ativar Roteiro</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isFichaOpen} onOpenChange={setIsFichaOpen}>
-        <DialogContent className="max-w-2xl overflow-hidden rounded-3xl p-0">
+        <DialogContent className="max-w-2xl overflow-hidden rounded-3xl p-0 bg-background border-border">
           <DialogHeader className="p-8 bg-slate-900 text-white"><DialogTitle>Ficha Técnica OnFlow</DialogTitle></DialogHeader>
-          <div className="p-8 space-y-8">
+          <div className="p-8 space-y-8 bg-background">
             <div className="grid grid-cols-2 gap-8">
-              <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">Instituição</Label><p className="font-bold">{selectedClientForFicha?.institutionName}</p></div>
-              <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">CNPJ</Label><p className="font-mono">{selectedClientForFicha?.cnpj}</p></div>
-              <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">Responsável</Label><p className="font-bold">{selectedClientForFicha?.displayName}</p></div>
-              <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">E-mail</Label><p className="text-slate-700">{selectedClientForFicha?.email}</p></div>
+              <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">Instituição</Label><p className="font-bold text-foreground">{selectedClientForFicha?.institutionName}</p></div>
+              <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">CNPJ</Label><p className="font-mono text-foreground">{selectedClientForFicha?.cnpj}</p></div>
+              <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">Responsável</Label><p className="font-bold text-foreground">{selectedClientForFicha?.displayName}</p></div>
+              <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">E-mail</Label><p className="text-muted-foreground">{selectedClientForFicha?.email}</p></div>
             </div>
             <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-between">
-              <div><Label className="text-[10px] uppercase font-bold text-primary">ID RTM</Label><p className="font-mono font-black text-lg">{selectedClientForFicha?.clientCode || 'Pendente'}</p></div>
+              <div><Label className="text-[10px] uppercase font-bold text-primary">ID RTM</Label><p className="font-mono font-black text-lg text-foreground">{selectedClientForFicha?.clientCode || 'Pendente'}</p></div>
             </div>
           </div>
-          <DialogFooter className="p-6 bg-slate-50 border-t"><Button className="w-full font-bold" onClick={() => setIsFichaOpen(false)}>Fechar</Button></DialogFooter>
+          <DialogFooter className="p-6 bg-muted/5 border-t"><Button className="w-full font-bold" onClick={() => setIsFichaOpen(false)}>Fechar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

@@ -39,8 +39,6 @@ export function StepInteractions({
   const interactionsQuery = useMemo(() => {
     if (!instanceId || !stepId || !clientId || !user) return null;
     
-    // Importante: Onde o cliente está listando, o clientId na query deve ser o dele
-    // No caso do suporte, ele passa o clientId do cliente específico que ele está atendendo
     return query(
       collection(db, 'interactions'),
       where('clientId', '==', clientId),
@@ -60,8 +58,8 @@ export function StepInteractions({
     const interactionData = {
       instanceId,
       stepId,
-      clientId, // ID do cliente dono do onboarding
-      userId: user.uid, // ID de quem está escrevendo (admin ou o próprio cliente)
+      clientId, 
+      userId: user.uid, 
       userName: userName || user.displayName || user.email?.split('@')[0],
       userRole: userRole || 'usuário',
       message: message.trim(),
@@ -88,13 +86,13 @@ export function StepInteractions({
   };
 
   return (
-    <div className="flex flex-col h-[400px] bg-white border rounded-2xl overflow-hidden shadow-sm">
-      <div className="p-4 border-b bg-slate-50/50 flex items-center gap-2">
+    <div className="flex flex-col h-[400px] bg-card border rounded-2xl overflow-hidden shadow-sm">
+      <div className="p-4 border-b bg-muted/5 flex items-center gap-2">
         <MessageSquare className="size-4 text-primary" />
-        <h4 className="text-xs font-bold uppercase tracking-widest text-slate-700">Log de Interação e Evidências</h4>
+        <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Log de Interação e Evidências</h4>
       </div>
 
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-4 bg-background/50">
         {loading ? (
           <div className="flex justify-center py-10">
             <Loader2 className="animate-spin text-primary/20" />
@@ -107,27 +105,27 @@ export function StepInteractions({
                 <div key={msg.id} className={cn("flex flex-col", isMe ? "items-end" : "items-start")}>
                   <div className={cn(
                     "max-w-[85%] rounded-2xl p-3 text-sm shadow-sm",
-                    isMe ? "bg-primary text-white rounded-tr-none" : "bg-slate-100 text-slate-800 rounded-tl-none"
+                    isMe ? "bg-primary text-primary-foreground rounded-tr-none" : "bg-muted text-foreground rounded-tl-none"
                   )}>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-black uppercase opacity-70">{msg.userName}</span>
-                      <span className="text-[9px] font-bold opacity-50">• {msg.userRole}</span>
+                      <span className="text-[10px] font-black uppercase opacity-90">{msg.userName}</span>
+                      <span className="text-[9px] font-bold opacity-70">• {msg.userRole}</span>
                     </div>
                     {msg.message && <p className="leading-relaxed">{msg.message}</p>}
                     {msg.fileName && (
                       <div className={cn(
                         "mt-2 p-2 rounded-lg flex items-center gap-2 border",
-                        isMe ? "bg-white/10 border-white/20" : "bg-white border-slate-200"
+                        isMe ? "bg-white/10 border-white/20" : "bg-background border-border"
                       )}>
                         <FileText className="size-4" />
                         <span className="text-xs font-medium truncate max-w-[150px]">{msg.fileName}</span>
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 ml-auto">
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 ml-auto hover:bg-white/10">
                           <Paperclip className="size-3" />
                         </Button>
                       </div>
                     )}
                   </div>
-                  <span className="text-[9px] text-slate-400 mt-1 font-bold">
+                  <span className="text-[9px] text-muted-foreground mt-1 font-bold">
                     {msg.createdAt?.seconds ? format(msg.createdAt.seconds * 1000, "HH:mm 'de' d MMM", { locale: ptBR }) : 'Enviando...'}
                   </span>
                 </div>
@@ -136,20 +134,20 @@ export function StepInteractions({
           </div>
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-2">
-            <MessageSquare className="size-8 text-slate-200" />
-            <p className="text-xs text-slate-400 font-medium italic">Nenhuma interação registrada para esta etapa.</p>
+            <MessageSquare className="size-8 text-muted/20" />
+            <p className="text-xs text-muted-foreground font-medium italic">Nenhuma interação registrada para esta etapa.</p>
           </div>
         )}
       </ScrollArea>
 
-      <div className="p-4 bg-slate-50 border-t">
+      <div className="p-4 bg-muted/5 border-t">
         {canInteract ? (
           <form onSubmit={(e) => handleSendMessage(e)} className="flex items-center gap-2">
             <Button 
               type="button" 
               variant="outline" 
               size="icon" 
-              className="rounded-xl shrink-0"
+              className="rounded-xl shrink-0 bg-background text-foreground"
               onClick={simulateFileUpload}
               disabled={isSending}
             >
@@ -159,7 +157,7 @@ export function StepInteractions({
               placeholder="Escreva sua mensagem ou anote o envio..." 
               value={message} 
               onChange={(e) => setMessage(e.target.value)}
-              className="rounded-xl bg-white"
+              className="rounded-xl bg-background text-foreground border-border"
               disabled={isSending}
             />
             <Button type="submit" size="icon" className="rounded-xl shrink-0" disabled={!message.trim() || isSending}>
@@ -167,7 +165,7 @@ export function StepInteractions({
             </Button>
           </form>
         ) : (
-          <div className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest py-2">
+          <div className="text-[10px] text-center text-muted-foreground font-bold uppercase tracking-widest py-2">
             Aguardando sua vez na jornada
           </div>
         )}

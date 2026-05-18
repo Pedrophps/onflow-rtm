@@ -149,7 +149,7 @@ export default function ClientsAdminPage() {
             </h3>
             
             {clientsLoading ? (
-              <div className="p-12 text-center bg-white rounded-xl border border-dashed">
+              <div className="p-12 text-center bg-card rounded-xl border border-dashed">
                 <Loader2 className="size-6 animate-spin mx-auto text-primary" />
                 <p className="text-xs text-muted-foreground mt-2">Buscando instituições pendentes...</p>
               </div>
@@ -167,9 +167,9 @@ export default function ClientsAdminPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="text-[11px] space-y-1 bg-white p-3 rounded-lg border">
+                      <div className="text-[11px] space-y-1 bg-background p-3 rounded-lg border">
                         <p className="text-muted-foreground">Responsável: <span className="text-foreground font-semibold">{client.displayName}</span></p>
-                        <p className="text-muted-foreground">Status: <span className="text-amber-600 font-bold uppercase tracking-tighter">Aguardando Configuração</span></p>
+                        <p className="text-amber-600 font-bold uppercase tracking-tighter">Aguardando Configuração</p>
                       </div>
                       <Button size="sm" className="w-full font-bold" onClick={() => openApprovalDialog(client)}>
                         Aprovar e Configurar
@@ -186,7 +186,7 @@ export default function ClientsAdminPage() {
           </section>
         )}
 
-        <Card className="bg-white">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="text-lg">Base de Clientes RTM</CardTitle>
             <CardDescription>Lista completa de instituições cadastradas no OnFlow.</CardDescription>
@@ -238,10 +238,10 @@ export default function ClientsAdminPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl bg-background border-border">
           <DialogHeader>
-            <DialogTitle>{isComercial ? "Configuração de Acesso RTM" : "Visualização de Parâmetros"}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-foreground">{isComercial ? "Configuração de Acesso RTM" : "Visualização de Parâmetros"}</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               {isComercial 
                 ? `Defina os parâmetros institucionais para ${selectedClient?.institutionName}` 
                 : `Consulta de dados de acesso para ${selectedClient?.institutionName}`}
@@ -249,23 +249,24 @@ export default function ClientsAdminPage() {
           </DialogHeader>
           <div className="grid grid-cols-2 gap-6 py-4">
             <div className="space-y-2">
-              <Label>ID RTM do Cliente</Label>
+              <Label className="text-foreground">ID RTM do Cliente</Label>
               <Input 
                 value={clientCode} 
                 onChange={(e) => setClientCode(e.target.value)} 
                 placeholder="Ex: RTM-BR-001" 
                 disabled={!isComercial}
+                className="bg-card text-foreground"
               />
             </div>
             <div className="space-y-2">
-              <Label>Telefone de Contato</Label>
+              <Label className="text-foreground">Telefone de Contato</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-3 size-4 text-muted-foreground" />
                 <Input 
                   value={phoneNumber} 
                   onChange={(e) => setPhoneNumber(e.target.value)} 
                   placeholder="(00) 00000-0000" 
-                  className="pl-10" 
+                  className="pl-10 bg-card text-foreground" 
                   disabled={!isComercial}
                 />
               </div>
@@ -284,12 +285,12 @@ export default function ClientsAdminPage() {
                   >
                     <Checkbox checked={selectedProductIds.includes(prod.id!)} disabled={!isComercial} />
                     <div className="flex flex-col">
-                      <span className="text-xs font-bold leading-none">{prod.name}</span>
+                      <span className="text-xs font-bold leading-none text-foreground">{prod.name}</span>
                       <span className="text-[10px] text-muted-foreground truncate w-40">{prod.description}</span>
                     </div>
                   </div>
                 )) : (
-                  <div className="col-span-2 p-4 text-center text-xs text-muted-foreground italic bg-slate-50 rounded-lg">
+                  <div className="col-span-2 p-4 text-center text-xs text-muted-foreground italic bg-muted/20 rounded-lg">
                     Nenhum produto cadastrado pelo suporte.
                   </div>
                 )}
@@ -297,7 +298,7 @@ export default function ClientsAdminPage() {
             </div>
 
             <div className="col-span-2 space-y-2">
-              <Label className="flex items-center gap-2">
+              <Label className="flex items-center gap-2 text-foreground">
                 <FileText className="size-4 text-primary" />
                 Informações Adicionais para o Cliente
               </Label>
@@ -305,13 +306,13 @@ export default function ClientsAdminPage() {
                 value={commercialNotes} 
                 onChange={(e) => setCommercialNotes(e.target.value)} 
                 placeholder={isComercial ? "Insira boas-vindas, orientações iniciais ou avisos específicos para este cliente..." : "Nenhuma nota inserida pelo comercial."}
-                className="min-h-[100px]"
+                className="min-h-[100px] bg-card text-foreground"
                 disabled={!isComercial}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="text-foreground">
               {isComercial ? "Cancelar" : "Fechar"}
             </Button>
             {isComercial && (
