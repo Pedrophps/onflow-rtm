@@ -30,7 +30,7 @@ export default function ProductsPage() {
   const { data: products, loading: productsLoading } = useCollection<Product>(productsQuery);
 
   const [isNewProductOpen, setIsNewProductOpen] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', code: '', description: '' });
+  const [newProduct, setNewProduct] = useState({ name: '', description: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCreateProduct = async () => {
@@ -50,7 +50,7 @@ export default function ProductsPage() {
       
       toast({ title: "Produto Criado", description: "O novo produto foi registrado como rascunho." });
       setIsNewProductOpen(false);
-      setNewProduct({ name: '', code: '', description: '' });
+      setNewProduct({ name: '', description: '' });
     } catch (e) {
       toast({ variant: "destructive", title: "Erro ao criar", description: "Verifique suas permissões de suporte." });
     } finally {
@@ -85,17 +85,13 @@ export default function ProductsPage() {
                     <Input placeholder="Ex: Mensageria SWIFT" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
                   </div>
                   <div className="space-y-2">
-                    <Label>Código Identificador</Label>
-                    <Input placeholder="Ex: SWIFT-CORE" value={newProduct.code} onChange={e => setNewProduct({...newProduct, code: e.target.value.toUpperCase()})} />
-                  </div>
-                  <div className="space-y-2">
                     <Label>Descrição Curta</Label>
                     <Textarea placeholder="Finalidade do produto no mercado..." value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} />
                   </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsNewProductOpen(false)}>Cancelar</Button>
-                  <Button disabled={!newProduct.name || !newProduct.code || isSubmitting} onClick={handleCreateProduct}>
+                  <Button disabled={!newProduct.name || isSubmitting} onClick={handleCreateProduct}>
                     {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
                     Criar Produto
                   </Button>
@@ -128,7 +124,6 @@ export default function ProductsPage() {
                     </Badge>
                   </div>
                   <CardTitle className="text-xl">{product.name}</CardTitle>
-                  <CardDescription className="font-mono text-[10px]">{product.code}</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-4 flex-1 flex flex-col justify-between space-y-4">
                   <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed italic">

@@ -85,7 +85,6 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ produ
               <div>
                 <div className="flex items-center gap-3">
                   <h1 className="text-3xl font-bold font-headline text-slate-900">{product.name}</h1>
-                  <Badge variant="outline" className="font-mono text-[10px]">{product.code}</Badge>
                 </div>
                 <p className="text-muted-foreground">{product.description}</p>
               </div>

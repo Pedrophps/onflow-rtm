@@ -24,7 +24,6 @@ export interface UserProfile {
 export interface Product {
   id?: string;
   name: string;
-  code: string;
   description: string;
   status: 'active' | 'draft' | 'archived';
   published: boolean;

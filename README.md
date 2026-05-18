@@ -44,4 +44,10 @@ O **OnFlow** é um ecossistema digital B2B desenvolvido para a **RTM (Rede de Te
 - **UX**: Navegação hierárquica implementada em `/dashboard/admin/products`.
 
 ---
+
+## [UPDATE - V1.14 - REFINAMENTO DE CADASTRO DE PRODUTO]
+- **Simplificação**: Remoção do campo "Código Identificador" do processo de criação e visualização de produtos.
+- **Justificativa**: A identificação única agora é gerenciada exclusivamente pelo ID do documento Firestore para evitar redundância na interface.
+
+---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*
