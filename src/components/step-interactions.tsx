@@ -35,7 +35,8 @@ export function StepInteractions({
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
 
-  // A query deve sempre incluir o clientId para satisfazer as Security Rules do Firestore de forma eficiente
+  // Consulta otimizada para respeitar as Security Rules
+  // Filtramos por clientId, instanceId e stepId para garantir que o Admin veja apenas o contexto correto
   const interactionsQuery = useMemo(() => {
     if (!instanceId || !stepId || !clientId || !user) return null;
     return query(
@@ -45,7 +46,7 @@ export function StepInteractions({
       where('stepId', '==', stepId),
       orderBy('createdAt', 'asc')
     );
-  }, [db, instanceId, stepId, clientId, user]);
+  }, [db, instanceId, stepId, clientId, user?.uid]);
 
   const { data: interactions, loading } = useCollection<StepInteraction>(interactionsQuery);
 
@@ -63,7 +64,7 @@ export function StepInteractions({
       userRole: userRole || 'usuário',
       message: message.trim(),
       fileName: fileName || null,
-      fileUrl: fileName ? 'https://example.com/mock-file-url' : null, // Simulado
+      fileUrl: fileName ? 'https://example.com/mock-file-url' : null,
       createdAt: serverTimestamp(),
     };
 
