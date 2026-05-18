@@ -3,6 +3,7 @@
 /**
  * @fileOverview Agente de Processamento de E-mails do ERP.
  * Transforma e-mails de solicitação de trabalho em instâncias de onboarding no OnFlow.
+ * Utiliza modelos de Reasoning para maior precisão na extração de dados técnicos.
  */
 
 import { ai } from '@/ai/genkit';
@@ -28,7 +29,9 @@ const prompt = ai.definePrompt({
   name: 'parseERPEmailPrompt',
   input: { schema: ParseERPEmailInputSchema },
   output: { schema: ParseERPEmailOutputSchema },
-  prompt: `Você é um assistente de triagem técnica da RTM. Seu trabalho é ler e-mails automáticos enviados pelo nosso ERP e extrair dados para criar um novo processo de onboarding.
+  prompt: `Você é um analista sênior de triagem técnica da RTM. Seu trabalho é ler e-mails automáticos enviados pelo nosso ERP e extrair dados estruturados.
+
+Como um modelo de raciocínio, analise cuidadosamente o contexto para evitar erros em CNPJs ou nomes de produtos.
 
 Analise o Assunto e o Corpo do e-mail abaixo:
 Assunto: {{{emailSubject}}}
@@ -40,12 +43,16 @@ Instruções:
 3. Identifique o Produto solicitado (ex: SWIFT, RSFN, PIX, etc).
 4. Se o e-mail contiver termos como "URGENTE", "CRÍTICO" ou "IMEDIATO", defina prioridade como 'high'.
 
-Se não encontrar algum dado, tente inferir pelo contexto ou deixe vazio se for impossível identificar.`,
+Retorne os dados estritamente conforme o esquema de saída solicitado.`,
 });
 
 export async function parseERPEmail(input: ParseERPEmailInput): Promise<ParseERPEmailOutput> {
-  // Chamada ao prompt utilizando o modelo configurado via OpenRouter
+  // A chamada utiliza o modelo padrão configurado em genkit.ts (NVIDIA Reasoning)
   const { output } = await prompt(input);
-  if (!output) throw new Error('Falha ao processar e-mail do ERP via OpenRouter.');
+  
+  if (!output) {
+    throw new Error('Falha ao processar e-mail do ERP. Verifique a cota do modelo gratuito no OpenRouter.');
+  }
+  
   return output;
 }
