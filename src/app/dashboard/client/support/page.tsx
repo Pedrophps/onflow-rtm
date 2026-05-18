@@ -1,3 +1,4 @@
+
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -18,20 +19,25 @@ import {
   User,
   Zap,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  MessageSquareText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useUser, useFirestore, useCollection } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { useUser, useFirestore, useCollection, useDoc } from "@/firebase";
+import { collection, query, where, doc } from "firebase/firestore";
 import { useMemo } from "react";
-import { OnboardingInstance } from "@/lib/types";
+import { OnboardingInstance, UserProfile } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { StepInteractions } from "@/components/step-interactions";
 
 export default function ClientSupportPage() {
   const { user } = useUser();
   const db = useFirestore();
 
-  // Buscar instâncias para mostrar os analistas responsáveis
+  const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
+  const { data: profile } = useDoc<UserProfile>(userRef);
+
+  // Buscar instâncias para mostrar os analistas responsáveis e habilitar o chat
   const instancesQuery = useMemo(() => 
     user ? query(
       collection(db, "onboardingInstances"),
@@ -41,6 +47,9 @@ export default function ClientSupportPage() {
   [db, user]);
 
   const { data: instances, loading: instancesLoading } = useCollection<OnboardingInstance>(instancesQuery);
+
+  // Seleciona a primeira instância ativa para o chat de suporte global
+  const activeInstanceForChat = instances.length > 0 ? instances[0] : null;
 
   return (
     <DashboardLayout role="client">
@@ -153,16 +162,37 @@ export default function ClientSupportPage() {
                   Todos os guias técnicos, diagramas de rede e termos de uso estão disponíveis na aba "Documentos" do seu portal OnFlow.
                 </AccordionContent>
               </AccordionItem>
-              <AccordionItem value="item-4">
-                <AccordionTrigger className="text-left font-bold text-slate-700 hover:text-primary transition-colors">
-                  Meu acesso foi bloqueado, o que fazer?
-                </AccordionTrigger>
-                <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-                  Bloqueios podem ocorrer por pendências documentais ou falhas de segurança. Entre em contato imediatamente com nossa central 24h pelo telefone 0800 123 4567 para desbloqueio imediato.
-                </AccordionContent>
-              </AccordionItem>
             </Accordion>
           </Card>
+        </div>
+
+        {/* Chat de Suporte */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold font-headline flex items-center gap-2">
+            <MessageSquareText className="size-5 text-primary" /> Chat de Suporte OnFlow
+          </h3>
+          {activeInstanceForChat ? (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <StepInteractions 
+                instanceId={activeInstanceForChat.id!}
+                stepId="general_support"
+                clientId={user?.uid || ""}
+                canInteract={true}
+                userName={profile?.displayName}
+                userRole="cliente"
+              />
+              <p className="mt-2 text-[10px] text-muted-foreground text-center font-bold uppercase tracking-widest">
+                Conectado ao suporte de {activeInstanceForChat.productName || activeInstanceForChat.productId}
+              </p>
+            </div>
+          ) : (
+            <Card className="p-12 text-center border-2 border-dashed bg-muted/20">
+              <MessageSquareText className="size-12 mx-auto text-muted-foreground/20 mb-4" />
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                O chat em tempo real fica disponível automaticamente assim que uma jornada de ativação técnica for iniciada.
+              </p>
+            </Card>
+          )}
         </div>
 
         <div className="bg-slate-900 rounded-3xl p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
