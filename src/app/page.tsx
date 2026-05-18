@@ -23,7 +23,8 @@ import {
   CreditCard,
   ExternalLink,
   Menu,
-  Wifi
+  Wifi,
+  ShieldAlert
 } from 'lucide-react';
 import {
   Sheet,
@@ -330,15 +331,41 @@ export default function Home() {
       </section>
 
       <footer className="py-12 border-t bg-white">
-        <div className="container mx-auto px-6 text-center space-y-6">
-          <p className="font-bold text-primary text-xl">OnFlow by RTM</p>
-          <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} RTM - Hub Integrador do Mercado Financeiro. Todos os direitos reservados.</p>
-          <div className="pt-4 border-t w-max mx-auto px-8">
+        <div className="container mx-auto px-6 text-center space-y-8">
+          <div className="space-y-2">
+            <p className="font-bold text-primary text-xl">OnFlow by RTM</p>
+            <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} RTM - Hub Integrador do Mercado Financeiro. Todos os direitos reservados.</p>
+          </div>
+
+          <div className="pt-8 border-t flex flex-wrap justify-center gap-8">
             <Link 
               href="/debug" 
-              className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-amber-600 hover:text-amber-700 transition-colors"
+              className="group flex flex-col items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-amber-600 transition-colors"
             >
-              <Wifi className="size-3" /> Testar Conexão com Firebase
+              <div className="size-8 rounded-full bg-slate-50 group-hover:bg-amber-50 flex items-center justify-center transition-colors">
+                <Wifi className="size-4" />
+              </div>
+              <span>Diagnóstico de Rede</span>
+            </Link>
+            
+            <Link 
+              href="/debug/integration-test" 
+              className="group flex flex-col items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors"
+            >
+              <div className="size-8 rounded-full bg-slate-50 group-hover:bg-emerald-50 flex items-center justify-center transition-colors">
+                <Database className="size-4" />
+              </div>
+              <span>Testes de Escrita</span>
+            </Link>
+
+            <Link 
+              href="/debug/integration-test" 
+              className="group flex flex-col items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary transition-colors"
+            >
+              <div className="size-8 rounded-full bg-slate-50 group-hover:bg-primary/5 flex items-center justify-center transition-colors">
+                <ShieldAlert className="size-4" />
+              </div>
+              <span>Validação de Segurança</span>
             </Link>
           </div>
         </div>

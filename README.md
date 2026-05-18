@@ -80,4 +80,11 @@ A arquitetura é dividida em:
 - **Motivo**: Necessidade de maior contraste para destacar os componentes brancos (cards/inputs) sobre a página, mantendo a estética corporativa.
 
 ---
+
+## [UPDATE - V1.5 - ACESSIBILIDADE TÉCNICA (DEBUG HUB)]
+- **Melhoria**: Inclusão de um Hub de Diagnóstico no rodapé da Homepage (`src/app/page.tsx`).
+- **Objetivo**: Facilitar o acesso a testes de conectividade e validação de escrita (RBAC) sem depender de URLs manuais.
+- **Links Adicionados**: Diagnóstico de Rede, Testes de Escrita e Validação de Segurança.
+
+---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*
