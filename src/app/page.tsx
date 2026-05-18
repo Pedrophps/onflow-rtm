@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,14 +45,14 @@ import { HeroBackground } from '@/components/hero-background';
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white selection:bg-primary/10 font-body text-foreground">
+    <main className="min-h-screen bg-white dark:bg-slate-950 selection:bg-primary/10 font-body text-foreground">
       {/* Header Section */}
-      <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-border/50">
+      <header className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-border/50">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2 font-headline font-bold text-2xl text-primary">
               RTM
-              <span className="text-foreground text-sm font-medium tracking-widest uppercase ml-1 opacity-60">OnFlow</span>
+              <span className="text-foreground dark:text-white text-sm font-medium tracking-widest uppercase ml-1 opacity-60">OnFlow</span>
             </Link>
           </div>
 
@@ -88,15 +90,15 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center bg-slate-950 overflow-hidden pt-20">
+      <section className="relative min-h-[90vh] flex items-center bg-white dark:bg-slate-950 overflow-hidden pt-20">
         <HeroBackground />
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-left duration-700">
-            <h1 className="text-5xl lg:text-7xl font-bold tracking-tighter text-white font-headline leading-tight">
+            <h1 className="text-5xl lg:text-7xl font-bold tracking-tighter text-slate-900 dark:text-white font-headline leading-tight">
               Somos a <span className="text-primary border-b-4 border-primary/20">RTM.</span><br />
               <span className="text-3xl lg:text-5xl opacity-80 block mt-2 font-medium">O Hub integrador do mercado financeiro.</span>
             </h1>
-            <p className="text-xl lg:text-2xl text-slate-300 leading-relaxed max-w-2xl font-light">
+            <p className="text-xl lg:text-2xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl font-light">
               Integramos o mercado financeiro brasileiro. Nossas soluções e ferramentas potencializam os resultados dos nossos clientes.
             </p>
             <div className="flex gap-4">
@@ -106,23 +108,22 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white to-transparent"></div>
       </section>
 
       {/* Sobre Section */}
-      <section id="sobre" className="py-32 bg-white border-b">
+      <section id="sobre" className="py-32 bg-white dark:bg-background border-b border-border/50">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center space-y-8 mb-24">
             <h2 className="text-4xl lg:text-5xl font-bold font-headline text-primary tracking-tight">
               Identificar para integrar. Entender para atender. Conhecer para evoluir.
             </h2>
-            <p className="text-xl text-slate-600 leading-relaxed font-medium italic">
+            <p className="text-xl text-slate-600 dark:text-slate-400 leading-relaxed font-medium italic">
               Empresa da ANBIMA e da B3, a RTM é o principal hub integrador do setor financeiro. Atuando como agente neutro de tecnologia, ouve o mercado com propósito de viabilizar o desenvolvimento de soluções que facilitem o dia a dia operacional das instituições.
             </p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-20 items-start">
-            <div className="space-y-8 text-lg text-slate-600 leading-relaxed">
+            <div className="space-y-8 text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
               <p>
                 Fundada em 1997, como rede de comunicação crítica para o segmento financeiro, a RTM evoluiu de provedora de infraestrutura de telecomunicações para o principal hub integrador do setor no país e hoje conecta mais de 850 instituições, com presença em 21 estados brasileiros.
               </p>
@@ -131,17 +132,17 @@ export default function Home() {
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-10">
-                <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 text-center">
+                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center">
                   <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Propósito</h4>
-                  <p className="text-sm font-bold text-slate-900 leading-snug">Promover a evolução do Mercado Financeiro pela Tecnologia</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">Promover a evolução do Mercado Financeiro pela Tecnologia</p>
                 </div>
-                <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 text-center">
+                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center">
                   <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Valores</h4>
-                  <p className="text-sm font-bold text-slate-900 leading-snug">Foco no cliente, Desenvolvimento de Pessoas e Equipe, Confiança e Inovação</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">Foco no cliente, Desenvolvimento de Pessoas e Equipe, Confiança e Inovação</p>
                 </div>
-                <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100 text-center">
+                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center">
                   <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Posicionamento</h4>
-                  <p className="text-sm font-bold text-slate-900 leading-snug">Identificar, Entender, Conhecer</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">Identificar, Entender, Conhecer</p>
                 </div>
               </div>
             </div>
@@ -170,10 +171,10 @@ export default function Home() {
       </section>
 
       {/* Serviços Críticos Section */}
-      <section id="servicos" className="py-32 bg-slate-50">
+      <section id="servicos" className="py-32 bg-slate-50 dark:bg-slate-900/50">
         <div className="container mx-auto px-6 text-foreground">
           <div className="text-center mb-20 space-y-4">
-            <h2 className="text-5xl font-bold font-headline tracking-tighter text-slate-900 uppercase">Serviços Críticos</h2>
+            <h2 className="text-5xl font-bold font-headline tracking-tighter text-slate-900 dark:text-white uppercase">Serviços Críticos</h2>
             <div className="h-2 w-24 bg-primary mx-auto rounded-full"></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -189,7 +190,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trajetória Futurista em Carrossel */}
+      {/* Trajetória em Carrossel */}
       <section id="trajetoria" className="py-32 bg-slate-950 text-white overflow-hidden relative">
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-3xl mb-24 space-y-4">
@@ -254,11 +255,11 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-20 border-t bg-white">
+      <footer className="py-20 border-t bg-white dark:bg-slate-950">
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-12">
             <div className="space-y-4 text-center md:text-left">
-              <p className="font-headline font-black text-primary text-3xl tracking-tighter">OnFlow <span className="text-slate-300">by RTM</span></p>
+              <p className="font-headline font-black text-primary text-3xl tracking-tighter">OnFlow <span className="text-slate-300 dark:text-slate-800">by RTM</span></p>
               <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest italic">© {new Date().getFullYear()} RTM - Hub Integrador do Mercado Financeiro.</p>
             </div>
             <div className="flex flex-wrap justify-center gap-8">
@@ -278,15 +279,15 @@ export default function Home() {
 
 function ServiceCard({ icon: Icon, title, desc }: { icon: any, title: string, desc: string }) {
   return (
-    <Card className="border-none shadow-sm hover:shadow-2xl transition-all group bg-white p-2 rounded-[2rem] hover:-translate-y-2 duration-300">
+    <Card className="border-none shadow-sm hover:shadow-2xl transition-all group bg-white dark:bg-slate-900 p-2 rounded-[2rem] hover:-translate-y-2 duration-300">
       <CardHeader className="pb-4">
-        <div className="size-14 rounded-2xl bg-slate-50 text-primary flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-all shadow-inner">
+        <div className="size-14 rounded-2xl bg-slate-50 dark:bg-slate-800 text-primary flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-all shadow-inner">
           <Icon className="size-7" />
         </div>
-        <CardTitle className="text-xl font-bold font-headline text-slate-900 group-hover:text-primary transition-colors tracking-tight">{title}</CardTitle>
+        <CardTitle className="text-xl font-bold font-headline text-slate-900 dark:text-white group-hover:text-primary transition-colors tracking-tight">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-slate-600 text-sm leading-relaxed font-medium">{desc}</p>
+        <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed font-medium">{desc}</p>
       </CardContent>
     </Card>
   );
