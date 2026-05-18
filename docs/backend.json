@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -48,6 +49,18 @@
         "startedAt": { "type": "string" },
         "updatedAt": { "type": "string" }
       }
+    },
+    "SystemLog": {
+      "title": "Log do Sistema",
+      "description": "Registros de eventos técnicos, auditoria de QA e diagnósticos de rede.",
+      "type": "object",
+      "properties": {
+        "timestamp": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["info", "success", "error", "warning"] },
+        "userId": { "type": "string" },
+        "context": { "type": "string" }
+      }
     }
   },
   "firestore": {
@@ -60,11 +73,11 @@
     "/products/{productId}/activationFlows/{flowId}": {
       "description": "Subcoleção de fluxos de ativação para um produto específico."
     },
-    "/products/{productId}/activationFlows/{flowId}/steps/{stepId}": {
-      "description": "Subcoleção de etapas técnicas de um fluxo de ativação."
-    },
     "/onboardingInstances/{instanceId}": {
       "schema": { "$ref": "#/backend/entities/OnboardingInstance" }
+    },
+    "/system_logs/{logId}": {
+      "schema": { "$ref": "#/backend/entities/SystemLog" }
     }
   }
 }
