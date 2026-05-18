@@ -12,6 +12,7 @@ const getOpenAI = (plugin: any) => {
   if (typeof plugin === 'function') return plugin;
   if (plugin?.openai && typeof plugin.openai === 'function') return plugin.openai;
   if (plugin?.default?.openai && typeof plugin.default.openai === 'function') return plugin.default.openai;
+  if (plugin?.default && typeof plugin.default === 'function') return plugin.default;
   return plugin;
 };
 
