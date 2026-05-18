@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useFirestore, useUser } from '@/firebase';
 import { processAutomationFromEmail } from '@/lib/automation-service';
-import { Loader2, Mail, Zap, CheckCircle2, AlertTriangle, ArrowRight, Database, ShieldCheck, Cog, ClipboardList } from 'lucide-react';
+import { Loader2, Mail, Zap, CheckCircle2, AlertTriangle, ArrowRight, Database, ShieldCheck, Cog, ClipboardList, Globe, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 export default function ERPSimulatorPage() {
   const db = useFirestore();
@@ -37,6 +38,8 @@ ERP OnFlow`);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<any>(null);
 
+  const webhookUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/webhook/erp-email` : '/api/webhook/erp-email';
+
   const handleSimulate = async () => {
     if (!user) return;
     setIsProcessing(true);
@@ -58,6 +61,11 @@ ERP OnFlow`);
     }
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copiado!", description: "URL do Webhook copiada para a área de transferência." });
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 p-8 font-body">
       <div className="max-w-5xl mx-auto space-y-8">
@@ -70,6 +78,29 @@ ERP OnFlow`);
           </div>
           <Button variant="ghost" asChild><Link href="/debug/suite">Voltar ao Suite</Link></Button>
         </div>
+
+        {/* Informações do Webhook Real */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <Globe className="size-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900">Endpoint de Integração Real</h3>
+                  <p className="text-xs text-muted-foreground">Configure seu ERP ou serviço de e-mail para enviar POST JSON para este endereço:</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 bg-white p-2 px-4 rounded-xl border font-mono text-[10px] text-primary font-bold">
+                {webhookUrl}
+                <Button variant="ghost" size="icon" className="size-6" onClick={() => copyToClipboard(webhookUrl)}>
+                  <Copy className="size-3" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Guia Visual do Processo */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
