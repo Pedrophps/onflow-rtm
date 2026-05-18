@@ -26,7 +26,10 @@ import {
   Wifi,
   ShieldAlert,
   Terminal,
-  Mail
+  Mail,
+  Zap,
+  Server,
+  Shield
 } from 'lucide-react';
 import {
   Sheet,
@@ -39,6 +42,7 @@ import {
 
 export default function Home() {
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-rtm');
+  const serviceImage = PlaceHolderImages.find(img => img.id === 'rtm-integration');
 
   return (
     <main className="min-h-screen bg-white selection:bg-primary/10">
@@ -67,7 +71,6 @@ export default function Home() {
               </Button>
             </div>
 
-            {/* Mobile Menu */}
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="lg:hidden">
@@ -77,9 +80,7 @@ export default function Home() {
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                 <SheetHeader className="text-left">
                   <SheetTitle className="font-headline text-primary">Navegação</SheetTitle>
-                  <SheetDescription>
-                    Acesse as principais seções do portal RTM OnFlow.
-                  </SheetDescription>
+                  <SheetDescription>Acesse as principais seções do portal RTM OnFlow.</SheetDescription>
                 </SheetHeader>
                 <nav className="flex flex-col gap-6 mt-10">
                   <Link href="#sobre" className="text-lg font-bold font-headline hover:text-primary transition-colors">Sobre a RTM</Link>
@@ -123,7 +124,7 @@ export default function Home() {
             <div className="absolute inset-0 bg-primary/5 rounded-3xl -rotate-2 -translate-x-4"></div>
             <div className="absolute inset-0 bg-secondary/5 rounded-3xl rotate-1 translate-x-4"></div>
             <Image 
-              src={heroImage?.imageUrl || "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"} 
+              src={heroImage?.imageUrl || "https://picsum.photos/seed/city-skyscrapers/1200/800"} 
               alt={heroImage?.description || "RTM Hub"} 
               fill 
               className="object-cover rounded-3xl shadow-2xl relative z-10"
@@ -131,7 +132,94 @@ export default function Home() {
             />
           </div>
         </div>
-        <div className="absolute bottom-0 right-0 w-1/3 h-1/2 bg-primary/5 blur-3xl rounded-full -mb-32 -mr-32 pointer-events-none"></div>
+      </section>
+
+      {/* Sobre Section */}
+      <section id="sobre" className="py-24 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-2xl">
+              <Image 
+                src={serviceImage?.imageUrl || "https://picsum.photos/seed/rtm-conn/800/600"}
+                alt="RTM Conectividade"
+                fill
+                className="object-cover"
+                data-ai-hint="network connection"
+              />
+            </div>
+            <div className="space-y-6">
+              <h2 className="text-4xl font-bold font-headline text-slate-900 tracking-tighter">Uma trajetória de excelência e inovação.</h2>
+              <p className="text-slate-600 leading-relaxed text-lg">
+                Fundada para ser a espinha dorsal do setor financeiro, a RTM evoluiu de uma provedora de conectividade para um Hub Integrador completo. Hoje, suportamos as maiores instituições do país com segurança, resiliência e baixa latência.
+              </p>
+              <div className="grid grid-cols-2 gap-6 pt-4">
+                <div className="space-y-2">
+                  <p className="text-3xl font-black text-primary">500+</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Instituições Conectadas</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-3xl font-black text-primary">99.99%</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Uptime Garantido</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Serviços Section */}
+      <section id="servicos" className="py-24 bg-slate-50">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16 space-y-4">
+            <h2 className="text-4xl font-bold font-headline tracking-tighter text-slate-900">Serviços Críticos</h2>
+            <p className="text-slate-600 max-w-2xl mx-auto">Infraestrutura robusta para operações que não podem parar.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <ServiceCard 
+              icon={Network} 
+              title="Rede RTM" 
+              desc="Conectividade privada e segura entre as principais praças financeiras do Brasil." 
+            />
+            <ServiceCard 
+              icon={Zap} 
+              title="Mensageria SWIFT" 
+              desc="Integração completa com o barramento internacional de pagamentos e câmbio." 
+            />
+            <ServiceCard 
+              icon={Server} 
+              title="Cloud RTM" 
+              desc="Nuvem híbrida desenhada especificamente para os requisitos de compliance do Bacen." 
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Soluções Section */}
+      <section id="solucoes" className="py-24 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="bg-slate-900 rounded-[3rem] p-12 lg:p-20 text-white relative overflow-hidden">
+            <div className="relative z-10 grid lg:grid-cols-2 gap-12 items-center">
+              <div className="space-y-8">
+                <h2 className="text-5xl font-bold font-headline leading-tight tracking-tighter">Soluções que simplificam o Onboarding.</h2>
+                <p className="text-slate-400 text-lg">
+                  Com o **OnFlow**, eliminamos a burocracia técnica. Nossa IA processa solicitações de ERP e gera jornadas de ativação automáticas para o seu time de suporte.
+                </p>
+                <div className="space-y-4">
+                  <SolutionItem icon={Shield} text="Segurança e Criptografia de Ponta a Ponta" />
+                  <SolutionItem icon={BarChart3} text="Analytics em Tempo Real de Ativações" />
+                  <SolutionItem icon={Mail} text="Ingestão Inteligente via E-mail ERP" />
+                </div>
+                <Button size="lg" className="rounded-full px-10 h-14 bg-white text-slate-900 hover:bg-slate-100 font-bold" asChild>
+                  <Link href="/login">Conheça o OnFlow</Link>
+                </Button>
+              </div>
+              <div className="hidden lg:flex justify-center">
+                <div className="size-80 rounded-full bg-primary/20 blur-3xl absolute"></div>
+                <LayoutDashboard className="size-64 text-primary/40 relative animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Positioning Section */}
@@ -159,47 +247,57 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer Debug Links */}
+      {/* Footer Section */}
       <footer className="py-12 border-t bg-white">
         <div className="container mx-auto px-6 text-center space-y-8">
           <div className="space-y-2">
             <p className="font-bold text-primary text-xl">OnFlow by RTM</p>
-            <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} RTM - Hub Integrador do Mercado Financeiro. Todos os direitos reservados.</p>
+            <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} RTM - Hub Integrador do Mercado Financeiro.</p>
           </div>
 
           <div className="pt-8 border-t flex flex-wrap justify-center gap-8">
-            <Link 
-              href="/debug" 
-              className="group flex flex-col items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-amber-600 transition-colors"
-            >
-              <div className="size-8 rounded-full bg-slate-50 group-hover:bg-amber-50 flex items-center justify-center transition-colors">
-                <Wifi className="size-4" />
-              </div>
+            <Link href="/debug" className="group flex flex-col items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-amber-600 transition-colors">
+              <div className="size-8 rounded-full bg-slate-50 group-hover:bg-amber-50 flex items-center justify-center transition-colors"><Wifi className="size-4" /></div>
               <span>Diagnóstico</span>
             </Link>
-            
-            <Link 
-              href="/debug/erp-simulator" 
-              className="group flex flex-col items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary transition-colors"
-            >
-              <div className="size-8 rounded-full bg-slate-50 group-hover:bg-primary/5 flex items-center justify-center transition-colors">
-                <Mail className="size-4" />
-              </div>
+            <Link href="/debug/erp-simulator" className="group flex flex-col items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary transition-colors">
+              <div className="size-8 rounded-full bg-slate-50 group-hover:bg-primary/5 flex items-center justify-center transition-colors"><Mail className="size-4" /></div>
               <span>Simulador ERP</span>
             </Link>
-
-            <Link 
-              href="/debug/suite" 
-              className="group flex flex-col items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary transition-colors"
-            >
-              <div className="size-8 rounded-full bg-slate-50 group-hover:bg-primary/5 flex items-center justify-center transition-colors">
-                <Terminal className="size-4" />
-              </div>
+            <Link href="/debug/suite" className="group flex flex-col items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary transition-colors">
+              <div className="size-8 rounded-full bg-slate-50 group-hover:bg-primary/5 flex items-center justify-center transition-colors"><Terminal className="size-4" /></div>
               <span>Test Suite</span>
             </Link>
           </div>
         </div>
       </footer>
     </main>
+  );
+}
+
+function ServiceCard({ icon: Icon, title, desc }: { icon: any, title: string, desc: string }) {
+  return (
+    <Card className="border-none shadow-sm hover:shadow-xl transition-all group bg-white p-4">
+      <CardHeader>
+        <div className="size-12 rounded-2xl bg-primary/5 text-primary flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-colors">
+          <Icon className="size-6" />
+        </div>
+        <CardTitle className="text-xl font-bold font-headline">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-slate-600 text-sm leading-relaxed">{desc}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SolutionItem({ icon: Icon, text }: { icon: any, text: string }) {
+  return (
+    <div className="flex items-center gap-3 text-slate-300">
+      <div className="size-6 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+        <Icon className="size-3" />
+      </div>
+      <span className="text-sm font-medium">{text}</span>
+    </div>
   );
 }
