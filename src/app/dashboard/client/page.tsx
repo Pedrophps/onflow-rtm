@@ -1,3 +1,4 @@
+
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -54,6 +55,24 @@ export default function ClientDashboardPage() {
   const currentStepOrder = instance?.currentStepOrder || 1;
   const totalSteps = steps.length || 1;
   const progress = Math.round(((currentStepOrder - 1) / totalSteps) * 100);
+
+  const formatPhone = (value: string) => {
+    let v = value.replace(/\D/g, "");
+    if (v.length > 11) v = v.slice(0, 11);
+    
+    if (v.length <= 10) {
+      v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+      v = v.replace(/(\d{4})(\d)/, "$1-$2");
+    } else {
+      v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+      v = v.replace(/(\d{5})(\d)/, "$1-$2");
+    }
+    return v;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewPhone(formatPhone(e.target.value));
+  };
 
   const handleUpdatePhone = async () => {
     if (!user || !newPhone) return;
@@ -119,7 +138,7 @@ export default function ClientDashboardPage() {
                   <Input 
                     placeholder="(00) 00000-0000" 
                     value={newPhone} 
-                    onChange={(e) => setNewPhone(e.target.value)}
+                    onChange={handlePhoneChange}
                     className="bg-white border-amber-200 w-full md:w-48"
                   />
                   <Button 
