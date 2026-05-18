@@ -64,7 +64,7 @@ A arquitetura é dividida em:
   - **Elevação**: O botão "Tornar meu usuário Admin agora" deve gravar `role: admin` no Firestore.
 
 #### 3. Fluxo de Login e RBAC
-- **Aba de Preenchimento Rápido**: No `/login`, utilize os botões de atalho para testar diferentes perfis (Suporte, Comercial, Cliente).
+- ~~**Aba de Preenchimento Rápido**: No `/login`, utilize os botões de atalho para testar diferentes perfis (Suporte, Comercial, Cliente).~~ [REMOVIDO EM V1.6]
 - **Validação de Visão**: Verifique se o Cliente é bloqueado na tela "Acesso Restrito" caso não tenha ID RTM e Produto Ativo.
 
 ---
@@ -85,6 +85,12 @@ A arquitetura é dividida em:
 - **Melhoria**: Inclusão de um Hub de Diagnóstico no rodapé da Homepage (`src/app/page.tsx`).
 - **Objetivo**: Facilitar o acesso a testes de conectividade e validação de escrita (RBAC) sem depender de URLs manuais.
 - **Links Adicionados**: Diagnóstico de Rede, Testes de Escrita e Validação de Segurança.
+
+---
+
+## [UPDATE - V1.6 - LIMPEZA DE INTERFACE E CENTRALIZAÇÃO]
+- **Mudança**: Remoção dos atalhos de preenchimento e links de debug da página de Login (`src/app/login/page.tsx`).
+- **Motivo**: Centralização das ferramentas técnicas no Hub de Diagnóstico (rodapé da home), tornando a jornada de login mais limpa e próxima de um ambiente de produção.
 
 ---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*

@@ -13,11 +13,10 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mail, Lock, Loader2, Headset, Briefcase, User, Wifi, Building2 } from 'lucide-react';
+import { Mail, Lock, Loader2, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import Link from 'next/link';
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -67,7 +66,6 @@ export default function LoginPage() {
       const role = isAdminEmail(email) ? 'admin' : 'client';
       const userRef = doc(db, 'users', result.user.uid);
 
-      // Gravação do perfil no Firestore sem await para não bloquear o redirecionamento
       setDoc(userRef, {
         email,
         role,
@@ -98,7 +96,6 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // O useEffect lidará com o redirecionamento assim que o estado do user mudar
     } catch (error: any) {
       setLoading(false);
       toast({ 
@@ -107,34 +104,6 @@ export default function LoginPage() {
         description: "Verifique suas credenciais ou conexão." 
       });
     }
-  };
-
-  const fillQuickAccess = (type: 'suporte' | 'comercial' | 'client') => {
-    const pass = '123456';
-    if (type === 'suporte') {
-      setEmail('suporte.rtm@rtm.net.br');
-      setPassword(pass);
-      setName('João Silva (Suporte)');
-      setCnpj('');
-      setInstitutionName('RTM');
-    } else if (type === 'comercial') {
-      setEmail('comercial.rtm@rtm.net.br');
-      setPassword(pass);
-      setName('Maria Souza (Comercial)');
-      setCnpj('');
-      setInstitutionName('RTM');
-    } else {
-      setEmail('cliente.teste@instituicao.com.br');
-      setPassword(pass);
-      setName('Roberto Pereira');
-      setCnpj('12.345.678/0001-99');
-      setInstitutionName('Banco Digital Beta S.A.');
-    }
-    
-    toast({
-      title: "Campos Preenchidos",
-      description: `O formulário foi preenchido para o perfil de ${type}.`,
-    });
   };
 
   if (authLoading && !currentUser) {
@@ -226,25 +195,6 @@ export default function LoginPage() {
                 </CardContent>
               </form>
             </TabsContent>
-            <CardFooter className="flex flex-col gap-4 border-t pt-6 bg-muted/20">
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest text-center w-full">Atalhos de Preenchimento (Teste)</p>
-              <div className="grid grid-cols-1 gap-2 w-full">
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" size="sm" className="gap-2 bg-white h-10" onClick={() => fillQuickAccess('suporte')} disabled={loading}>
-                    <Headset className="size-3.5" /> Perfil Suporte
-                  </Button>
-                  <Button variant="outline" size="sm" className="gap-2 bg-white h-10" onClick={() => fillQuickAccess('comercial')} disabled={loading}>
-                    <Briefcase className="size-3.5" /> Perfil Comercial
-                  </Button>
-                </div>
-                <Button variant="outline" size="sm" className="gap-2 bg-white h-10" onClick={() => fillQuickAccess('client')} disabled={loading}>
-                  <User className="size-3.5" /> Cliente Institucional
-                </Button>
-                <Link href="/debug" className="flex items-center justify-center gap-2 text-[10px] text-amber-600 hover:text-amber-700 font-bold uppercase tracking-tighter mt-2">
-                  <Wifi className="size-3" /> Ver Diagnóstico de Conexão
-                </Link>
-              </div>
-            </CardFooter>
           </Tabs>
         </Card>
       </div>
