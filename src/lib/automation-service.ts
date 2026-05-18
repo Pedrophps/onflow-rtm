@@ -1,5 +1,3 @@
-
-'use client';
 /**
  * @fileOverview Serviço central de automação do OnFlow.
  * Lida com a criação de registros baseados em inputs externos (como e-mails).

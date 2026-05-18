@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useFirestore, useUser } from '@/firebase';
 import { processAutomationFromEmail } from '@/lib/automation-service';
-import { Loader2, Mail, Zap, CheckCircle2, AlertTriangle, ArrowRight, Database, ShieldCheck, Cog, ClipboardList, Globe, Copy, Code } from 'lucide-react';
+import { Loader2, Mail, Zap, CheckCircle2, AlertTriangle, ArrowRight, Database, ShieldCheck, Cog, ClipboardList, Globe, Copy, Code, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -84,7 +84,18 @@ ERP OnFlow`);
           <Button variant="ghost" asChild><Link href="/debug/suite">Voltar ao Suite</Link></Button>
         </div>
 
-        {/* Informações do Webhook Real */}
+        {/* Alerta de Autenticação para Webhook Externo */}
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex gap-4 items-start">
+          <Lock className="size-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="text-sm font-bold text-amber-900">Nota sobre Testes Externos (Postman)</p>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              O erro <strong>401 Unauthorized</strong> no Postman ocorre porque este ambiente de desenvolvimento é protegido por uma camada de segurança do Google. 
+              Para testar agora, utilize o simulador abaixo. Em produção, o endpoint será público para o seu ERP.
+            </p>
+          </div>
+        </div>
+
         <div className="grid md:grid-cols-2 gap-6">
           <Card className="border-primary/20 bg-primary/5">
             <CardContent className="p-6 space-y-4">
@@ -125,14 +136,6 @@ ERP OnFlow`);
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Guia Visual do Processo */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <StepCard number="1" title="E-mail" desc="ERP dispara e-mail de venda" active={!result} />
-          <StepCard number="2" title="IA" desc="Gemini extrai CNPJ e Produto" active={isProcessing} />
-          <StepCard number="3" title="Cadastro" desc="Sistema valida ou cria cliente" active={!!result} />
-          <StepCard number="4" title="Fila" desc="Onboarding aparece para Suporte" active={!!result} />
         </div>
 
         <div className="grid md:grid-cols-12 gap-8">
@@ -227,19 +230,6 @@ ERP OnFlow`);
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function StepCard({ number, title, desc, active }: { number: string, title: string, desc: string, active: boolean }) {
-  return (
-    <div className={cn(
-      "p-4 rounded-2xl border-2 transition-all",
-      active ? "border-primary bg-primary/5 shadow-md" : "border-slate-100 bg-white opacity-50"
-    )}>
-      <span className="text-[10px] font-black text-primary opacity-40">PASSO {number}</span>
-      <h4 className="font-bold text-slate-900 text-sm">{title}</h4>
-      <p className="text-[10px] text-muted-foreground leading-tight mt-1">{desc}</p>
     </div>
   );
 }
