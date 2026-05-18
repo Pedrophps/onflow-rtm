@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 interface StepInteractionsProps {
   instanceId: string;
@@ -37,7 +37,7 @@ export function StepInteractions({
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
 
-  // Consulta otimizada e estabilizada com useMemo
+  // Consulta estabilizada e protegida
   const interactionsQuery = useMemo(() => {
     if (!instanceId || !stepId || !clientId || !user) return null;
     
@@ -52,7 +52,7 @@ export function StepInteractions({
 
   const { data: interactions, loading } = useCollection<StepInteraction>(interactionsQuery);
 
-  const handleSendMessage = async (e?: React.FormEvent, fileName?: string) => {
+  const handleSendMessage = (e?: React.FormEvent, fileName?: string) => {
     e?.preventDefault();
     if ((!message.trim() && !fileName) || isSending || !user) return;
 
@@ -74,12 +74,13 @@ export function StepInteractions({
       .then(() => {
         setMessage('');
       })
-      .catch((error) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
           path: 'interactions',
           operation: 'create',
           requestResourceData: interactionData
-        }));
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
       })
       .finally(() => {
         setIsSending(false);
