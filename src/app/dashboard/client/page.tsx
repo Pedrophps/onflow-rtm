@@ -4,23 +4,19 @@
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { FlowStep, UserProfile, Product, ActivationFlow, OnboardingInstance } from "@/lib/types";
-import { CheckCircle2, ChevronDown, ChevronUp, FileUp, Send, Clock, ShieldAlert, Loader2, Zap, Lock, Circle } from "lucide-react";
-import { useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { UserProfile, Product, OnboardingInstance } from "@/lib/types";
+import { CheckCircle2, Clock, ShieldAlert, Loader2, Zap, LayoutDashboard, Building2, UserCheck, ArrowRight } from "lucide-react";
+import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
-import { doc, collection, query, where, limit, addDoc, serverTimestamp } from "firebase/firestore";
+import { doc, collection, query, where, limit } from "firebase/firestore";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
-export default function ClientPage() {
+export default function ClientDashboardPage() {
   const { user } = useUser();
   const db = useFirestore();
-  const { toast } = useToast();
   
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
@@ -41,240 +37,155 @@ export default function ClientPage() {
   const productRef = useMemo(() => instance?.productId ? doc(db, "products", instance.productId) : null, [db, instance]);
   const { data: product } = useDoc<Product>(productRef);
 
-  // Buscar Fluxo (a partir da instância)
-  const flowRef = useMemo(() => (instance?.productId && instance?.flowId) ? doc(db, "products", instance.productId, "activationFlows", instance.flowId) : null, [db, instance]);
-  const { data: flow } = useDoc<ActivationFlow>(flowRef);
-
-  // Buscar Etapas do Fluxo
+  // Buscar Total de Etapas (Simulado para o Dashboard)
   const stepsQuery = useMemo(() => 
     (instance?.productId && instance?.flowId) ? query(
       collection(db, "products", instance.productId, "activationFlows", instance.flowId, "steps")
     ) : null, 
   [db, instance]);
-  const { data: rawSteps, loading: stepsLoading } = useCollection<FlowStep>(stepsQuery);
-  
-  const steps = useMemo(() => [...rawSteps].sort((a, b) => a.order - b.order), [rawSteps]);
+  const { data: steps, loading: stepsLoading } = useCollection(stepsQuery);
 
-  const [expandedStage, setExpandedStage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Lógica de Validação RTM
-  const isFullyValidated = profile?.status === 'approved' && profile?.clientCode && profile?.activeProduct;
-
-  const handleSendEvidence = async (step: FlowStep) => {
-    if (!user || isSubmitting) return;
-    setIsSubmitting(true);
-
-    const submissionData = {
-      userId: user.uid,
-      productId: instance?.productId,
-      flowId: instance?.flowId,
-      stepId: step.id,
-      submittedAt: serverTimestamp(),
-      status: 'pending',
-      responsibleAtTime: step.responsible,
-      institutionName: profile?.institutionName
-    };
-
-    try {
-      await addDoc(collection(db, "submissions"), submissionData);
-      toast({
-        title: "Evidência Enviada",
-        description: `Sua interação na etapa "${step.name}" foi registrada para análise.`
-      });
-      setExpandedStage(null);
-    } catch (e) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: 'submissions',
-        operation: 'create',
-        requestResourceData: submissionData
-      }));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const currentStepOrder = instance?.currentStepOrder || 1;
+  const totalSteps = steps.length || 1;
+  const progress = Math.round(((currentStepOrder - 1) / totalSteps) * 100);
 
   if (profileLoading || instanceLoading || stepsLoading) {
     return (
       <DashboardLayout role="client">
         <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
           <Loader2 className="size-8 animate-spin text-primary" />
-          <p className="text-muted-foreground font-medium">Carregando sua jornada técnica...</p>
+          <p className="text-muted-foreground font-medium text-sm">Preparando sua visão geral...</p>
         </div>
       </DashboardLayout>
     );
   }
-
-  if (!isFullyValidated || !instance) {
-    return (
-      <DashboardLayout role="client">
-        <div className="max-w-2xl mx-auto mt-10 md:mt-20 text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="size-24 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 mx-auto">
-            <ShieldAlert className="size-12" />
-          </div>
-          <div className="space-y-4">
-            <h1 className="text-3xl font-bold font-headline">Aguardando Habilitação Técnica</h1>
-            <p className="text-muted-foreground text-lg leading-relaxed">
-              Olá, <span className="font-bold text-foreground">{profile?.displayName}</span>. 
-              Sua conta institucional está aguardando a atribuição de um Analista de Suporte RTM para iniciar o fluxo técnico.
-            </p>
-          </div>
-          
-          <Card className="bg-white border-2 border-amber-100 shadow-sm overflow-hidden">
-            <div className="bg-amber-50 px-6 py-3 border-b border-amber-100 flex items-center gap-2">
-              <Clock className="size-4 text-amber-600" />
-              <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">Status de Conformidade RTM</span>
-            </div>
-            <CardContent className="p-6 text-left space-y-4">
-              <div className="grid gap-4">
-                <CheckItem label="Aprovação de Cadastro" checked={profile?.status === 'approved'} />
-                <CheckItem label="Atribuição de ID RTM" checked={!!profile?.clientCode} />
-                <CheckItem label="Instância de Ativação Criada" checked={!!instance} />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  const currentStepOrder = instance?.currentStepOrder || 1;
-  const progress = steps.length > 0 ? ((currentStepOrder - 1) / steps.length) * 100 : 0;
 
   return (
     <DashboardLayout role="client">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="bg-white rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-5">
-            <Zap className="size-32 text-primary" />
-          </div>
-          
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
-            <div className="space-y-2">
-              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 px-3 py-1">
-                <CheckCircle2 className="size-3.5" /> Ativação em Curso
-              </Badge>
-              <h1 className="text-3xl font-bold font-headline">Ativação: {product?.name || profile?.activeProduct}</h1>
-              <p className="text-muted-foreground font-medium">{profile?.institutionName} • ID {profile?.clientCode}</p>
-            </div>
-            <div className="text-right">
-              <span className="text-5xl font-black text-primary">{Math.round(progress)}%</span>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Progresso Atual</p>
-            </div>
-          </div>
-          <Progress value={progress} className="h-3 rounded-full" />
+      <div className="space-y-8">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-bold font-headline text-slate-900">Visão Geral</h1>
+          <p className="text-muted-foreground">Bem-vindo ao OnFlow, {profile?.displayName}. Aqui está o resumo da sua jornada.</p>
         </div>
 
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold font-headline flex items-center gap-2">Etapas do Workflow</h2>
-            <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-tighter">Analista: {instance?.techName || 'Pendente'}</Badge>
-          </div>
-          
-          <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
-            {steps.map((step) => {
-              const isCompleted = step.order < currentStepOrder;
-              const isCurrent = step.order === currentStepOrder;
-              const isFuture = step.order > currentStepOrder;
-              const isClientResponsible = step.responsible === 'cliente';
-              const isExpanded = expandedStage === step.id;
-
-              return (
-                <div key={step.id} className="relative">
-                  <div className={cn(
-                    "absolute -left-[29px] top-1 size-6 rounded-full border-2 flex items-center justify-center transition-all z-10 bg-white shadow-sm",
-                    isCompleted ? "border-emerald-500 bg-emerald-500 text-white" : 
-                    isCurrent ? "border-primary bg-primary text-white animate-pulse" : 
-                    "border-slate-200 text-slate-400"
-                  )}>
-                    {isCompleted ? <CheckCircle2 className="size-3.5" /> : 
-                     isCurrent ? <Circle className="size-2 fill-current" /> :
-                     <span className="text-[10px] font-bold">{step.order}</span>}
-                  </div>
-                  
-                  <Card className={cn(
-                    "transition-all duration-300",
-                    isCurrent ? "ring-2 ring-primary/20 shadow-lg border-primary/20" : 
-                    isFuture ? "opacity-60" : "hover:border-primary/30"
-                  )}>
-                    <CardHeader 
-                      className={cn(
-                        "p-5 flex flex-row items-center justify-between space-y-0",
-                        !isFuture && "cursor-pointer"
-                      )}
-                      onClick={() => !isFuture && setExpandedStage(isExpanded ? null : step.id || null)}
-                    >
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-3">
-                          <CardTitle className={cn(
-                            "text-base font-bold",
-                            isCompleted ? "text-slate-400" : "text-slate-800"
-                          )}>{step.name}</CardTitle>
-                          <Badge variant="secondary" className="text-[9px] uppercase font-black bg-slate-100">
-                            {step.responsible}
-                          </Badge>
-                          {isCurrent && <Badge className="text-[8px] bg-primary/10 text-primary border-primary/20 uppercase font-bold">Aguardando Ação</Badge>}
-                        </div>
-                        <CardDescription className="text-sm line-clamp-1">{step.description}</CardDescription>
-                      </div>
-                      {!isFuture && (isExpanded ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />)}
-                      {isFuture && <Lock className="size-4 text-slate-300" />}
-                    </CardHeader>
-
-                    {isExpanded && !isFuture && (
-                      <CardContent className="p-5 pt-0 border-t bg-slate-50/30">
-                        <div className="mt-5 space-y-6">
-                          {!isClientResponsible ? (
-                            <div className="p-4 rounded-2xl bg-white border border-slate-200 flex gap-3 items-center">
-                              <Loader2 className="size-5 text-primary animate-spin shrink-0" />
-                              <div className="space-y-0.5">
-                                <p className="text-xs font-bold text-slate-600 uppercase">Processamento RTM</p>
-                                <p className="text-[11px] text-slate-500">Esta etapa está sendo tratada pelo time de <strong>{step.responsible}</strong>. Você será notificado ao concluir.</p>
-                              </div>
-                            </div>
-                          ) : isCompleted ? (
-                            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex gap-3 items-center">
-                              <CheckCircle2 className="size-5 text-emerald-500 shrink-0" />
-                              <div className="space-y-0.5">
-                                <p className="text-xs font-bold text-emerald-700 uppercase">Enviado com Sucesso</p>
-                                <p className="text-[11px] text-emerald-600">Sua evidência foi recebida e validada pelo suporte.</p>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Sua Ação Necessária</Label>
-                                <div className="border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center bg-white group hover:border-primary cursor-pointer transition-all">
-                                  <FileUp className="size-8 mb-3 text-primary/40 group-hover:text-primary group-hover:scale-110 transition-all" />
-                                  <p className="text-sm font-bold text-slate-700">Clique para enviar a evidência</p>
-                                  <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold tracking-tighter">Arquivos aceitos: PDF, PNG ou JPG</p>
-                                </div>
-                              </div>
-                              <div className="flex justify-between items-center pt-2">
-                                <div className="flex items-center gap-2 text-amber-600">
-                                  <Clock className="size-4" />
-                                  <span className="text-[10px] font-bold uppercase">SLA Estimado: {step.estimatedTimeInHours} Horas</span>
-                                </div>
-                                <Button 
-                                  size="sm" 
-                                  className="gap-2 rounded-full px-8 font-bold shadow-md"
-                                  onClick={() => handleSendEvidence(step)}
-                                  disabled={isSubmitting}
-                                >
-                                  {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-3.5" />}
-                                  Confirmar Envio
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    )}
-                  </Card>
+        <div className="grid gap-6 md:grid-cols-12">
+          {/* Status Card */}
+          <Card className="md:col-span-8 border-none shadow-xl bg-white overflow-hidden">
+            <CardHeader className="bg-slate-50 border-b">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3 text-primary">
+                  <LayoutDashboard className="size-5" />
+                  <CardTitle className="text-lg">Status da Ativação</CardTitle>
                 </div>
-              );
-            })}
-          </div>
+                {instance ? (
+                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 uppercase text-[10px]">Ativação em Curso</Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 uppercase text-[10px]">Aguardando Suporte</Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-8">
+              {instance ? (
+                <>
+                  <div className="flex flex-col md:flex-row justify-between gap-6">
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Produto Contratado</p>
+                        <h2 className="text-2xl font-bold text-slate-900">{product?.name || profile?.activeProduct}</h2>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex flex-col">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Etapa Atual</p>
+                          <p className="text-sm font-bold text-primary">Etapa {currentStepOrder} de {totalSteps}</p>
+                        </div>
+                        <div className="h-8 w-px bg-slate-200" />
+                        <div className="flex flex-col">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Analista RTM</p>
+                          <p className="text-sm font-bold text-slate-700">{instance.techName || "A definir"}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-6xl font-black text-primary">{progress}%</span>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Concluído</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs font-bold text-muted-foreground uppercase">
+                      <span>Progresso Técnico</span>
+                      <span>SLA Médio: 48h</span>
+                    </div>
+                    <Progress value={progress} className="h-3 rounded-full" />
+                  </div>
+                  <Button asChild className="w-full h-12 rounded-xl font-bold gap-2">
+                    <Link href="/dashboard/client/activations">
+                      Acessar Detalhes do Onboarding <ArrowRight className="size-4" />
+                    </Link>
+                  </Button>
+                </>
+              ) : (
+                <div className="py-10 text-center space-y-4">
+                  <div className="size-16 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mx-auto">
+                    <Clock className="size-8" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-bold text-slate-900">Seu fluxo ainda não foi iniciado</p>
+                    <p className="text-sm text-muted-foreground max-w-sm mx-auto">Nossa equipe de suporte está preparando o seu ambiente para o início da ativação técnica.</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Institutional Info */}
+          <Card className="md:col-span-4 border-none shadow-xl bg-slate-900 text-white">
+            <CardHeader>
+              <CardTitle className="text-lg">Informações RTM</CardTitle>
+              <CardDescription className="text-slate-400">Dados oficiais da sua conta institucional.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-0">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-xl bg-white/10 flex items-center justify-center text-primary">
+                    <Building2 className="size-5" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Instituição</p>
+                    <p className="text-sm font-bold truncate max-w-[180px]">{profile?.institutionName}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-xl bg-white/10 flex items-center justify-center text-primary">
+                    <Zap className="size-5" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ID RTM (Client Code)</p>
+                    <p className="text-sm font-mono font-bold">{profile?.clientCode || "Pendente"}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-xl bg-white/10 flex items-center justify-center text-primary">
+                    <UserCheck className="size-5" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Colaborador Líder</p>
+                    <p className="text-sm font-bold">{profile?.displayName}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-white/10 space-y-4">
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Conformidade Cadastral</p>
+                  <div className="space-y-2">
+                    <CheckItem label="Aprovação Comercial" checked={profile?.status === 'approved'} />
+                    <CheckItem label="ID Atribuído" checked={!!profile?.clientCode} />
+                    <CheckItem label="Instância Ativa" checked={!!instance} />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </DashboardLayout>
@@ -283,18 +194,13 @@ export default function ClientPage() {
 
 function CheckItem({ label, checked }: { label: string, checked: boolean }) {
   return (
-    <div className={cn(
-      "flex items-center gap-3 text-sm p-4 rounded-xl border transition-all",
-      checked ? "bg-emerald-50 border-emerald-100" : "bg-white border-dashed shadow-sm"
-    )}>
+    <div className="flex items-center justify-between text-[11px]">
+      <span className="text-slate-300">{label}</span>
       {checked ? (
-        <CheckCircle2 className="size-5 text-emerald-500" />
+        <CheckCircle2 className="size-3.5 text-emerald-400" />
       ) : (
-        <Clock className="size-5 text-amber-500 animate-pulse" />
+        <Clock className="size-3.5 text-amber-400" />
       )}
-      <span className={cn("font-bold", checked ? "text-emerald-800" : "text-slate-600")}>
-        {label}: {checked ? 'OK' : 'Pendente'}
-      </span>
     </div>
   );
 }

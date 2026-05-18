@@ -57,7 +57,8 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
         { title: "Relatórios", icon: BarChart3, href: "/dashboard/admin/reports" },
       ]
     : [
-        { title: "Ativações", icon: Zap, href: "/dashboard/client" },
+        { title: "Visão Geral", icon: LayoutDashboard, href: "/dashboard/client" },
+        { title: "Ativações", icon: Zap, href: "/dashboard/client/activations" },
         { title: "Documentos", icon: ClipboardList, href: "/dashboard/client/docs" },
         { title: "Suporte RTM", icon: Settings, href: "/dashboard/client/support" },
       ];
@@ -85,16 +86,16 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild 
-                    isActive={pathname === item.href || pathname.startsWith(item.href + '/')}
+                    isActive={pathname === item.href || (item.href !== "/dashboard/admin" && item.href !== "/dashboard/client" && pathname.startsWith(item.href + '/'))}
                     className={cn(
                       "py-6 px-4 rounded-xl transition-all",
-                      (pathname === item.href || pathname.startsWith(item.href + '/')) && "bg-primary/5 text-primary font-semibold"
+                      (pathname === item.href || (item.href !== "/dashboard/admin" && item.href !== "/dashboard/client" && pathname.startsWith(item.href + '/'))) && "bg-primary/5 text-primary font-semibold"
                     )}
                   >
                     <Link href={item.href}>
                       <item.icon className="size-5" />
                       <span>{item.title}</span>
-                      {(pathname === item.href || pathname.startsWith(item.href + '/')) && <ChevronRight className="ml-auto size-4" />}
+                      {(pathname === item.href || (item.href !== "/dashboard/admin" && item.href !== "/dashboard/client" && pathname.startsWith(item.href + '/'))) && <ChevronRight className="ml-auto size-4" />}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

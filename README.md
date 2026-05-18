@@ -12,30 +12,10 @@ Este documento é a fonte única de verdade (Single Source of Truth) para o proj
 
 ---
 
-## [UPDATE - V1.17 - SIMPLIFICAÇÃO DO WORKFLOW]
-- **Mudança de Requisito**: Remoção completa do seletor "Tipo de Interação" na interface de criação de etapas.
-- **Lógica Padrão**: As etapas agora assumem o comportamento padrão de coleta de evidências (Upload).
-
-## [UPDATE - V1.18 - REGRAS DE INTERAÇÃO POR RESPONSABILIDADE]
-- **Nova Regra de Negócio**: Admins podem interagir com qualquer etapa. Clientes interagem apenas nas etapas onde são o `responsible`.
-- **Implementação Técnica**: Atualização do `firestore.rules` para permitir CRUD em `submissions` baseado em UID ou cargo admin.
-- **Dinamicidade**: Dashboard do Cliente agora consome etapas reais do produto vinculado no perfil, filtrando permissões de edição localmente.
-
-## [UPDATE - V1.19 - FINALIZAÇÃO E PUBLICAÇÃO DO FLUXO]
-- **Melhoria de UX**: Adição de botões globais de "Salvar Rascunho" e "Publicar Fluxo" no rodapé da página de detalhes.
-- **Bug Fix**: Correção do tratamento de números no SLA para evitar a exibição de `NaN`.
-- **Lógica de Publicação**: Fluxos publicados agora alteram seu status para `active`, sinalizando prontidão para instanciamento.
-
-## [UPDATE - V1.20 - REFINAMENTO ESTÉTICO DOS BOTÕES]
-- **Estética**: Remoção de ícones estáticos nos botões de rodapé para uma interface mais limpa e focada no texto.
-- **Feedback**: Mantido apenas o loader de processamento quando em submissão.
-
-## [UPDATE - V1.21 - AJUSTE DE NOMENCLATURA]
-- **UX**: Alteração do botão de criação de etapa de "Salvar Etapa" para "Adicionar" para refletir a ação de inclusão na lista.
-
-## [UPDATE - V1.22 - REFINAMENTOS DE INTERFACE]
-- **UX**: Remoção da mensagem "Arraste para reordenar (Em breve)" na lista de etapas.
-- **Estética**: Correção de contraste nos ícones e textos de responsáveis (alterado de branco para cores visíveis sobre fundo claro).
+## [UPDATE - V1.23 - PADRONIZAÇÃO DE DASHBOARDS]
+- **UX**: A primeira aba de todos os perfis (Admin e Cliente) agora é a "Visão Geral" (Dashboard).
+- **Sumário do Cliente**: Criada página inicial para o cliente com progresso da ativação, dados da instituição e conformidade cadastral.
+- **Segregação de Rotas**: O fluxo de ativação detalhado do cliente foi movido para `/dashboard/client/activations`.
 
 ---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*
