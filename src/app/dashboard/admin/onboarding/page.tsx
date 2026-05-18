@@ -60,22 +60,32 @@ export default function OnboardingManagement() {
   const [isFetchingFlows, setIsFetchingFlows] = useState(false);
 
   // Mapeamento de Produtos
-  const productsQuery = useMemo(() => query(collection(db, "products")), [db]);
+  const productsQuery = useMemo(() => {
+    if (!user) return null;
+    return query(collection(db, "products"));
+  }, [db, user]);
   const { data: dbProducts } = useCollection<Product>(productsQuery);
+  
   const productsMap = useMemo(() => {
     return dbProducts.reduce((acc, p) => ({ ...acc, [p.id!]: p.name }), {} as Record<string, string>);
   }, [dbProducts]);
 
   // 1. Buscar Clientes Aprovados
-  const clientsQuery = useMemo(() => query(
-    collection(db, "users"), 
-    where("role", "==", "client"),
-    where("status", "==", "approved")
-  ), [db]);
+  const clientsQuery = useMemo(() => {
+    if (!user) return null;
+    return query(
+      collection(db, "users"), 
+      where("role", "==", "client"),
+      where("status", "==", "approved")
+    );
+  }, [db, user]);
   const { data: approvedClients, loading: clientsLoading } = useCollection<UserProfile>(clientsQuery);
 
   // 2. Buscar Instâncias de Onboarding
-  const instancesQuery = useMemo(() => query(collection(db, "onboardingInstances")), [db]);
+  const instancesQuery = useMemo(() => {
+    if (!user) return null;
+    return query(collection(db, "onboardingInstances"));
+  }, [db, user]);
   const { data: instances, loading: instancesLoading } = useCollection<OnboardingInstance>(instancesQuery);
 
   // 3. Cruzamento para Suporte: Disponíveis (Não assumidos)

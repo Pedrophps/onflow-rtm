@@ -1,3 +1,4 @@
+
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -32,12 +33,18 @@ export default function ClientsAdminPage() {
   const currentView = profile?.adminType || searchParams.get('view');
   const isComercial = currentView === 'comercial';
   
-  // Buscar Clientes
-  const clientsQuery = useMemo(() => query(collection(db, "users"), where("role", "==", "client")), [db]);
+  // Buscar Clientes - Guardado com user
+  const clientsQuery = useMemo(() => {
+    if (!user) return null;
+    return query(collection(db, "users"), where("role", "==", "client"));
+  }, [db, user]);
   const { data: clients, loading: clientsLoading } = useCollection<UserProfile>(clientsQuery);
 
-  // Buscar Produtos Reais
-  const productsQuery = useMemo(() => query(collection(db, "products")), [db]);
+  // Buscar Produtos Reais - Guardado com user
+  const productsQuery = useMemo(() => {
+    if (!user) return null;
+    return query(collection(db, "products"));
+  }, [db, user]);
   const { data: dbProducts, loading: productsLoading } = useCollection<Product>(productsQuery);
 
   const [selectedClient, setSelectedClient] = useState<UserProfile | null>(null);
