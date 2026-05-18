@@ -3,11 +3,12 @@
 /**
  * @fileOverview Agente de Processamento de E-mails do ERP.
  * Transforma e-mails de solicitação de trabalho em instâncias de onboarding no OnFlow.
- * Utiliza modelos de Reasoning para maior precisão na extração de dados técnicos.
+ * Utiliza o Gemini 1.5 Flash para extração precisa de dados estruturados.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const ParseERPEmailInputSchema = z.object({
   emailSubject: z.string().describe('O assunto do e-mail recebido.'),
@@ -31,9 +32,8 @@ const prompt = ai.definePrompt({
   output: { schema: ParseERPEmailOutputSchema },
   prompt: `Você é um analista sênior de triagem técnica da RTM. Seu trabalho é ler e-mails automáticos enviados pelo nosso ERP e extrair dados estruturados.
 
-Como um modelo de raciocínio, analise cuidadosamente o contexto para evitar erros em CNPJs ou nomes de produtos.
+Analise o Assunto e o Corpo do e-mail abaixo com atenção aos detalhes para evitar erros em CNPJs ou nomes de produtos.
 
-Analise o Assunto e o Corpo do e-mail abaixo:
 Assunto: {{{emailSubject}}}
 Corpo: {{{emailBody}}}
 
@@ -47,11 +47,13 @@ Retorne os dados estritamente conforme o esquema de saída solicitado.`,
 });
 
 export async function parseERPEmail(input: ParseERPEmailInput): Promise<ParseERPEmailOutput> {
-  // A chamada utiliza o modelo padrão configurado em genkit.ts (NVIDIA Reasoning)
-  const { output } = await prompt(input);
+  const { output } = await ai.generate({
+    model: googleAI('gemini-1.5-flash'),
+    prompt: prompt(input),
+  });
   
   if (!output) {
-    throw new Error('Falha ao processar e-mail do ERP. Verifique a cota do modelo gratuito no OpenRouter.');
+    throw new Error('Falha ao processar e-mail do ERP com Gemini 1.5 Flash.');
   }
   
   return output;
