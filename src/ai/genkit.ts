@@ -1,13 +1,18 @@
 
 import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import * as openaiPluginModule from 'genkitx-openai';
 
 /**
- * Configuração central do Genkit utilizando o plugin oficial do Google AI.
- * Esta configuração garante máxima estabilidade e compatibilidade com o ambiente de execução.
+ * Lógica de importação resiliente para lidar com diferenças de exportação CJS/ESM no Next.js 15 Turbopack.
+ * Garante que o plugin seja identificado corretamente como uma função de configuração.
  */
+const openai = (openaiPluginModule as any).openai || (openaiPluginModule as any).default || openaiPluginModule;
+
 export const ai = genkit({
   plugins: [
-    googleAI(),
+    openai({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: 'https://openrouter.ai/api/v1',
+    }),
   ],
 });
