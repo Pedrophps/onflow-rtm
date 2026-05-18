@@ -1,0 +1,58 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Função auxiliar para verificar se o usuário é Administrador do tipo Suporte
+    function isSupportAdmin() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.adminType == 'suporte';
+    }
+
+    // Função auxiliar para verificar se o usuário é qualquer tipo de Administrador RTM
+    function isAdmin() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Regras para Perfis de Usuário
+    match /users/{userId} {
+      // Qualquer usuário autenticado pode ler seu próprio perfil
+      // Admins podem ler perfis de outros para gestão de clientes
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      // Usuários só podem escrever em seus próprios documentos
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Regras para o Catálogo de Produtos e Hierarquia de Workflows
+    match /products/{productId} {
+      // Leitura permitida para todos os autenticados (Suporte, Comercial e Clientes em Onboarding)
+      allow read: if request.auth != null;
+      // Escrita (Criar, Editar, Deletar) restrita exclusivamente ao Suporte
+      allow write: if isSupportAdmin();
+
+      match /activationFlows/{flowId} {
+        allow read: if request.auth != null;
+        allow write: if isSupportAdmin();
+
+        match /steps/{stepId} {
+          allow read: if request.auth != null;
+          allow write: if isSupportAdmin();
+        }
+      }
+    }
+
+    // Regras para Submissões de Onboarding
+    match /submissions/{submissionId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if request.auth != null;
+      allow update: if isAdmin();
+    }
+
+    // Regras para Testes de Integração (Debug)
+    match /onboardingFlows/{flowId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+  }
+}
