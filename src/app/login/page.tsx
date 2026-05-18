@@ -91,8 +91,8 @@ export default function LoginPage() {
         role,
         status: role === 'admin' ? 'approved' : 'pending',
         displayName: name || 'Usuário RTM',
-        institutionName: role === 'client' ? institutionName : 'RTM',
-        cnpj: role === 'client' ? cnpj : '',
+        institutionName: institutionName || (role === 'admin' ? 'RTM' : ''),
+        cnpj: cnpj || '',
         createdAt: new Date().toISOString()
       }, { merge: true });
 
@@ -206,27 +206,25 @@ export default function LoginPage() {
                     <Input type="email" placeholder="seu@rtm.net.br" required value={email} onChange={e => setEmail(e.target.value)} />
                   </div>
                   
-                  {!isAdminEmail(email) && (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-top-1">
-                      <div className="space-y-2">
-                        <Label>Nome da Instituição / Razão Social</Label>
-                        <div className="relative">
-                          <Building2 className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                          <Input 
-                            placeholder="Ex: Banco Investimento S.A." 
-                            className="pl-10"
-                            value={institutionName} 
-                            onChange={e => setInstitutionName(e.target.value)} 
-                            required 
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>CNPJ da Instituição</Label>
-                        <Input placeholder="00.000.000/0000-00" value={cnpj} onChange={e => setCnpj(e.target.value)} required />
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Nome da Instituição / Razão Social</Label>
+                      <div className="relative">
+                        <Building2 className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="Ex: Banco Investimento S.A." 
+                          className="pl-10"
+                          value={institutionName} 
+                          onChange={e => setInstitutionName(e.target.value)} 
+                          required 
+                        />
                       </div>
                     </div>
-                  )}
+                    <div className="space-y-2">
+                      <Label>CNPJ da Instituição</Label>
+                      <Input placeholder="00.000.000/0000-00" value={cnpj} onChange={e => setCnpj(e.target.value)} required />
+                    </div>
+                  </div>
 
                   <div className="space-y-2">
                     <Label>Senha de Acesso</Label>
@@ -262,7 +260,7 @@ export default function LoginPage() {
                 variant="outline" 
                 size="sm" 
                 className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-primary/50 transition-colors"
-                onClick={() => fillFields('suporte@rtm.net.br', '123456', 'Analista Suporte', 'RTM', '')}
+                onClick={() => fillFields('suporte@rtm.net.br', '123456', 'Analista Suporte', 'RTM', '00.000.000/0001-91')}
               >
                 <Headset className="size-3" />
                 Suporte
@@ -271,7 +269,7 @@ export default function LoginPage() {
                 variant="outline" 
                 size="sm" 
                 className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-primary/50 transition-colors"
-                onClick={() => fillFields('comercial@rtm.net.br', '123456', 'Gerente Comercial', 'RTM', '')}
+                onClick={() => fillFields('comercial@rtm.net.br', '123456', 'Gerente Comercial', 'RTM', '00.000.000/0001-91')}
               >
                 <ShieldCheck className="size-3" />
                 Comercial

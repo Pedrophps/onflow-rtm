@@ -127,5 +127,13 @@ A arquitetura é dividida em:
 - **Melhoria**: Atualização da função `fillFields` na tela de Login.
 - **Lógica**: Agora os botões de atalho preenchem também **Nome do Usuário**, **Instituição** e **CNPJ**.
 - **Objetivo**: Garantir que o teste do formulário de Cadastro seja tão fluido quanto o de Login, sem perda de campos críticos.
+
+---
+
+## [UPDATE - V1.12 - CAMPOS DE CADASTRO UNIVERSAIS]
+- **Mudança**: Remoção da lógica condicional de exibição no formulário de cadastro.
+- **Lógica**: Os campos de Instituição e CNPJ agora são **sempre visíveis**, independentemente do e-mail digitado.
+- **Motivo**: Solicitação direta do usuário para garantir que os dados institucionais sejam coletados em 100% dos cenários de cadastro, sem exceções de visualização.
+
 ---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*
