@@ -50,13 +50,17 @@ service cloud.firestore {
     }
 
     match /submissions/{submissionId} {
-      // Listagem e Leitura: Visíveis para o dono (cliente) e para administradores.
       allow list: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
       allow get: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
-      // Criação: Qualquer autenticado pode iniciar uma submissão (validado via app logic).
       allow create: if request.auth != null;
-      // Atualização/Exclusão: Apenas o dono ou admins.
       allow update, delete: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
+    }
+
+    match /interactions/{interactionId} {
+      // Leitura permitida para Admins ou para o cliente dono da instância vinculada
+      allow read: if request.auth != null && (isAdmin() || resource.data.clientId == request.auth.uid);
+      // Criação permitida para qualquer usuário autenticado (validação lógica no front)
+      allow create: if request.auth != null;
     }
 
     // Regra legado para compatibilidade de testes

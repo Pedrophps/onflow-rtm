@@ -1,3 +1,4 @@
+
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -37,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { StepInteractions } from "@/components/step-interactions";
 
 export default function ActivationsPage() {
   const { user } = useUser();
@@ -109,39 +111,6 @@ export default function ActivationsPage() {
 
   const handleSelectInstance = (id: string) => {
     setSelectedInstanceId(id);
-  };
-
-  const handleSendEvidence = async (step: FlowStep) => {
-    if (!user || isSubmitting || !selectedInstance || !selectedInstance.flowId) return;
-    setIsSubmitting(true);
-
-    const submissionData = {
-      userId: user.uid,
-      productId: selectedInstance.productId,
-      flowId: selectedInstance.flowId,
-      stepId: step.id,
-      submittedAt: serverTimestamp(),
-      status: 'pending',
-      responsibleAtTime: step.responsible,
-      institutionName: profile?.institutionName
-    };
-
-    try {
-      await addDoc(collection(db, "submissions"), submissionData);
-      toast({
-        title: "Evidência Enviada",
-        description: `Sua interação na etapa "${step.name}" foi registrada.`
-      });
-      setExpandedStage(null);
-    } catch (e) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: 'submissions',
-        operation: 'create',
-        requestResourceData: submissionData
-      }));
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const getResponsibleIcon = (role: string) => {
@@ -316,49 +285,45 @@ export default function ActivationsPage() {
 
                               {isExpanded && (
                                 <CardContent className="p-5 pt-0 border-t bg-slate-50/30">
-                                  <div className="mt-5 space-y-6">
-                                    <div className="grid md:grid-cols-2 gap-4">
-                                       <div className="space-y-1">
-                                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SLA de Atendimento</p>
-                                          <p className="text-xs font-bold flex items-center gap-2"><Clock className="size-3" /> {step.estimatedTimeInHours}h Úteis</p>
-                                       </div>
-                                       <div className="space-y-1">
-                                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Ação</p>
-                                          <p className="text-xs font-bold flex items-center gap-2"><FileEdit className="size-3" /> {step.type === 'upload' ? 'Envio de Arquivo' : 'Preenchimento'}</p>
-                                       </div>
+                                  <div className="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div className="lg:col-span-1 space-y-6">
+                                      <div className="grid md:grid-cols-2 gap-4">
+                                         <div className="space-y-1">
+                                            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SLA de Atendimento</p>
+                                            <p className="text-xs font-bold flex items-center gap-2"><Clock className="size-3" /> {step.estimatedTimeInHours}h Úteis</p>
+                                         </div>
+                                         <div className="space-y-1">
+                                            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Ação</p>
+                                            <p className="text-xs font-bold flex items-center gap-2"><FileEdit className="size-3" /> {step.type === 'upload' ? 'Envio de Arquivo' : 'Preenchimento'}</p>
+                                         </div>
+                                      </div>
+                                      <div className="p-4 rounded-xl bg-white border border-slate-200 text-sm text-slate-700 leading-relaxed font-medium">
+                                        {step.description}
+                                      </div>
+                                      
+                                      {isCompleted && (
+                                        <div className="flex items-center gap-2 text-xs text-emerald-600 font-bold uppercase">
+                                          <CheckCircle2 className="size-3.5" /> Etapa Concluída
+                                        </div>
+                                      )}
+                                      
+                                      {isFuture && (
+                                        <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                                          <Lock className="size-3.5" /> Etapa bloqueada
+                                        </div>
+                                      )}
                                     </div>
-
-                                    {isCurrent && step.responsible === 'cliente' ? (
-                                      <div className="space-y-4">
-                                        <div className="border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center bg-white group hover:border-primary cursor-pointer transition-all">
-                                          <FileUp className="size-8 mb-3 text-primary/40 group-hover:text-primary" />
-                                          <p className="text-sm font-bold text-slate-700">Clique para enviar evidência</p>
-                                        </div>
-                                        <div className="flex justify-end">
-                                          <Button 
-                                            className="gap-2 rounded-full px-8 font-bold"
-                                            onClick={() => handleSendEvidence(step)}
-                                            disabled={isSubmitting}
-                                          >
-                                            {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-3.5" />}
-                                            Finalizar Minha Ação
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    ) : isCurrent ? (
-                                      <div className="p-4 rounded-xl bg-white border border-slate-200 flex gap-3 items-center">
-                                        <Loader2 className="size-5 text-primary animate-spin" />
-                                        <p className="text-xs text-slate-500 font-medium">Aguardando processamento interno RTM ({step.responsible}).</p>
-                                      </div>
-                                    ) : isFuture ? (
-                                      <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
-                                        <Lock className="size-3.5" /> Etapa bloqueada até a conclusão da anterior.
-                                      </div>
-                                    ) : (
-                                      <div className="flex items-center gap-2 text-xs text-emerald-600 font-bold uppercase">
-                                        <CheckCircle2 className="size-3.5" /> Etapa Concluída com Sucesso
-                                      </div>
-                                    )}
+                                    <div className="lg:col-span-2">
+                                      {/* Log de Interação - Clientes só interagem em SUAS etapas */}
+                                      <StepInteractions 
+                                        instanceId={selectedInstance.id!}
+                                        stepId={step.id!}
+                                        clientId={selectedInstance.clientId}
+                                        canInteract={isCurrent && step.responsible === 'cliente'}
+                                        userName={profile?.displayName}
+                                        userRole="cliente"
+                                      />
+                                    </div>
                                   </div>
                                 </CardContent>
                               )}

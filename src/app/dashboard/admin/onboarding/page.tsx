@@ -1,3 +1,4 @@
+
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -45,6 +46,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { StepInteractions } from "@/components/step-interactions";
 
 export default function OnboardingManagement() {
   const db = useFirestore();
@@ -54,6 +56,7 @@ export default function OnboardingManagement() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile } = useDoc<UserProfile>(userRef);
   const isSupport = profile?.adminType === 'suporte';
+  const isAdminUser = profile?.role === 'admin';
 
   const [activeTab, setActiveTab] = useState("available");
   const [selectedClientForFicha, setSelectedClientForFicha] = useState<UserProfile | null>(null);
@@ -298,177 +301,177 @@ export default function OnboardingManagement() {
           </p>
         </div>
 
-        {isSupport ? (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="bg-slate-100 p-1 h-12 rounded-xl">
-              <TabsTrigger value="available" className="rounded-lg px-8 gap-2 data-[state=active]:bg-white">
-                <Zap className="size-4" /> Disponíveis
-              </TabsTrigger>
-              <TabsTrigger value="my" className="rounded-lg px-8 gap-2 data-[state=active]:bg-white">
-                <ClipboardList className="size-4" /> Meus Atendimentos
-              </TabsTrigger>
-              <TabsTrigger value="journey" disabled={!journeyInstanceId} className="rounded-lg px-8 gap-2 data-[state=active]:bg-white">
-                <LayoutGrid className="size-4" /> Jornada Técnica
-              </TabsTrigger>
-            </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-slate-100 p-1 h-12 rounded-xl">
+            <TabsTrigger value="available" className="rounded-lg px-8 gap-2 data-[state=active]:bg-white">
+              <Zap className="size-4" /> Disponíveis
+            </TabsTrigger>
+            <TabsTrigger value="my" className="rounded-lg px-8 gap-2 data-[state=active]:bg-white">
+              <ClipboardList className="size-4" /> Meus Atendimentos
+            </TabsTrigger>
+            <TabsTrigger value="journey" disabled={!journeyInstanceId} className="rounded-lg px-8 gap-2 data-[state=active]:bg-white">
+              <LayoutGrid className="size-4" /> Jornada Técnica
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="available" className="space-y-4">
-              <div className="grid gap-4">
-                {availableActivities.length > 0 ? (
-                  availableActivities.map((client) => (
-                    <Card key={client.id} className="border-l-4 border-l-amber-500 overflow-hidden group hover:shadow-md transition-all">
-                      <CardContent className="p-0">
-                        <div className="flex flex-col md:flex-row">
-                          <div className="p-6 flex-1 space-y-4">
-                            <div className="flex justify-between items-start">
-                              <div className="space-y-1">
-                                <h3 className="text-xl font-bold text-slate-900">{client.institutionName}</h3>
-                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                  <span className="flex items-center gap-1"><Building2 className="size-3" /> {client.cnpj}</span>
-                                  <span className="flex items-center gap-1 font-bold text-primary"><Zap className="size-3" /> {productsMap[client.activeProduct!] || client.activeProduct}</span>
-                                </div>
-                              </div>
-                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Aguardando Analista</Badge>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-3 rounded-lg border">
-                              <div className="space-y-1">
-                                <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest">Contato Cliente</p>
-                                <p className="font-bold">{client.displayName}</p>
-                                <p className="text-slate-500">{client.email}</p>
-                              </div>
-                              <div className="space-y-1">
-                                <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest">Aprovação</p>
-                                <p className="font-bold text-slate-700">{client.approvedAt ? new Date(client.approvedAt).toLocaleDateString() : 'N/A'}</p>
-                                <p className="text-slate-500">ID RTM: {client.clientCode || 'Pendente'}</p>
+          <TabsContent value="available" className="space-y-4">
+            <div className="grid gap-4">
+              {availableActivities.length > 0 ? (
+                availableActivities.map((client) => (
+                  <Card key={client.id} className="border-l-4 border-l-amber-500 overflow-hidden group hover:shadow-md transition-all">
+                    <CardContent className="p-0">
+                      <div className="flex flex-col md:flex-row">
+                        <div className="p-6 flex-1 space-y-4">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-1">
+                              <h3 className="text-xl font-bold text-slate-900">{client.institutionName}</h3>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1"><Building2 className="size-3" /> {client.cnpj}</span>
+                                <span className="flex items-center gap-1 font-bold text-primary"><Zap className="size-3" /> {productsMap[client.activeProduct!] || client.activeProduct}</span>
                               </div>
                             </div>
+                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Aguardando Analista</Badge>
                           </div>
-                          <div className="bg-slate-50 md:w-48 flex items-center justify-center p-6 border-l border-t md:border-t-0">
-                            <Button className="w-full gap-2 font-bold shadow-lg" onClick={() => handleAssumeActivity(client)}>
-                              <UserPlus className="size-4" /> Assumir
-                            </Button>
+                          <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-3 rounded-lg border">
+                            <div className="space-y-1">
+                              <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest">Contato Cliente</p>
+                              <p className="font-bold">{client.displayName}</p>
+                              <p className="text-slate-500">{client.email}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest">Aprovação</p>
+                              <p className="font-bold text-slate-700">{client.approvedAt ? new Date(client.approvedAt).toLocaleDateString() : 'N/A'}</p>
+                              <p className="text-slate-500">ID RTM: {client.clientCode || 'Pendente'}</p>
+                            </div>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                ) : (
-                  <div className="p-20 text-center border-2 border-dashed rounded-3xl space-y-4">
-                    <CheckCircle2 className="size-12 mx-auto text-emerald-500/20" />
-                    <p className="text-muted-foreground">Nenhum cliente aprovado aguardando suporte no momento.</p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="my" className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                {myOnboardings.length > 0 ? (
-                  myOnboardings.map((inst) => (
-                    <Card key={inst.id} className="hover:border-primary/40 transition-all overflow-hidden border-2">
-                      <CardHeader className="bg-slate-50 p-4 border-b flex flex-row justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          {inst.flowId ? (
-                             <Badge className="bg-emerald-500 text-[9px] uppercase">Fluxo Ativo</Badge>
-                          ) : (
-                             <Badge variant="destructive" className="text-[9px] uppercase animate-pulse">Pendente Seleção</Badge>
-                          )}
+                        <div className="bg-slate-50 md:w-48 flex items-center justify-center p-6 border-l border-t md:border-t-0">
+                          <Button className="w-full gap-2 font-bold shadow-lg" onClick={() => handleAssumeActivity(client)}>
+                            <UserPlus className="size-4" /> Assumir
+                          </Button>
                         </div>
-                        <span className="text-[10px] text-muted-foreground font-bold">{new Date(inst.startedAt).toLocaleDateString()}</span>
-                      </CardHeader>
-                      <CardContent className="p-6 space-y-6">
-                        <div className="space-y-1">
-                          <h4 className="font-bold text-xl">{inst.institutionName}</h4>
-                          <p className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Briefcase className="size-3.5" /> Produto: <strong>{productsMap[inst.productId] || inst.productId}</strong>
-                          </p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Button variant="outline" className="w-full rounded-xl font-bold text-xs" onClick={() => handleViewFicha(inst.clientId)}>Ficha</Button>
-                          {inst.flowId ? (
-                            <Button className="w-full rounded-xl font-bold text-xs gap-2" onClick={() => handleSelectJourney(inst)}>
-                              <ArrowRight className="size-3" /> Ver Jornada
-                            </Button>
-                          ) : (
-                            <Button className="w-full rounded-xl font-bold text-xs gap-2 bg-amber-600 hover:bg-amber-700" onClick={() => openFlowSelection(inst)}>
-                              Definir Fluxo
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                ) : (
-                  <div className="col-span-full p-20 text-center border-2 border-dashed rounded-3xl">
-                    <p className="text-muted-foreground">Você ainda não assumiu atendimentos.</p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="journey" className="space-y-8 animate-in fade-in duration-500">
-              {selectedJourneyInstance ? (
-                <div className="space-y-8">
-                  <div className="bg-white rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
-                      <div className="space-y-2">
-                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 px-3 py-1 font-bold">
-                          <CheckCircle2 className="size-3.5" /> JORNADA TÉCNICA
-                        </Badge>
-                        <h2 className="text-3xl font-bold font-headline">{selectedJourneyInstance.institutionName} - {productsMap[selectedJourneyInstance.productId] || selectedJourneyInstance.productId}</h2>
-                        <p className="text-muted-foreground font-medium">Analista Responsável: <span className="text-foreground font-bold">{selectedJourneyInstance.techName}</span></p>
                       </div>
-                      <div className="text-right">
-                        <span className="text-5xl font-black text-primary">{journeyProgress}%</span>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Concluído</p>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="p-20 text-center border-2 border-dashed rounded-3xl space-y-4">
+                  <CheckCircle2 className="size-12 mx-auto text-emerald-500/20" />
+                  <p className="text-muted-foreground">Nenhum cliente aprovado aguardando suporte no momento.</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="my" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              {myOnboardings.length > 0 ? (
+                myOnboardings.map((inst) => (
+                  <Card key={inst.id} className="hover:border-primary/40 transition-all overflow-hidden border-2">
+                    <CardHeader className="bg-slate-50 p-4 border-b flex flex-row justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        {inst.flowId ? (
+                           <Badge className="bg-emerald-500 text-[9px] uppercase">Fluxo Ativo</Badge>
+                        ) : (
+                           <Badge variant="destructive" className="text-[9px] uppercase animate-pulse">Pendente Seleção</Badge>
+                        )}
                       </div>
+                      <span className="text-[10px] text-muted-foreground font-bold">{new Date(inst.startedAt).toLocaleDateString()}</span>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-6">
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-xl">{inst.institutionName}</h4>
+                        <p className="text-sm text-muted-foreground flex items-center gap-2">
+                          <Briefcase className="size-3.5" /> Produto: <strong>{productsMap[inst.productId] || inst.productId}</strong>
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button variant="outline" className="w-full rounded-xl font-bold text-xs" onClick={() => handleViewFicha(inst.clientId)}>Ficha</Button>
+                        {inst.flowId ? (
+                          <Button className="w-full rounded-xl font-bold text-xs gap-2" onClick={() => handleSelectJourney(inst)}>
+                            <ArrowRight className="size-3" /> Ver Jornada
+                          </Button>
+                        ) : (
+                          <Button className="w-full rounded-xl font-bold text-xs gap-2 bg-amber-600 hover:bg-amber-700" onClick={() => openFlowSelection(inst)}>
+                            Definir Fluxo
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="col-span-full p-20 text-center border-2 border-dashed rounded-3xl">
+                  <p className="text-muted-foreground">Você ainda não assumiu atendimentos.</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="journey" className="space-y-8 animate-in fade-in duration-500">
+            {selectedJourneyInstance ? (
+              <div className="space-y-8">
+                <div className="bg-white rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
+                    <div className="space-y-2">
+                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 px-3 py-1 font-bold">
+                        <CheckCircle2 className="size-3.5" /> JORNADA TÉCNICA
+                      </Badge>
+                      <h2 className="text-3xl font-bold font-headline">{selectedJourneyInstance.institutionName} - {productsMap[selectedJourneyInstance.productId] || selectedJourneyInstance.productId}</h2>
+                      <p className="text-muted-foreground font-medium">Analista Responsável: <span className="text-foreground font-bold">{selectedJourneyInstance.techName}</span></p>
                     </div>
-                    <Progress value={journeyProgress} className="h-3 rounded-full" />
+                    <div className="text-right">
+                      <span className="text-5xl font-black text-primary">{journeyProgress}%</span>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Concluído</p>
+                    </div>
                   </div>
+                  <Progress value={journeyProgress} className="h-3 rounded-full" />
+                </div>
 
-                  <div className="space-y-6">
-                    <h3 className="text-lg font-bold font-headline flex items-center gap-2">
-                      <ClipboardList className="size-5 text-primary" /> Etapas do Projeto
-                    </h3>
-                    
-                    {journeySteps.length > 0 ? (
-                      <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
-                        {journeySteps.map((step) => {
-                          const isCompleted = step.order < (selectedJourneyInstance.currentStepOrder || 1);
-                          const isCurrent = step.order === (selectedJourneyInstance.currentStepOrder || 1);
-                          const isExpanded = expandedStepId === step.id;
+                <div className="space-y-6">
+                  <h3 className="text-lg font-bold font-headline flex items-center gap-2">
+                    <ClipboardList className="size-5 text-primary" /> Etapas do Projeto
+                  </h3>
+                  
+                  {journeySteps.length > 0 ? (
+                    <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
+                      {journeySteps.map((step) => {
+                        const isCompleted = step.order < (selectedJourneyInstance.currentStepOrder || 1);
+                        const isCurrent = step.order === (selectedJourneyInstance.currentStepOrder || 1);
+                        const isExpanded = expandedStepId === step.id;
 
-                          return (
-                            <div key={step.id} className="relative">
-                              <div className={cn(
-                                "absolute -left-[29px] top-1 size-6 rounded-full border-2 flex items-center justify-center transition-all z-10 bg-white",
-                                isCompleted ? "border-emerald-500 bg-emerald-500 text-white" : 
-                                isCurrent ? "border-primary bg-primary text-white animate-pulse" : 
-                                "border-slate-200 text-slate-400"
-                              )}>
-                                {isCompleted ? <CheckCircle2 className="size-3.5" /> : <span className="text-[10px] font-bold">{step.order}</span>}
-                              </div>
-                              <Card className={cn(
-                                "transition-all duration-300",
-                                isCurrent ? "ring-2 ring-primary/20 shadow-lg border-primary/40" : 
-                                step.order > (selectedJourneyInstance.currentStepOrder || 1) ? "opacity-60" : "hover:border-primary/30"
-                              )}>
-                                <CardHeader className="p-5 flex flex-row items-center justify-between cursor-pointer" onClick={() => setExpandedStepId(isExpanded ? null : step.id!)}>
-                                  <div className="flex-1 space-y-1">
-                                    <div className="flex items-center gap-3">
-                                      <CardTitle className={cn("text-base font-bold", isCompleted ? "text-slate-400" : "text-slate-800")}>{step.name}</CardTitle>
-                                      <Badge variant="outline" className="text-[9px] uppercase font-bold bg-slate-50 text-slate-600 border-slate-200 gap-1 px-2 py-0.5">
-                                        {getResponsibleIcon(step.responsible)} {step.responsible}
-                                      </Badge>
-                                    </div>
-                                    <CardDescription className="text-sm line-clamp-1">{step.description}</CardDescription>
+                        return (
+                          <div key={step.id} className="relative">
+                            <div className={cn(
+                              "absolute -left-[29px] top-1 size-6 rounded-full border-2 flex items-center justify-center transition-all z-10 bg-white",
+                              isCompleted ? "border-emerald-500 bg-emerald-500 text-white" : 
+                              isCurrent ? "border-primary bg-primary text-white animate-pulse" : 
+                              "border-slate-200 text-slate-400"
+                            )}>
+                              {isCompleted ? <CheckCircle2 className="size-3.5" /> : <span className="text-[10px] font-bold">{step.order}</span>}
+                            </div>
+                            <Card className={cn(
+                              "transition-all duration-300",
+                              isCurrent ? "ring-2 ring-primary/20 shadow-lg border-primary/40" : 
+                              step.order > (selectedJourneyInstance.currentStepOrder || 1) ? "opacity-60" : "hover:border-primary/30"
+                            )}>
+                              <CardHeader className="p-5 flex flex-row items-center justify-between cursor-pointer" onClick={() => setExpandedStepId(isExpanded ? null : step.id!)}>
+                                <div className="flex-1 space-y-1">
+                                  <div className="flex items-center gap-3">
+                                    <CardTitle className={cn("text-base font-bold", isCompleted ? "text-slate-400" : "text-slate-800")}>{step.name}</CardTitle>
+                                    <Badge variant="outline" className="text-[9px] uppercase font-bold bg-slate-50 text-slate-600 border-slate-200 gap-1 px-2 py-0.5">
+                                      {getResponsibleIcon(step.responsible)} {step.responsible}
+                                    </Badge>
                                   </div>
-                                  {isExpanded ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
-                                </CardHeader>
-                                {isExpanded && (
-                                  <CardContent className="p-5 pt-0 border-t bg-slate-50/30">
-                                    <div className="mt-5 space-y-6">
-                                      <div className="grid md:grid-cols-2 gap-4">
+                                  <CardDescription className="text-sm line-clamp-1">{step.description}</CardDescription>
+                                </div>
+                                {isExpanded ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
+                              </CardHeader>
+                              {isExpanded && (
+                                <CardContent className="p-5 pt-0 border-t bg-slate-50/30">
+                                  <div className="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div className="lg:col-span-1 space-y-6">
+                                      <div className="grid grid-cols-2 gap-4">
                                          <div className="space-y-1">
                                             <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SLA</p>
                                             <p className="text-xs font-bold flex items-center gap-2"><Clock className="size-3" /> {step.estimatedTimeInHours}h Úteis</p>
@@ -483,75 +486,46 @@ export default function OnboardingManagement() {
                                       </div>
                                       {isCurrent && (
                                         <div className="flex justify-end pt-4 border-t">
-                                          <Button className="font-bold gap-2 rounded-full px-8" onClick={() => handleAdvanceStep(selectedJourneyInstance.id!, step.order)} disabled={isAdvancing}>
+                                          <Button className="font-bold gap-2 rounded-full px-8 w-full" onClick={() => handleAdvanceStep(selectedJourneyInstance.id!, step.order)} disabled={isAdvancing}>
                                             {isAdvancing ? <Loader2 className="size-4 animate-spin" /> : <ChevronRight className="size-4" />}
                                             Concluir Etapa {step.order}
                                           </Button>
                                         </div>
                                       )}
                                     </div>
-                                  </CardContent>
-                                )}
-                              </Card>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="p-20 text-center border-2 border-dashed rounded-3xl bg-slate-50/50">
-                        <p className="text-sm text-muted-foreground">Nenhuma etapa encontrada para este fluxo.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="p-20 text-center border-2 border-dashed rounded-3xl">
-                  <p className="text-muted-foreground">Selecione um atendimento na aba anterior para ver a jornada.</p>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Monitoramento de Ativação (Comercial)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Instituição</TableHead>
-                    <TableHead>Produto</TableHead>
-                    <TableHead>Status Ativação</TableHead>
-                    <TableHead>Responsável Técnico</TableHead>
-                    <TableHead className="text-right">Acompanhar</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {instances.length > 0 ? instances.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-bold text-xs">{item.institutionName}</TableCell>
-                      <TableCell className="text-[11px] font-bold text-primary">{productsMap[item.productId] || item.productId}</TableCell>
-                      <TableCell>
-                        <Badge variant={item.techId ? 'default' : 'secondary'} className="text-[9px] uppercase">
-                          {item.techId ? 'Em Atendimento' : 'Fila'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-[11px] font-medium">{item.techName || 'Pendente'}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleSelectJourney(item)}><ArrowRight className="size-4" /></Button>
-                      </TableCell>
-                    </TableRow>
-                  )) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">Nenhuma ativação em curso.</TableCell>
-                    </TableRow>
+                                    <div className="lg:col-span-2">
+                                      {/* Log de Interação - Admins interagem em TODAS as etapas */}
+                                      <StepInteractions 
+                                        instanceId={selectedJourneyInstance.id!}
+                                        stepId={step.id!}
+                                        clientId={selectedJourneyInstance.clientId}
+                                        canInteract={isAdminUser} // Admins podem interagir sempre
+                                        userName={profile?.displayName}
+                                        userRole={profile?.adminType || 'admin'}
+                                      />
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              )}
+                            </Card>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-20 text-center border-2 border-dashed rounded-3xl bg-slate-50/50">
+                      <p className="text-sm text-muted-foreground">Nenhuma etapa encontrada para este fluxo.</p>
+                    </div>
                   )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
+                </div>
+              </div>
+            ) : (
+              <div className="p-20 text-center border-2 border-dashed rounded-3xl">
+                <p className="text-muted-foreground">Selecione um atendimento na aba anterior para ver a jornada.</p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Diálogos Auxiliares */}

@@ -1,3 +1,4 @@
+
 export type OnboardingStatus = 'pendente' | 'em_revisao' | 'concluida';
 export type UserStatus = 'pending' | 'approved' | 'rejected';
 export type UserRole = 'admin' | 'client';
@@ -80,6 +81,20 @@ export interface OnboardingInstance {
   updatedAt: any;
   institutionName?: string;
   productName?: string;
+}
+
+export interface StepInteraction {
+  id?: string;
+  instanceId: string;
+  stepId: string;
+  clientId: string;
+  userId: string;
+  userName: string;
+  userRole: string;
+  message: string;
+  fileUrl?: string;
+  fileName?: string;
+  createdAt: any;
 }
 
 export interface OnboardingStage {
