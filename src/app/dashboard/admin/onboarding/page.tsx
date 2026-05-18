@@ -28,16 +28,25 @@ import {
   Settings2,
   GitFork,
   AlertTriangle,
-  Clock
+  Clock,
+  ChevronUp,
+  ChevronDown,
+  User,
+  ShieldCheck,
+  HardDrive,
+  Headset,
+  Lock,
+  LayoutGrid
 } from "lucide-react";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
-import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, getDocs } from "firebase/firestore";
+import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, getDocs, orderBy } from "firebase/firestore";
 import { useMemo, useState, useEffect } from "react";
 import { UserProfile, OnboardingInstance, ActivationFlow, Product, FlowStep } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 export default function OnboardingManagement() {
   const db = useFirestore();
@@ -59,6 +68,13 @@ export default function OnboardingManagement() {
   const [isSavingFlow, setIsSavingFlow] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [isFetchingFlows, setIsFetchingFlows] = useState(false);
+
+  // Estados para Visão de Jornada
+  const [isJourneyOpen, setIsJourneyOpen] = useState(false);
+  const [journeyInstance, setJourneyInstance] = useState<OnboardingInstance | null>(null);
+  const [journeySteps, setJourneySteps] = useState<FlowStep[]>([]);
+  const [isFetchingSteps, setIsFetchingSteps] = useState(false);
+  const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
 
   // Mapeamento de Produtos
   const productsQuery = useMemo(() => {
@@ -147,7 +163,6 @@ export default function OnboardingManagement() {
     
     let productId = instance.productId;
 
-    // Resolve o ID real do produto se estiver gravado como nome
     const productById = dbProducts.find(p => p.id === productId);
     if (!productById) {
       const foundProductByName = dbProducts.find(p => p.name.toLowerCase() === productId.toLowerCase());
@@ -171,6 +186,38 @@ export default function OnboardingManagement() {
     }
   };
 
+  const openJourneyView = async (instance: OnboardingInstance) => {
+    setJourneyInstance(instance);
+    setIsFetchingSteps(true);
+    setJourneySteps([]);
+    
+    let productId = instance.productId;
+    const productById = dbProducts.find(p => p.id === productId);
+    if (!productById) {
+      const foundProductByName = dbProducts.find(p => p.name.toLowerCase() === productId.toLowerCase());
+      if (foundProductByName) productId = foundProductByName.id!;
+    }
+
+    if (!instance.flowId) {
+      setIsFetchingSteps(false);
+      setIsJourneyOpen(true);
+      return;
+    }
+
+    try {
+      const stepsRef = collection(db, "products", productId, "activationFlows", instance.flowId, "steps");
+      const snapshot = await getDocs(query(stepsRef, orderBy("order", "asc")));
+      const steps = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as FlowStep));
+      setJourneySteps(steps);
+      setIsJourneyOpen(true);
+    } catch (error) {
+      console.error("Error fetching steps:", error);
+      toast({ variant: "destructive", title: "Erro", description: "Falha ao carregar roteiro." });
+    } finally {
+      setIsFetchingSteps(false);
+    }
+  };
+
   const handleSetFlow = async () => {
     if (!targetInstance?.id || !selectedFlowId || isSavingFlow) return;
     setIsSavingFlow(true);
@@ -178,7 +225,7 @@ export default function OnboardingManagement() {
     const instanceRef = doc(db, "onboardingInstances", targetInstance.id);
     const updateData = {
       flowId: selectedFlowId,
-      currentStepOrder: 1, // Sempre inicia na etapa 1 ao definir fluxo
+      currentStepOrder: 1, 
       updatedAt: serverTimestamp()
     };
 
@@ -208,6 +255,9 @@ export default function OnboardingManagement() {
         updatedAt: serverTimestamp()
       });
       toast({ title: "Próxima Etapa Ativada" });
+      if (journeyInstance?.id === instanceId) {
+        setJourneyInstance(prev => prev ? {...prev, currentStepOrder: currentStep + 1} : null);
+      }
     } catch (e) {
       toast({ variant: "destructive", title: "Erro ao avançar" });
     } finally {
@@ -220,6 +270,18 @@ export default function OnboardingManagement() {
     if (client) {
       setSelectedClientForFicha(client);
       setIsFichaOpen(true);
+    }
+  };
+
+  const getResponsibleIcon = (role: string) => {
+    const iconClass = "size-3.5 text-slate-500";
+    switch (role) {
+      case 'suporte': return <Headset className={iconClass} />;
+      case 'comercial': return <ShieldCheck className={iconClass} />;
+      case 'cliente': return <User className={iconClass} />;
+      case 'infraestrutura': return <HardDrive className={iconClass} />;
+      case 'compliance': return <CheckCircle2 className={iconClass} />;
+      default: return <User className={iconClass} />;
     }
   };
 
@@ -346,11 +408,11 @@ export default function OnboardingManagement() {
                           {inst.flowId ? (
                             <Button 
                               className="w-full rounded-xl font-bold text-xs gap-2"
-                              onClick={() => handleAdvanceStep(inst.id!, inst.currentStepOrder)}
-                              disabled={isAdvancing}
+                              onClick={() => openJourneyView(inst)}
+                              disabled={isFetchingSteps}
                             >
-                              {isAdvancing ? <Loader2 className="size-3 animate-spin" /> : <ChevronRight className="size-3" />}
-                              Avançar Etapa
+                              {isFetchingSteps ? <Loader2 className="size-3 animate-spin" /> : <ChevronRight className="size-3" />}
+                              Ver Jornada
                             </Button>
                           ) : (
                             <Button 
@@ -424,7 +486,14 @@ export default function OnboardingManagement() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary"><ArrowRight className="size-4" /></Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-slate-400 hover:text-primary"
+                          onClick={() => openJourneyView(item)}
+                        >
+                          <ArrowRight className="size-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   )) : (
@@ -553,6 +622,155 @@ export default function OnboardingManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Diálogo de Visão da Jornada */}
+      <Dialog open={isJourneyOpen} onOpenChange={setIsJourneyOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 px-3 py-1 font-bold">
+                  <CheckCircle2 className="size-3.5" /> JORNADA TÉCNICA
+                </Badge>
+                <DialogTitle className="text-3xl font-bold font-headline">
+                  {journeyInstance?.institutionName} - {productsMap[journeyInstance?.productId!] || journeyInstance?.productId}
+                </DialogTitle>
+                <p className="text-muted-foreground font-medium">Analista RTM: <span className="text-foreground font-bold">{journeyInstance?.techName || 'Pendente'}</span></p>
+              </div>
+              <div className="text-right">
+                {journeySteps.length > 0 && (
+                  <>
+                    <span className="text-5xl font-black text-primary">
+                      {Math.min(100, Math.round(((Math.max(0, (journeyInstance?.currentStepOrder || 1) - 1)) / journeySteps.length) * 100))}%
+                    </span>
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Concluído</p>
+                  </>
+                )}
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="py-8 space-y-10">
+            {journeySteps.length > 0 ? (
+              <>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-bold text-muted-foreground uppercase">
+                    <span>Progresso do Projeto</span>
+                    <span>Etapa {journeyInstance?.currentStepOrder} de {journeySteps.length}</span>
+                  </div>
+                  <Progress 
+                    value={Math.min(100, ((Math.max(0, (journeyInstance?.currentStepOrder || 1) - 1)) / journeySteps.length) * 100)} 
+                    className="h-3 rounded-full" 
+                  />
+                </div>
+
+                <div className="space-y-6">
+                  <h3 className="text-lg font-bold font-headline flex items-center gap-2">
+                    <ClipboardList className="size-5 text-primary" /> Etapas do Roteiro Técnico
+                  </h3>
+                  
+                  <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
+                    {journeySteps.map((step) => {
+                      const isCompleted = step.order < (journeyInstance?.currentStepOrder || 1);
+                      const isCurrent = step.order === (journeyInstance?.currentStepOrder || 1);
+                      const isFuture = step.order > (journeyInstance?.currentStepOrder || 1);
+                      const isExpanded = expandedStepId === step.id;
+
+                      return (
+                        <div key={step.id} className="relative">
+                          <div className={cn(
+                            "absolute -left-[29px] top-1 size-6 rounded-full border-2 flex items-center justify-center transition-all z-10 bg-white",
+                            isCompleted ? "border-emerald-500 bg-emerald-500 text-white" : 
+                            isCurrent ? "border-primary bg-primary text-white animate-pulse" : 
+                            "border-slate-200 text-slate-400"
+                          )}>
+                            {isCompleted ? <CheckCircle2 className="size-3.5" /> : 
+                             <span className="text-[10px] font-bold">{step.order}</span>}
+                          </div>
+                          
+                          <Card className={cn(
+                            "transition-all duration-300",
+                            isCurrent ? "ring-2 ring-primary/20 shadow-lg border-primary/40" : 
+                            isFuture ? "opacity-60" : "hover:border-primary/30"
+                          )}>
+                            <CardHeader 
+                              className="p-5 flex flex-row items-center justify-between cursor-pointer"
+                              onClick={() => setExpandedStepId(isExpanded ? null : step.id || null)}
+                            >
+                              <div className="flex-1 space-y-1">
+                                <div className="flex items-center gap-3">
+                                  <CardTitle className={cn(
+                                    "text-base font-bold",
+                                    isCompleted ? "text-slate-400" : "text-slate-800"
+                                  )}>{step.name}</CardTitle>
+                                  <Badge variant="secondary" className="text-[9px] uppercase font-bold bg-slate-100 gap-1">
+                                    {getResponsibleIcon(step.responsible)}
+                                    {step.responsible}
+                                  </Badge>
+                                </div>
+                                <CardDescription className="text-sm line-clamp-1">{step.description}</CardDescription>
+                              </div>
+                              {isExpanded ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
+                            </CardHeader>
+
+                            {isExpanded && (
+                              <CardContent className="p-5 pt-0 border-t bg-slate-50/30">
+                                <div className="mt-5 space-y-6">
+                                  <div className="grid md:grid-cols-2 gap-4">
+                                     <div className="space-y-1">
+                                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SLA de Atendimento</p>
+                                        <p className="text-xs font-bold flex items-center gap-2"><Clock className="size-3" /> {step.estimatedTimeInHours}h Úteis</p>
+                                     </div>
+                                     <div className="space-y-1">
+                                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Ação</p>
+                                        <p className="text-xs font-bold flex items-center gap-2"><FileText className="size-3" /> {step.type === 'upload' ? 'Evidência Requerida' : 'Formulário Interno'}</p>
+                                     </div>
+                                  </div>
+                                  
+                                  <div className="p-4 rounded-xl bg-white border border-slate-200">
+                                    <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                                      {step.description}
+                                    </p>
+                                  </div>
+
+                                  {isSupport && isCurrent && (
+                                    <div className="flex justify-end gap-3 pt-4 border-t">
+                                      <Button 
+                                        className="font-bold gap-2"
+                                        onClick={() => handleAdvanceStep(journeyInstance?.id!, step.order)}
+                                        disabled={isAdvancing}
+                                      >
+                                        {isAdvancing ? <Loader2 className="size-4 animate-spin" /> : <ChevronRight className="size-4" />}
+                                        Concluir Etapa {step.order}
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              </CardContent>
+                            )}
+                          </Card>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="p-20 text-center border-2 border-dashed rounded-3xl bg-slate-50/50 space-y-4">
+                <AlertTriangle className="size-12 mx-auto text-amber-500/20" />
+                <div className="space-y-1">
+                  <p className="font-bold text-slate-900">Nenhum roteiro técnico ativo</p>
+                  <p className="text-sm text-muted-foreground">O analista de suporte ainda não selecionou um fluxo para esta instituição.</p>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="border-t pt-4">
+            <Button className="w-full font-bold h-12" onClick={() => setIsJourneyOpen(false)}>Fechar Visualização</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
+

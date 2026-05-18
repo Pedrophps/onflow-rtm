@@ -1,3 +1,4 @@
+
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -25,7 +26,8 @@ import {
   ShieldCheck,
   FileEdit,
   Settings2,
-  ClipboardList
+  ClipboardList,
+  FileText
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -165,7 +167,7 @@ export default function ActivationsPage() {
   }
 
   const currentStepOrder = selectedInstance?.currentStepOrder || 1;
-  const progress = steps.length > 0 ? (Math.max(0, currentStepOrder - 1) / steps.length) * 100 : 0;
+  const progress = steps.length > 0 ? Math.min(100, (Math.max(0, currentStepOrder - 1) / steps.length) * 100) : 0;
 
   return (
     <DashboardLayout role="client">
