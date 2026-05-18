@@ -1,16 +1,19 @@
-import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/google-genai';
+
+import { genkit } from 'genkit';
+import { openAI } from 'genkitx-openai';
 
 /**
- * Configuração central do Genkit AI.
- * O plugin googleAI utiliza o modelo Gemini 1.5 Flash por padrão.
- * As chaves podem ser configuradas via GEMINI_API_KEY ou GOOGLE_GENAI_API_KEY no .env.
+ * Configuração central do Genkit AI utilizando OpenRouter.
+ * OpenRouter é compatível com o plugin OpenAI (via genkitx-openai).
+ * A chave deve ser configurada via OPENROUTER_API_KEY no .env.
  */
 export const ai = genkit({
   plugins: [
-    googleAI({
-      apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY,
+    openAI({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: "https://openrouter.ai/api/v1",
     }),
   ],
-  model: 'googleai/gemini-1.5-flash',
+  // Modelo padrão via OpenRouter
+  model: 'openai/google/gemini-2.0-flash-001',
 });

@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Agente de Processamento de E-mails do ERP.
@@ -43,7 +44,8 @@ Se não encontrar algum dado, tente inferir pelo contexto ou deixe vazio se for 
 });
 
 export async function parseERPEmail(input: ParseERPEmailInput): Promise<ParseERPEmailOutput> {
+  // Chamada ao prompt utilizando o modelo configurado via OpenRouter
   const { output } = await prompt(input);
-  if (!output) throw new Error('Falha ao processar e-mail do ERP.');
+  if (!output) throw new Error('Falha ao processar e-mail do ERP via OpenRouter.');
   return output;
 }
