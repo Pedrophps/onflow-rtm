@@ -1,4 +1,3 @@
-
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -16,7 +15,7 @@ import {
   Loader2, 
   ArrowRight, 
   UserPlus, 
-  Building2,
+  Building2, 
   Briefcase,
   Zap,
   Mail,
@@ -35,6 +34,7 @@ import { UserProfile, OnboardingInstance, ActivationFlow, Product } from "@/lib/
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { cn } from "@/lib/utils";
 
 export default function OnboardingManagement() {
   const db = useFirestore();
