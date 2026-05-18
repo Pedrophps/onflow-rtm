@@ -26,7 +26,10 @@ export default function ProductsPage() {
   const { data: profile } = useDoc<UserProfile>(userRef);
   const isSupport = profile?.adminType === 'suporte';
 
-  const productsQuery = useMemo(() => query(collection(db, "products")), [db]);
+  const productsQuery = useMemo(() => {
+    if (!user) return null;
+    return query(collection(db, "products"));
+  }, [db, user]);
   const { data: products, loading: productsLoading } = useCollection<Product>(productsQuery);
 
   const [isNewProductOpen, setIsNewProductOpen] = useState(false);

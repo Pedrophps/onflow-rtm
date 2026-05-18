@@ -25,14 +25,17 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ produ
   const { toast } = useToast();
   const router = useRouter();
   
-  const productRef = useMemo(() => doc(db, "products", productId), [db, productId]);
+  const productRef = useMemo(() => (user ? doc(db, "products", productId) : null), [db, user, productId]);
   const { data: product, loading: productLoading } = useDoc<Product>(productRef);
 
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile } = useDoc<UserProfile>(userRef);
   const isSupport = profile?.adminType === 'suporte';
 
-  const flowsQuery = useMemo(() => query(collection(db, "products", productId, "activationFlows")), [db, productId]);
+  const flowsQuery = useMemo(() => {
+    if (!user) return null;
+    return query(collection(db, "products", productId, "activationFlows"));
+  }, [db, user, productId]);
   const { data: flows, loading: flowsLoading } = useCollection<ActivationFlow>(flowsQuery);
 
   const [isNewFlowOpen, setIsNewFlowOpen] = useState(false);

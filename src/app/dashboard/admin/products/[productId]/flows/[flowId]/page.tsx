@@ -27,20 +27,23 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
   const { user } = useUser();
   const { toast } = useToast();
   
-  const productRef = useMemo(() => doc(db, "products", productId), [db, productId]);
+  const productRef = useMemo(() => (user ? doc(db, "products", productId) : null), [db, user, productId]);
   const { data: product } = useDoc<Product>(productRef);
 
-  const flowRef = useMemo(() => doc(db, "products", productId, "activationFlows", flowId), [db, productId, flowId]);
+  const flowRef = useMemo(() => (user ? doc(db, "products", productId, "activationFlows", flowId) : null), [db, user, productId, flowId]);
   const { data: flow, loading: flowLoading } = useDoc<ActivationFlow>(flowRef);
 
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile } = useDoc<UserProfile>(userRef);
   const isSupport = profile?.adminType === 'suporte';
 
-  const stepsQuery = useMemo(() => query(
-    collection(db, "products", productId, "activationFlows", flowId, "steps"),
-    orderBy("order", "asc")
-  ), [db, productId, flowId]);
+  const stepsQuery = useMemo(() => {
+    if (!user) return null;
+    return query(
+      collection(db, "products", productId, "activationFlows", flowId, "steps"),
+      orderBy("order", "asc")
+    );
+  }, [db, user, productId, flowId]);
   const { data: steps, loading: stepsLoading } = useCollection<FlowStep>(stepsQuery);
 
   const [isNewStepOpen, setIsNewStepOpen] = useState(false);
@@ -71,7 +74,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
       .then(() => {
         toast({ title: "Etapa Adicionada", description: "O fluxo foi atualizado com sucesso." });
         setIsNewStepOpen(false);
-        setNewStep({ name: '', description: '', responsible: 'suporte', type: 'upload', estimatedTimeInHours: 8, required: true });
+        setNewStep({ name: '', description: '' });
       })
       .catch(async (error) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -86,7 +89,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
   };
 
   const handleUpdateFlowStatus = async (published: boolean) => {
-    if (!user || isSubmitting) return;
+    if (!user || !flowRef || isSubmitting) return;
     setIsSubmitting(true);
 
     const updateData = {
