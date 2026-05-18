@@ -11,8 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserProfile } from "@/lib/types";
-import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal } from "lucide-react";
+import { UserProfile, Product } from "@/lib/types";
+import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal, Package } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -28,20 +28,22 @@ export default function ClientsAdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile } = useDoc<UserProfile>(userRef);
   
-  // Determinamos a visão atual (prioridade para o Firestore, fallback para URL)
   const currentView = profile?.adminType || searchParams.get('view');
   const isComercial = currentView === 'comercial';
   
-  // Query para buscar todos os usuários com o papel 'client'
+  // Buscar Clientes
   const clientsQuery = useMemo(() => query(collection(db, "users"), where("role", "==", "client")), [db]);
   const { data: clients, loading: clientsLoading } = useCollection<UserProfile>(clientsQuery);
+
+  // Buscar Produtos Reais (Cadastrados pelo Suporte)
+  const productsQuery = useMemo(() => query(collection(db, "products")), [db]);
+  const { data: dbProducts, loading: productsLoading } = useCollection<Product>(productsQuery);
 
   const [selectedClient, setSelectedClient] = useState<UserProfile | null>(null);
   const [clientCode, setClientCode] = useState("");
   const [activeProduct, setActiveProduct] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Filtro de pendentes: Status 'pending' OU falta de Código RTM OU falta de Produto
   const pendingClients = useMemo(() => {
     return clients.filter(c => c.status === 'pending' || !c.clientCode || !c.activeProduct);
   }, [clients]);
@@ -202,20 +204,29 @@ export default function ClientsAdminPage() {
             <div className="space-y-2">
               <Label>Produto Contratado</Label>
               <Select onValueChange={setActiveProduct} value={activeProduct}>
-                <SelectTrigger><SelectValue placeholder="Selecione o produto principal" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder={productsLoading ? "Carregando produtos..." : "Selecione o produto principal"} />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="RSFN">Rede RSFN</SelectItem>
-                  <SelectItem value="SWIFT">Mensageria SWIFT</SelectItem>
-                  <SelectItem value="PIX">Integração PIX</SelectItem>
-                  <SelectItem value="CLOUD">Cloud Privada RTM</SelectItem>
-                  <SelectItem value="DREX">Ecossistema DREX</SelectItem>
+                  {dbProducts.length > 0 ? dbProducts.map((prod) => (
+                    <SelectItem key={prod.id} value={prod.name}>
+                      <div className="flex items-center gap-2">
+                        <Package className="size-3 text-primary/60" />
+                        {prod.name}
+                      </div>
+                    </SelectItem>
+                  )) : (
+                    <div className="p-4 text-center text-xs text-muted-foreground italic">
+                      Nenhum produto cadastrado pelo suporte.
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-            <Button disabled={!clientCode || !activeProduct} onClick={handleApprove}>Confirmar Ativação</Button>
+            <Button disabled={!clientCode || !activeProduct || productsLoading} onClick={handleApprove}>Confirmar Ativação</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
