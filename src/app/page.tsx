@@ -1,8 +1,7 @@
-
-import Link from 'next/image';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Badge } from '@/components/ui/badge';
 import { 
   ArrowRight, 
   ShieldCheck, 
@@ -53,7 +52,7 @@ export default function Home() {
               <a href="#trajetoria" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Trajetória</a>
             </nav>
             <Button size="sm" className="rounded-full px-6 font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary/20" asChild>
-              <a href="/login">Acessar Portal</a>
+              <Link href="/login">Acessar Portal</Link>
             </Button>
 
             <Sheet>
@@ -72,7 +71,7 @@ export default function Home() {
                   <a href="#presenca" className="text-lg font-bold font-headline">Presença</a>
                   <a href="#trajetoria" className="text-lg font-bold font-headline">Trajetória</a>
                   <hr />
-                  <a href="/login" className="text-lg font-bold font-headline text-primary">Login</a>
+                  <Link href="/login" className="text-lg font-bold font-headline text-primary">Login</Link>
                 </nav>
               </SheetContent>
             </Sheet>
@@ -93,7 +92,7 @@ export default function Home() {
             </p>
             <div className="flex gap-4">
               <Button size="lg" className="rounded-full px-10 h-14 font-bold gap-2 text-lg shadow-xl shadow-primary/30" asChild>
-                <a href="/login">Começar Agora <ArrowRight className="size-6" /></a>
+                <Link href="/login">Começar Agora <ArrowRight className="size-6" /></Link>
               </Button>
             </div>
           </div>
@@ -119,7 +118,7 @@ export default function Home() {
               Identificar para integrar. Entender para atender. Conhecer para evoluir.
             </h2>
             <p className="text-xl text-slate-600 leading-relaxed font-medium italic">
-              Empresa da ANBIMA e da B3, a RTM é o principal hub integrador do setor financeiro.
+              Empresa da ANBIMA e da B3, a RTM é o principal hub integrador do setor financeiro. Atuando como agente neutro de tecnologia, ouve o mercado com propósito de viabilizar o desenvolvimento de soluções que facilitem o dia a dia operacional das instituições.
             </p>
           </div>
 
@@ -155,14 +154,14 @@ export default function Home() {
                 <div className="flex items-center gap-6">
                   <div className="size-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/40"><MapPin className="text-white size-8" /></div>
                   <div>
-                    <p className="text-2xl font-black">21 Estados + DF</p>
+                    <p className="text-2xl font-black">20 Estados + DF</p>
                     <p className="text-slate-400 font-medium">Cobertura em todas as 5 regiões do país.</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
                   <div className="size-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/40"><Building2 className="text-white size-8" /></div>
                   <div>
-                    <p className="text-2xl font-black">850+ Instituições</p>
+                    <p className="text-2xl font-black">750+ Instituições</p>
                     <p className="text-slate-400 font-medium">Conectadas com estabilidade absoluta.</p>
                   </div>
                 </div>
@@ -192,12 +191,12 @@ export default function Home() {
             <ServiceCard 
               icon={Database} 
               title="NÚCLEA" 
-              desc="Sistema de Cessão de Crédito, nova cobrança e liquidação centralizada." 
+              desc="Sistema de Cessão de Crédito, plataforma de nova cobrança, sistema de liquidação centralizado e cadastro positivo." 
             />
             <ServiceCard 
               icon={TrendingUp} 
               title="B3" 
-              desc="Negociação, compensação, liquidação e registro para títulos privados." 
+              desc="Negociação, compensação, liquidação, depósito e registro para títulos privados." 
             />
             <ServiceCard 
               icon={FileCheck} 
@@ -252,7 +251,7 @@ export default function Home() {
                     <PieChart className="text-primary size-8" />
                     <h4 className="font-bold text-slate-900">Distribuição de Clientes</h4>
                  </div>
-                 <p className="text-sm text-slate-600 font-medium leading-relaxed italic">"Gráfico de distribuição dos clientes RTM de acordo com os segmentos do mercado em que se enquadram."</p>
+                 <p className="text-sm text-slate-600 font-medium leading-relaxed italic">"Gráfico em pizza que mostra a distribuição dos clientes RTM de acordo com os segmentos do mercado em que se enquadram."</p>
               </div>
             </div>
           </div>
@@ -264,25 +263,25 @@ export default function Home() {
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
         <div className="container mx-auto px-6 relative z-10">
           <div className="text-center mb-24 space-y-4">
-            <h2 className="text-5xl font-bold font-headline tracking-tighter">Destaques da Trajetória</h2>
-            <p className="text-slate-400 text-xl font-light">Profundo conhecimento técnico e entregas de excelência desde 1997.</p>
+            <h2 className="text-5xl font-bold font-headline tracking-tighter">Confira os destaques da nossa trajetória</h2>
+            <p className="text-slate-400 text-xl font-light">Temos uma história que reflete a construção de nosso profundo conhecimento técnico e entregas de excelência.</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-16">
             <TimelineItem year="1997" title="Fundação" text="Nasce a RTM - Rede de Telecomunicações para o Mercado." />
-            <TimelineItem year="2001" title="SPB" text="Implantação da rede do Sistema de Pagamentos Brasileiro." />
-            <TimelineItem year="2002" title="Contingência" text="Oferta de Site de Contingência para o mercado." />
-            <TimelineItem year="2003" title="SWIFT" text="Estrutura para conexão direta à SWIFT." />
-            <TimelineItem year="2011" title="Data Center" text="Inauguração do Data Center próprio para o setor financeiro." />
-            <TimelineItem year="2014" title="Cloud" text="Lançamento da solução de Cloud exclusiva RTM." />
-            <TimelineItem year="2016" title="Traders" text="Modernização da mesa de operações financeiras." />
+            <TimelineItem year="2001" title="SPB" text="Implantação da rede do SPB." />
+            <TimelineItem year="2002" title="Contingência" text="Oferta de Site de Contingência." />
+            <TimelineItem year="2003" title="SWIFT" text="Estrutura para conexão à SWIFT." />
+            <TimelineItem year="2011" title="Data Center" text="Data Center para o mercado financeiro." />
+            <TimelineItem year="2014" title="Cloud" text="Solução de Cloud." />
+            <TimelineItem year="2016" title="Traders" text="Mesa de operações financeiras." />
             <TimelineItem year="2017" title="SaaS" text="1ª solução de SaaS para o mercado de pagamentos." />
             <TimelineItem year="2018" title="Hybrid Cloud" text="Conexão segura com nuvens públicas." />
             <TimelineItem year="2020" title="PIX" text="Soluções de segurança e infraestrutura para o Pix." />
             <TimelineItem year="2022" title="Hub Fundos" text="Lançamento da Plataforma Hub Fundos." />
-            <TimelineItem year="2023" title="Blockchain" text="Infraestrutura para Drex e Tokenização de ativos." />
-            <TimelineItem year="2024" title="Conciliação" text="Funcionalidade do Hub Pagamentos para conciliação de vendas." />
-            <TimelineItem year="2025" title="Expansão" text="Aquisição da Galgo S.A. e expansão para indústria de fundos." />
+            <TimelineItem year="2023" title="Blockchain" text="Infraestrutura de Blockchain para Drex/Tokenização." />
+            <TimelineItem year="2024" title="Conciliação" text="Nova funcionalidade do Hub Pagamentos para conciliação de vendas." />
+            <TimelineItem year="2025" title="Expansão" text="Aquisição da Galgo S.A. e expansão dos serviços para a indústria de fundos." />
           </div>
         </div>
       </section>
@@ -296,15 +295,12 @@ export default function Home() {
               <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest italic">© {new Date().getFullYear()} RTM - Hub Integrador do Mercado Financeiro.</p>
             </div>
             <div className="flex flex-wrap justify-center gap-8">
-              <a href="/debug/erp-simulator" className="group flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all">
+              <Link href="/debug/erp-simulator" className="group flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all">
                 <LayoutGrid className="size-4 opacity-40 group-hover:opacity-100" /> Simulador ERP
-              </a>
-              <a href="/debug/suite" className="group flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all">
+              </Link>
+              <Link href="/debug/suite" className="group flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all">
                 <ShieldCheck className="size-4 opacity-40 group-hover:opacity-100" /> Test Suite
-              </a>
-              <a href="/api/erp/process" className="group flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all">
-                <Zap className="size-4 opacity-40 group-hover:opacity-100" /> API Postman
-              </a>
+              </Link>
             </div>
           </div>
         </div>
