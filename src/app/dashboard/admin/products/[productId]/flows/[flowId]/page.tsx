@@ -1,5 +1,4 @@
-
-'use client';
+"use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
@@ -317,7 +316,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                       <div className="flex items-center gap-6">
                         <div className="flex flex-col items-end gap-1">
                           <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Responsável</span>
-                          <Badge variant="secondary" className="gap-1.5 py-1 px-3 text-[10px] uppercase font-bold bg-slate-100 text-slate-700 border-slate-200">
+                          <Badge variant="outline" className="gap-1.5 py-1 px-3 text-[10px] uppercase font-bold bg-slate-50 text-slate-600 border-slate-200">
                             {getResponsibleIcon(step.responsible)}
                             {step.responsible}
                           </Badge>

@@ -1,5 +1,4 @@
-
-'use client';
+"use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -68,7 +67,7 @@ export default function OnboardingManagement() {
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [isFetchingFlows, setIsFetchingFlows] = useState(false);
 
-  // Estados para Visão de Jornada Integrada (Igual ao cliente)
+  // Estados para Visão de Jornada Integrada
   const [journeyInstanceId, setJourneyInstanceId] = useState<string | null>(null);
   const [journeySteps, setJourneySteps] = useState<FlowStep[]>([]);
   const [isFetchingSteps, setIsFetchingSteps] = useState(false);
@@ -458,7 +457,7 @@ export default function OnboardingManagement() {
                                   <div className="flex-1 space-y-1">
                                     <div className="flex items-center gap-3">
                                       <CardTitle className={cn("text-base font-bold", isCompleted ? "text-slate-400" : "text-slate-800")}>{step.name}</CardTitle>
-                                      <Badge variant="secondary" className="text-[9px] uppercase font-bold bg-slate-100 gap-1">
+                                      <Badge variant="outline" className="text-[9px] uppercase font-bold bg-slate-50 text-slate-600 border-slate-200 gap-1 px-2 py-0.5">
                                         {getResponsibleIcon(step.responsible)} {step.responsible}
                                       </Badge>
                                     </div>

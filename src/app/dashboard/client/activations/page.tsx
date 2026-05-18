@@ -1,4 +1,3 @@
-
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -305,7 +304,7 @@ export default function ActivationsPage() {
                                       "text-base font-bold",
                                       isCompleted ? "text-slate-400" : "text-slate-800"
                                     )}>{step.name}</CardTitle>
-                                    <Badge variant="secondary" className="text-[9px] uppercase font-bold bg-slate-100 gap-1">
+                                    <Badge variant="outline" className="text-[9px] uppercase font-bold bg-slate-50 text-slate-600 border-slate-200 gap-1 px-2 py-0.5">
                                       {getResponsibleIcon(step.responsible)}
                                       {step.responsible}
                                     </Badge>
