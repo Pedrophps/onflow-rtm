@@ -71,6 +71,7 @@ export interface OnboardingInstance {
   productId: string;
   flowId?: string;
   techId?: string;
+  techName?: string;
   status: InstanceStatus;
   currentStepOrder: number;
   startedAt: string;
