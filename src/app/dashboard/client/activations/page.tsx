@@ -39,6 +39,7 @@ import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { StepInteractions } from "@/components/step-interactions";
+import { format } from "date-fns";
 
 export default function ActivationsPage() {
   const { user } = useUser();
@@ -123,6 +124,14 @@ export default function ActivationsPage() {
       default: return <User className={iconClass} />;
     }
   };
+
+  const predictedCompletionDate = useMemo(() => {
+    if (!selectedInstance?.startedAt || steps.length === 0) return null;
+    const totalHours = steps.reduce((acc, step) => acc + (Number(step.estimatedTimeInHours) || 0), 0);
+    const startDate = new Date(selectedInstance.startedAt);
+    const endDate = new Date(startDate.getTime() + totalHours * 60 * 60 * 1000);
+    return endDate;
+  }, [selectedInstance, steps]);
 
   if (profileLoading || instancesLoading) {
     return (
@@ -225,6 +234,12 @@ export default function ActivationsPage() {
                     <div className="text-right">
                       <span className="text-5xl font-black text-primary">{Math.round(progress)}%</span>
                       <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Concluído</p>
+                      {predictedCompletionDate && (
+                        <div className="mt-2 text-right">
+                          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">conclusão prevista:</p>
+                          <p className="text-xs font-bold text-slate-700">{format(predictedCompletionDate, "dd/MM/yyyy")}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <Progress value={progress} className="h-3 rounded-full" />
@@ -293,7 +308,7 @@ export default function ActivationsPage() {
                                          </div>
                                          <div className="space-y-1">
                                             <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Ação</p>
-                                            <p className="text-xs font-bold flex items-center gap-2"><FileEdit className="size-3" /> {step.type === 'upload' ? 'Envio de Arquivo' : 'Preenchimento'}</p>
+                                            <p className="text-xs font-bold flex items-center gap-2"><FileEdit className="size-3" /> Envio de Evidência</p>
                                          </div>
                                       </div>
                                       <div className="p-4 rounded-xl bg-white border border-slate-200 text-sm text-slate-700 leading-relaxed font-medium">
