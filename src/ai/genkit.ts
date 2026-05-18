@@ -4,10 +4,10 @@ import * as openaiPlugin from 'genkitx-openai';
 
 /**
  * @fileOverview Configuração central do Genkit.
- * Resolve problemas de interoperabilidade CJS/ESM no Turbopack do Next.js 15.
+ * Implementa padrão resiliente para extração de plugin em ambiente Next.js 15 Turbopack.
  */
 
-// Lógica de extração do plugin para evitar "TypeError: openai is not a function"
+// Lógica de extração robusta para evitar erro "openai is not a function"
 const getOpenAI = (plugin: any) => {
   if (typeof plugin === 'function') return plugin;
   if (plugin?.openai && typeof plugin.openai === 'function') return plugin.openai;

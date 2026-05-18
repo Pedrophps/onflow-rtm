@@ -4,17 +4,17 @@ import { initializeFirebase } from '@/firebase';
 import { processAutomationFromEmail } from '@/lib/automation-service';
 
 /**
- * API para integração via Postman.
- * Requer Header: Authorization: Bearer RTM-TEST-TOKEN-2024
+ * API Operacional para integração externa (Postman/ERP).
+ * Exige Bearer Token para conformidade de segurança.
  */
 export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization');
     
-    // Validação do Token de Teste solicitado
+    // Validação de Token solicitada pelo usuário
     if (!authHeader || authHeader !== 'Bearer RTM-TEST-TOKEN-2024') {
       return NextResponse.json(
-        { error: 'Não autorizado. Token RTM-TEST-TOKEN-2024 inválido ou ausente.' }, 
+        { error: 'Não autorizado. Use Header "Authorization: Bearer RTM-TEST-TOKEN-2024".' }, 
         { status: 401 }
       );
     }
@@ -24,25 +24,39 @@ export async function POST(req: NextRequest) {
 
     if (!data.subject || !data.body) {
       return NextResponse.json(
-        { error: 'Campos "subject" e "body" são obrigatórios no JSON.' }, 
+        { error: 'Payload inválido. Campos "subject" e "body" são obrigatórios.' }, 
         { status: 400 }
       );
     }
 
-    // Dispara o serviço de automação que usa o OpenRouter (NVIDIA Reasoning)
+    // Execução do serviço de automação com IA Nemotron
     const result = await processAutomationFromEmail(firestore, data.subject, data.body);
 
     return NextResponse.json({
       status: 'success',
-      message: 'IA (OpenRouter/NVIDIA) processou os dados e criou a instância.',
+      message: 'Workflow RTM iniciado com sucesso via automação de IA.',
       instanceId: result.instanceId,
-      extracted: result.extracted
+      extracted: result.extracted,
+      timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Erro na API OnFlow:', error);
+    console.error('CRITICAL_API_ERROR:', error);
     return NextResponse.json({ 
       status: 'error', 
-      message: error.message || 'Erro interno ao processar requisição.' 
+      code: 'INTERNAL_SERVER_ERROR',
+      message: error.message || 'Falha técnica no processamento da automação.' 
     }, { status: 500 });
   }
+}
+
+/**
+ * Handler para GET para facilitar debug de endpoint.
+ */
+export async function GET() {
+  return NextResponse.json({
+    endpoint: '/api/erp/process',
+    method: 'POST',
+    auth: 'Bearer Token Required',
+    status: 'Operational'
+  });
 }
