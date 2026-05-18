@@ -21,7 +21,8 @@ service cloud.firestore {
     match /users/{userId} {
       // Admins podem listar e ler qualquer usuário. Clientes leem apenas seu próprio perfil.
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // Admins podem atualizar perfis (para aprovação/configuração). Clientes editam apenas a si mesmos.
+      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
 
     match /products/{productId} {
@@ -40,11 +41,11 @@ service cloud.firestore {
     }
 
     match /onboardingInstances/{instanceId} {
-      // Listagem: Separada para evitar erros de resource.data em queries abertas
+      // Listagem: Administradores podem listar tudo. Clientes apenas o que lhes pertence.
       allow list: if request.auth != null && (isAdmin() || (resource != null && resource.data.clientId == request.auth.uid));
       // Get: Permite leitura individual para o dono ou admins.
       allow get: if request.auth != null && (isAdmin() || resource.data.clientId == request.auth.uid);
-      // Escrita: Administradores gerenciam a operação.
+      // Escrita: Administradores gerenciam a operação técnica.
       allow write: if isAdmin();
     }
 
