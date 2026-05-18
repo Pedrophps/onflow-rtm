@@ -24,7 +24,8 @@ import {
   Menu,
   Wifi,
   ShieldAlert,
-  Terminal
+  Terminal,
+  Mail
 } from 'lucide-react';
 import {
   Sheet,
@@ -157,179 +158,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* About Section */}
-      <section id="sobre" className="py-24">
-        <div className="container mx-auto px-6 max-w-5xl">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
-            <div className="lg:col-span-7 space-y-6">
-              <h2 className="text-3xl font-bold font-headline">Sobre a RTM</h2>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                Empresa da <span className="font-bold text-foreground">ANBIMA</span> e da <span className="font-bold text-foreground">B3</span>, a RTM é o principal hub integrador do setor financeiro. Atuando como agente neutro de tecnologia, ouve o mercado com propósito de viabilizar o desenvolvimento de soluções que facilitem o dia a dia operacional das instituições.
-              </p>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                Fundada em 1997, como rede de comunicação crítica para o segmento financeiro, a RTM evoluiu de provedora de infraestrutura de telecomunicações para o principal hub integrador do setor no país e hoje conecta mais de <span className="text-primary font-bold">850 instituições</span>, com presença em 21 estados brasileiros.
-              </p>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                Com a evolução tecnológica e a transformação digital, a oferta de soluções especializadas foi se ampliando e hoje inclui serviços de Data Center, nuvem, cibersegurança, plataforma para indústria de fundos de investimentos, conexão ao Pix, Drex e Open Finance, além de Blockchain as a Service para operações com ativos tokenizados.
-              </p>
-            </div>
-            <div className="lg:col-span-5 space-y-8">
-              <Card className="border-none bg-muted/50">
-                <CardHeader>
-                  <CardTitle className="text-primary font-headline">Nosso Propósito</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-lg font-medium">Promover a evolução do Mercado Financeiro pela Tecnologia</p>
-                </CardContent>
-              </Card>
-              <div className="space-y-4">
-                <h4 className="font-bold uppercase tracking-wider text-xs text-muted-foreground">Valores</h4>
-                <div className="flex flex-wrap gap-2">
-                  {["Foco no cliente", "Desenvolvimento de Pessoas", "Equipe", "Confiança", "Inovação"].map((val) => (
-                    <span key={val} className="px-3 py-1 rounded-full bg-white border font-medium text-sm text-slate-700">{val}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Serviços Críticos Section */}
-      <section id="servicos" className="py-24 bg-background">
-        <div className="container mx-auto px-6">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-4xl font-bold font-headline">Serviços Críticos</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">Conectividade e sistemas essenciais para o funcionamento do mercado.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { 
-                title: "RSFN", 
-                icon: Network, 
-                desc: "Rede do Sistema Financeiro Nacional do SPB em consórcio com a Embratel." 
-              },
-              { 
-                title: "NÚCLEA", 
-                icon: Database, 
-                desc: "Sistema de Cessão de Crédito, plataforma de nova cobrança, sistema de liquidação centralizado e cadastro positivo." 
-              },
-              { 
-                title: "B3", 
-                icon: BarChart3, 
-                desc: "Sistema de negociação, compensação, liquidação, depósito e registro para títulos privados." 
-              },
-              { 
-                title: "COMPE ABBC", 
-                icon: FileCheck, 
-                desc: "Compensação de cheques por imagem digital." 
-              },
-              { 
-                title: "SELIC", 
-                icon: Lock, 
-                desc: "Sistema Especial de Liquidação e Custódia para títulos públicos." 
-              },
-              { 
-                title: "Hotline / Mesa", 
-                icon: PhoneCall, 
-                desc: "Serviços de comunicação e negociação para traders. Atualmente com mais de 2 mil linhas privadas conectando o mercado." 
-              },
-              { 
-                title: "SWIFT", 
-                icon: Globe, 
-                desc: "Acesso aos serviços SWIFT para remessas e pagamentos internacionais." 
-              },
-              { 
-                title: "TECBAN", 
-                icon: CreditCard, 
-                desc: "Movimentação bancária das transações de rede de atendimento 24 horas." 
-              },
-            ].map((serv, i) => (
-              <Card key={i} className="hover:shadow-md transition-all border-muted">
-                <CardHeader>
-                  <div className="size-10 rounded-lg bg-primary/5 flex items-center justify-center text-primary mb-2">
-                    <serv.icon className="size-5" />
-                  </div>
-                  <CardTitle className="text-lg font-bold">{serv.title}</CardTitle>
-                  <CardDescription className="text-sm leading-relaxed">{serv.desc}</CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Solutions Section */}
-      <section id="solucoes" className="py-24 bg-muted/30">
-        <div className="container mx-auto px-6">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-4xl font-bold font-headline">Soluções Especializadas</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">Tecnologia de ponta para atender as demandas críticas do setor financeiro.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { title: "Data Center & Cloud", icon: Cloud, desc: "Infraestrutura robusta e segura para aplicações críticas." },
-              { title: "Cibersegurança", icon: ShieldCheck, desc: "Proteção avançada contra ameaças digitais complexas." },
-              { title: "Indústria de Fundos", icon: Building2, desc: "Plataforma integrada para gestão de ativos e investimentos." },
-              { title: "Pix, Drex & Open Finance", icon: ExternalLink, desc: "Conexão direta com os novos ecossistemas de inovação." },
-              { title: "Blockchain as a Service", icon: Cpu, desc: "Tokenização de ativos com segurança e conformidade." },
-              { title: "Rede Crítica", icon: Network, desc: "Conectividade de altíssima disponibilidade e baixa latência." },
-            ].map((sol, i) => (
-              <Card key={i} className="hover:border-primary transition-all group border-muted shadow-sm">
-                <CardHeader>
-                  <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-2 group-hover:scale-110 transition-transform">
-                    <sol.icon className="size-5" />
-                  </div>
-                  <CardTitle className="text-lg">{sol.title}</CardTitle>
-                  <CardDescription>{sol.desc}</CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Access Section */}
-      <section className="py-24">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Link href="/login">
-              <Card className="hover:border-primary transition-all cursor-pointer group h-full border-2 border-dashed">
-                <CardHeader>
-                  <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
-                    <LayoutDashboard className="size-6" />
-                  </div>
-                  <CardTitle>Entrar</CardTitle>
-                  <CardDescription>Gerencie fluxos, etapas e visualize métricas de progresso.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full justify-between" variant="ghost">
-                    Acessar como Admin <ArrowRight className="size-4" />
-                  </Button>
-                </CardContent>
-              </Card>
-            </Link>
-
-            <Link href="/login">
-              <Card className="hover:border-primary transition-all cursor-pointer group h-full border-2 border-dashed">
-                <CardHeader>
-                  <div className="size-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary mb-2">
-                    <Users className="size-6" />
-                  </div>
-                  <CardTitle>Cadastre-se</CardTitle>
-                  <CardDescription>Acompanhe seu progresso e envie as evidências solicitadas.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full justify-between" variant="ghost">
-                    Jornada do Cliente <ArrowRight className="size-4" />
-                  </Button>
-                </CardContent>
-              </Card>
-            </Link>
-          </div>
-        </div>
-      </section>
-
+      {/* Footer Debug Links */}
       <footer className="py-12 border-t bg-white">
         <div className="container mx-auto px-6 text-center space-y-8">
           <div className="space-y-2">
@@ -345,9 +174,19 @@ export default function Home() {
               <div className="size-8 rounded-full bg-slate-50 group-hover:bg-amber-50 flex items-center justify-center transition-colors">
                 <Wifi className="size-4" />
               </div>
-              <span>Diagnóstico de Rede</span>
+              <span>Diagnóstico</span>
             </Link>
             
+            <Link 
+              href="/debug/erp-simulator" 
+              className="group flex flex-col items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary transition-colors"
+            >
+              <div className="size-8 rounded-full bg-slate-50 group-hover:bg-primary/5 flex items-center justify-center transition-colors">
+                <Mail className="size-4" />
+              </div>
+              <span>Simulador ERP</span>
+            </Link>
+
             <Link 
               href="/debug/suite" 
               className="group flex flex-col items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary transition-colors"
@@ -355,27 +194,7 @@ export default function Home() {
               <div className="size-8 rounded-full bg-slate-50 group-hover:bg-primary/5 flex items-center justify-center transition-colors">
                 <Terminal className="size-4" />
               </div>
-              <span>Test Suite & Seeding</span>
-            </Link>
-
-            <Link 
-              href="/debug/integration-test" 
-              className="group flex flex-col items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors"
-            >
-              <div className="size-8 rounded-full bg-slate-50 group-hover:bg-emerald-50 flex items-center justify-center transition-colors">
-                <Database className="size-4" />
-              </div>
-              <span>Testes de Escrita</span>
-            </Link>
-
-            <Link 
-              href="/debug/integration-test" 
-              className="group flex flex-col items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary transition-colors"
-            >
-              <div className="size-8 rounded-full bg-slate-50 group-hover:bg-primary/5 flex items-center justify-center transition-colors">
-                <ShieldAlert className="size-4" />
-              </div>
-              <span>Validação de Segurança</span>
+              <span>Test Suite</span>
             </Link>
           </div>
         </div>
