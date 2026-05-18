@@ -1,19 +1,23 @@
 
 import { genkit } from 'genkit';
-import { openAI } from 'genkitx-openai';
+import { openai } from 'genkitx-openai';
 
 /**
- * Configuração central do Genkit AI utilizando OpenRouter.
- * O modelo padrão foi atualizado para o NVIDIA Nemotron Reasoning (Free) conforme solicitado.
- * A chave deve ser configurada via OPENROUTER_API_KEY no .env.
+ * Configuração do Genkit utilizando OpenRouter como provedor.
+ * OpenRouter é 100% compatível com a API da OpenAI.
+ * Modelo selecionado: nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
  */
+
 export const ai = genkit({
   plugins: [
-    openAI({
+    openai({
       apiKey: process.env.OPENROUTER_API_KEY,
-      baseURL: "https://openrouter.ai/api/v1",
+      config: {
+        // Redireciona as chamadas para o endpoint do OpenRouter
+        baseURL: "https://openrouter.ai/api/v1",
+      }
     }),
   ],
-  // Modelo de raciocínio gratuito via OpenRouter
+  // Definimos o modelo específico do OpenRouter como padrão para o app
   model: 'openai/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
 });
