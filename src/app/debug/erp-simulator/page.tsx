@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -225,18 +224,5 @@ function DataItem({ label, value }: { label: string, value: string }) {
       <span className="text-[10px] font-bold text-muted-foreground uppercase">{label}</span>
       <span className="text-xs font-bold text-slate-700">{value}</span>
     </div>
-  );
-}
-
-function Badge({ children, className, variant = 'default' }: any) {
-  const variants: any = {
-    default: "bg-slate-100 text-slate-600 border-slate-200",
-    destructive: "bg-red-50 text-red-600 border-red-200",
-    primary: "bg-primary/10 text-primary border-primary/20",
-  };
-  return (
-    <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold border", variants[variant], className)}>
-      {children}
-    </span>
   );
 }
