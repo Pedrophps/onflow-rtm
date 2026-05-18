@@ -3,7 +3,7 @@
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
-import { collection, query, addDoc, serverTimestamp, doc, orderBy, updateDoc } from "firebase/firestore";
+import { collection, query, addDoc, serverTimestamp, doc, orderBy, updateDoc, deleteDoc } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,11 +12,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Product, ActivationFlow, FlowStep, UserProfile } from "@/lib/types";
-import { Plus, GripVertical, ArrowLeft, Loader2, GitFork, CheckCircle2, ShieldCheck, User, Headset, HardDrive, FileEdit, Save, Rocket } from "lucide-react";
+import { Plus, GripVertical, ArrowLeft, Loader2, GitFork, CheckCircle2, ShieldCheck, User, Headset, HardDrive, FileEdit, Save, Rocket, Edit, Trash2, Settings2 } from "lucide-react";
 import { useState, useMemo, use } from "react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -26,6 +28,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
   const db = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
+  const router = useRouter();
   
   const productRef = useMemo(() => (user ? doc(db, "products", productId) : null), [db, user, productId]);
   const { data: product } = useDoc<Product>(productRef);
@@ -46,15 +49,14 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
   }, [db, user, productId, flowId]);
   const { data: steps, loading: stepsLoading } = useCollection<FlowStep>(stepsQuery);
 
+  // States para Fluxo
+  const [isEditFlowOpen, setIsEditFlowOpen] = useState(false);
+  const [editedFlow, setEditedFlow] = useState({ name: '', description: '' });
+
+  // States para Etapas
   const [isNewStepOpen, setIsNewStepOpen] = useState(false);
-  const [newStep, setNewStep] = useState<Partial<FlowStep>>({ 
-    name: '', 
-    description: '', 
-    responsible: 'suporte', 
-    type: 'upload',
-    estimatedTimeInHours: 8,
-    required: true 
-  });
+  const [isEditStepOpen, setIsEditStepOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState<Partial<FlowStep>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCreateStep = async () => {
@@ -63,7 +65,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
     
     const nextOrder = steps.length + 1;
     const stepData = {
-      ...newStep,
+      ...currentStep,
       order: nextOrder,
       status: 'active',
       createdAt: new Date().toISOString(),
@@ -72,9 +74,9 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
 
     addDoc(collection(db, "products", productId, "activationFlows", flowId, "steps"), stepData)
       .then(() => {
-        toast({ title: "Etapa Adicionada", description: "O fluxo foi atualizado com sucesso." });
+        toast({ title: "Etapa Adicionada" });
         setIsNewStepOpen(false);
-        setNewStep({ name: '', description: '' });
+        setCurrentStep({});
       })
       .catch(async (error) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -83,9 +85,72 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
           requestResourceData: stepData,
         }));
       })
-      .finally(() => {
-        setIsSubmitting(false);
-      });
+      .finally(() => setIsSubmitting(false));
+  };
+
+  const handleUpdateStep = async () => {
+    if (!user || !currentStep.id || isSubmitting) return;
+    setIsSubmitting(true);
+
+    const stepRef = doc(db, "products", productId, "activationFlows", flowId, "steps", currentStep.id);
+    const updateData = {
+      name: currentStep.name,
+      description: currentStep.description,
+      responsible: currentStep.responsible,
+      estimatedTimeInHours: currentStep.estimatedTimeInHours,
+      type: currentStep.type,
+      required: currentStep.required,
+      updatedAt: serverTimestamp()
+    };
+
+    updateDoc(stepRef, updateData)
+      .then(() => {
+        toast({ title: "Etapa Atualizada" });
+        setIsEditStepOpen(false);
+      })
+      .catch((error) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: stepRef.path,
+          operation: 'update',
+          requestResourceData: updateData,
+        }));
+      })
+      .finally(() => setIsSubmitting(false));
+  };
+
+  const handleDeleteStep = async (id: string) => {
+    if (!isSupport) return;
+    const stepRef = doc(db, "products", productId, "activationFlows", flowId, "steps", id);
+    
+    deleteDoc(stepRef)
+      .then(() => toast({ title: "Etapa Excluída" }))
+      .catch(() => toast({ variant: "destructive", title: "Erro ao excluir etapa" }));
+  };
+
+  const handleUpdateFlowMeta = async () => {
+    if (!flowRef || isSubmitting) return;
+    setIsSubmitting(true);
+
+    updateDoc(flowRef, {
+      ...editedFlow,
+      updatedAt: serverTimestamp()
+    })
+    .then(() => {
+      toast({ title: "Informações do Fluxo Atualizadas" });
+      setIsEditFlowOpen(false);
+    })
+    .catch((e) => toast({ variant: "destructive", title: "Erro ao atualizar fluxo" }))
+    .finally(() => setIsSubmitting(false));
+  };
+
+  const handleDeleteFlow = async () => {
+    if (!flowRef || !isSupport) return;
+    deleteDoc(flowRef)
+      .then(() => {
+        toast({ title: "Fluxo Excluído Permanentemente" });
+        router.push(`/dashboard/admin/products/${productId}`);
+      })
+      .catch(() => toast({ variant: "destructive", title: "Erro ao excluir fluxo" }));
   };
 
   const handleUpdateFlowStatus = async (published: boolean) => {
@@ -101,8 +166,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
     updateDoc(flowRef, updateData)
       .then(() => {
         toast({ 
-          title: published ? "Fluxo Publicado" : "Fluxo Atualizado", 
-          description: published ? "O fluxo agora está disponível para novos onboardings." : "As alterações foram salvas como rascunho."
+          title: published ? "Fluxo Publicado" : "Fluxo Salvo como Rascunho"
         });
       })
       .catch(async (error) => {
@@ -112,9 +176,19 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
           requestResourceData: updateData,
         }));
       })
-      .finally(() => {
-        setIsSubmitting(false);
-      });
+      .finally(() => setIsSubmitting(false));
+  };
+
+  const openEditStep = (step: FlowStep) => {
+    setCurrentStep(step);
+    setIsEditStepOpen(true);
+  };
+
+  const openEditFlow = () => {
+    if (flow) {
+      setEditedFlow({ name: flow.name, description: flow.description });
+      setIsEditFlowOpen(true);
+    }
   };
 
   const getResponsibleIcon = (role: string) => {
@@ -134,13 +208,13 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
 
   return (
     <DashboardLayout role="admin">
-      <div className="space-y-8 pb-24">
+      <div className="space-y-8 pb-32">
         <div className="flex flex-col gap-4">
           <Button variant="ghost" asChild className="w-fit -ml-4 gap-2 text-muted-foreground hover:text-primary">
             <Link href={`/dashboard/admin/products/${productId}`}><ArrowLeft className="size-4" /> Voltar ao Produto</Link>
           </Button>
           
-          <div className="flex justify-between items-end">
+          <div className="flex justify-between items-start">
             <div className="space-y-1">
               <div className="flex items-center gap-3">
                 <GitFork className="size-8 text-primary" />
@@ -148,66 +222,60 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                 <Badge className={cn("rounded-sm", flow.published ? "bg-emerald-500" : "bg-slate-500")}>
                   {flow.published ? 'Publicado' : 'Rascunho'}
                 </Badge>
+                {isSupport && (
+                  <Button variant="ghost" size="icon" onClick={openEditFlow} className="text-slate-400 hover:text-primary">
+                    <Edit className="size-4" />
+                  </Button>
+                )}
               </div>
               <p className="text-muted-foreground max-w-2xl">{flow.description}</p>
             </div>
             
-            {isSupport && (
-              <Dialog open={isNewStepOpen} onOpenChange={setIsNewStepOpen}>
-                <DialogTrigger asChild>
-                  <Button className="gap-2 rounded-full font-bold shadow-md">
-                    <Plus className="size-4" /> Adicionar Etapa
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Nova Etapa do Workflow</DialogTitle>
-                    <DialogDescription>Defina uma ação obrigatória para a jornada.</DialogDescription>
-                  </DialogHeader>
-                  <div className="grid grid-cols-2 gap-4 py-4">
-                    <div className="col-span-2 space-y-2">
-                      <Label>Nome da Etapa</Label>
-                      <Input placeholder="Ex: Configuração de Túnel VPN" value={newStep.name} onChange={e => setNewStep({...newStep, name: e.target.value})} />
-                    </div>
-                    <div className="col-span-2 space-y-2">
-                      <Label>Descrição Técnica</Label>
-                      <Textarea placeholder="Instruções para o responsável..." value={newStep.description} onChange={e => setNewStep({...newStep, description: e.target.value})} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Perfil Responsável</Label>
-                      <Select value={newStep.responsible} onValueChange={(val: any) => setNewStep({...newStep, responsible: val})}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="suporte">Suporte Técnico</SelectItem>
-                          <SelectItem value="comercial">Gestão Comercial</SelectItem>
-                          <SelectItem value="cliente">Instituição (Cliente)</SelectItem>
-                          <SelectItem value="infraestrutura">Infraestrutura</SelectItem>
-                          <SelectItem value="compliance">Compliance / Auditoria</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>SLA Estimado (Horas)</Label>
-                      <Input 
-                        type="number" 
-                        value={newStep.estimatedTimeInHours || ''} 
-                        onChange={e => {
-                          const val = parseInt(e.target.value);
-                          setNewStep({...newStep, estimatedTimeInHours: isNaN(val) ? 0 : val});
-                        }} 
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter className="gap-2 sm:gap-0">
-                    <Button variant="outline" onClick={() => setIsNewStepOpen(false)}>Cancelar</Button>
-                    <Button disabled={!newStep.name || isSubmitting} onClick={handleCreateStep} className="gap-2 bg-primary hover:bg-primary/90">
-                      {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-                      Adicionar
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            )}
+            <div className="flex gap-2">
+               {isSupport && (
+                 <>
+                   <AlertDialog>
+                     <AlertDialogTrigger asChild>
+                       <Button variant="outline" className="text-destructive hover:bg-destructive/10 border-destructive/20 rounded-full font-bold">
+                         <Trash2 className="size-4" />
+                       </Button>
+                     </AlertDialogTrigger>
+                     <AlertDialogContent>
+                       <AlertDialogHeader>
+                         <AlertDialogTitle>Excluir Fluxo Técnico?</AlertDialogTitle>
+                         <AlertDialogDescription>Esta ação é irreversível e removerá todas as etapas associadas a este roteiro.</AlertDialogDescription>
+                       </AlertDialogHeader>
+                       <AlertDialogFooter>
+                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                         <AlertDialogAction onClick={handleDeleteFlow} className="bg-destructive text-white hover:bg-destructive/90">Excluir Fluxo</AlertDialogAction>
+                       </AlertDialogFooter>
+                     </AlertDialogContent>
+                   </AlertDialog>
+
+                   <Dialog open={isNewStepOpen} onOpenChange={setIsNewStepOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="gap-2 rounded-full font-bold shadow-md">
+                        <Plus className="size-4" /> Adicionar Etapa
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Nova Etapa do Workflow</DialogTitle>
+                        <DialogDescription>Defina uma ação obrigatória para a jornada.</DialogDescription>
+                      </DialogHeader>
+                      <StepFormFields step={currentStep} setStep={setCurrentStep} />
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => { setIsNewStepOpen(false); setCurrentStep({}); }}>Cancelar</Button>
+                        <Button disabled={!currentStep.name || isSubmitting} onClick={handleCreateStep} className="gap-2">
+                          {isSubmitting && <Loader2 className="size-4 animate-spin" />}
+                          Adicionar
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                 </>
+               )}
+            </div>
           </div>
         </div>
 
@@ -233,12 +301,12 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                     "absolute left-0 top-1 size-12 rounded-2xl border-2 bg-white flex items-center justify-center transition-all z-10",
                     isSupport ? "hover:border-primary hover:shadow-md cursor-grab active:cursor-grabbing" : ""
                   )}>
-                    {isSupport ? <GripVertical className="size-5 text-slate-300" /> : <span className="font-bold text-slate-400">{step.order}</span>}
+                    <span className="font-bold text-slate-400">{step.order}</span>
                   </div>
 
                   <Card className="hover:border-primary/40 transition-all">
                     <CardContent className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="space-y-1">
+                      <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-3">
                           <h5 className="font-bold text-slate-900">{step.name}</h5>
                           {step.required && <Badge className="bg-red-50 text-red-600 border-red-100 text-[8px] uppercase font-black">Obrigatório</Badge>}
@@ -255,18 +323,35 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                           </Badge>
                         </div>
                         
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Tipo</span>
-                          <span className="text-xs font-medium flex items-center gap-1.5 text-slate-900">
-                            <FileEdit className="size-3.5 text-primary" />
-                            {step.type === 'upload' ? 'Upload' : 'Form'}
-                          </span>
-                        </div>
-
                         <div className="flex flex-col items-end gap-1 border-l pl-6">
                           <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SLA</span>
                           <span className="text-xs font-bold text-slate-900">{Number(step.estimatedTimeInHours || 0)} horas</span>
                         </div>
+
+                        {isSupport && (
+                          <div className="flex items-center gap-1 border-l pl-6">
+                            <Button variant="ghost" size="icon" onClick={() => openEditStep(step)} className="size-8 text-slate-400 hover:text-primary">
+                              <Edit className="size-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="size-8 text-slate-400 hover:text-destructive">
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir Etapa?</AlertDialogTitle>
+                                  <AlertDialogDescription>Esta etapa será removida deste roteiro técnico. Você pode precisar reordenar as etapas restantes.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Voltar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteStep(step.id!)} className="bg-destructive text-white">Excluir Etapa</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -286,6 +371,51 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
           </div>
         </div>
 
+        {/* Dialog Edição de Fluxo */}
+        <Dialog open={isEditFlowOpen} onOpenChange={setIsEditFlowOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar Fluxo Técnico</DialogTitle>
+              <DialogDescription>Atualize os metadados do roteiro de ativação.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Nome do Fluxo</Label>
+                <Input value={editedFlow.name} onChange={e => setEditedFlow({...editedFlow, name: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Descrição da Jornada</Label>
+                <Textarea value={editedFlow.description} onChange={e => setEditedFlow({...editedFlow, description: e.target.value})} className="min-h-[100px]" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditFlowOpen(false)}>Cancelar</Button>
+              <Button disabled={!editedFlow.name || isSubmitting} onClick={handleUpdateFlowMeta}>
+                {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
+                Salvar Alterações
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog Edição de Etapa */}
+        <Dialog open={isEditStepOpen} onOpenChange={setIsEditStepOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Editar Etapa: {currentStep.name}</DialogTitle>
+              <DialogDescription>Ajuste os parâmetros técnicos desta etapa.</DialogDescription>
+            </DialogHeader>
+            <StepFormFields step={currentStep} setStep={setCurrentStep} />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setIsEditStepOpen(false); setCurrentStep({}); }}>Cancelar</Button>
+              <Button disabled={!currentStep.name || isSubmitting} onClick={handleUpdateStep}>
+                {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
+                Salvar Etapa
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Rodapé de Ações do Fluxo */}
         {isSupport && (
           <div className="fixed bottom-0 right-0 left-0 md:left-64 bg-white/80 backdrop-blur-lg border-t p-4 px-10 flex justify-end items-center gap-4 z-50">
@@ -304,7 +434,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
               disabled={isSubmitting}
             >
               {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
-              Salvar Rascunho
+              Mover para Rascunho
             </Button>
             
             <Button 
@@ -319,5 +449,64 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
         )}
       </div>
     </DashboardLayout>
+  );
+}
+
+function StepFormFields({ step, setStep }: { step: Partial<FlowStep>, setStep: (s: any) => void }) {
+  return (
+    <div className="grid grid-cols-2 gap-4 py-4">
+      <div className="col-span-2 space-y-2">
+        <Label>Nome da Etapa</Label>
+        <Input placeholder="Ex: Configuração de Túnel VPN" value={step.name || ''} onChange={e => setStep({...step, name: e.target.value})} />
+      </div>
+      <div className="col-span-2 space-y-2">
+        <Label>Descrição Técnica</Label>
+        <Textarea placeholder="Instruções para o responsável..." value={step.description || ''} onChange={e => setStep({...step, description: e.target.value})} />
+      </div>
+      <div className="space-y-2">
+        <Label>Perfil Responsável</Label>
+        <Select value={step.responsible || 'suporte'} onValueChange={(val: any) => setStep({...step, responsible: val})}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="suporte">Suporte Técnico</SelectItem>
+            <SelectItem value="comercial">Gestão Comercial</SelectItem>
+            <SelectItem value="cliente">Instituição (Cliente)</SelectItem>
+            <SelectItem value="infraestrutura">Infraestrutura</SelectItem>
+            <SelectItem value="compliance">Compliance / Auditoria</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label>SLA Estimado (Horas)</Label>
+        <Input 
+          type="number" 
+          value={step.estimatedTimeInHours || ''} 
+          onChange={e => {
+            const val = parseInt(e.target.value);
+            setStep({...step, estimatedTimeInHours: isNaN(val) ? 0 : val});
+          }} 
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Tipo de Atividade</Label>
+        <Select value={step.type || 'upload'} onValueChange={(val: any) => setStep({...step, type: val})}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="upload">Upload de Evidência</SelectItem>
+            <SelectItem value="form">Formulário Interno</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex items-center space-x-2 pt-8">
+        <input 
+          type="checkbox" 
+          id="required-check" 
+          className="size-4 accent-primary"
+          checked={step.required || false}
+          onChange={e => setStep({...step, required: e.target.checked})}
+        />
+        <Label htmlFor="required-check" className="cursor-pointer">Etapa Obrigatória</Label>
+      </div>
+    </div>
   );
 }
