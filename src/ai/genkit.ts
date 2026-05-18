@@ -1,12 +1,16 @@
 
 import { genkit } from 'genkit';
-import { openai } from 'genkitx-openai';
+import * as openaiPluginModule from 'genkitx-openai';
 
 /**
  * Configuração do Genkit utilizando OpenRouter como provedor.
  * OpenRouter é 100% compatível com a API da OpenAI.
  * Modelo selecionado: nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
+ * 
+ * Lida com problemas de interoperabilidade CJS/ESM no Next.js 15 (Turbopack).
  */
+
+const openai = (openaiPluginModule as any).openai || (openaiPluginModule as any).default || openaiPluginModule;
 
 export const ai = genkit({
   plugins: [
