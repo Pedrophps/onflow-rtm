@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { collection, query, where, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import { StepInteraction } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface StepInteractionsProps {
   instanceId: string;
@@ -35,7 +37,7 @@ export function StepInteractions({
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
 
-  // Consulta rigorosa: o clientId deve ser fornecido e corresponder ao filtro esperado pelas regras
+  // Consulta otimizada e estabilizada com useMemo
   const interactionsQuery = useMemo(() => {
     if (!instanceId || !stepId || !clientId || !user) return null;
     
@@ -64,18 +66,24 @@ export function StepInteractions({
       userRole: userRole || 'usuário',
       message: message.trim(),
       fileName: fileName || null,
-      fileUrl: fileName ? 'https://example.com/mock-file-url' : null,
+      fileUrl: fileName ? 'https://picsum.photos/seed/doc/800/600' : null,
       createdAt: serverTimestamp(),
     };
 
-    try {
-      await addDoc(collection(db, 'interactions'), interactionData);
-      setMessage('');
-    } catch (error) {
-      console.error('Error sending message:', error);
-    } finally {
-      setIsSending(false);
-    }
+    addDoc(collection(db, 'interactions'), interactionData)
+      .then(() => {
+        setMessage('');
+      })
+      .catch((error) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: 'interactions',
+          operation: 'create',
+          requestResourceData: interactionData
+        }));
+      })
+      .finally(() => {
+        setIsSending(false);
+      });
   };
 
   const simulateFileUpload = () => {
@@ -126,7 +134,11 @@ export function StepInteractions({
                     )}
                   </div>
                   <span className="text-[9px] text-muted-foreground mt-1 font-bold">
-                    {msg.createdAt?.seconds ? format(msg.createdAt.seconds * 1000, "HH:mm 'de' d MMM", { locale: ptBR }) : 'Enviando...'}
+                    {msg.createdAt?.seconds 
+                      ? format(msg.createdAt.seconds * 1000, "HH:mm 'de' d MMM", { locale: ptBR }) 
+                      : msg.createdAt instanceof Date 
+                        ? format(msg.createdAt, "HH:mm 'de' d MMM", { locale: ptBR })
+                        : 'Enviando...'}
                   </span>
                 </div>
               );

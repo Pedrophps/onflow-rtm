@@ -8,9 +8,10 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    // Verifica se o usuário tem papel de admin
+    // Verifica se o usuário tem papel de admin (Comercial ou Suporte)
     function isAdmin() {
-      return request.auth != null && getUserData().role == 'admin';
+      let data = getUserData();
+      return request.auth != null && data.role == 'admin';
     }
 
     // Verifica se o usuário é especificamente do Suporte Técnico
@@ -46,13 +47,13 @@ service cloud.firestore {
     }
 
     match /interactions/{interactionId} {
-      allow read: if request.auth != null && (
-        resource.data.clientId == request.auth.uid || 
-        isAdmin()
-      );
+      // Separamos get e list para otimizar a performance do Firestore e evitar erros de permissão em queries
+      allow list: if request.auth != null && (isAdmin() || resource.data.clientId == request.auth.uid);
+      allow get: if request.auth != null && (isAdmin() || resource.data.clientId == request.auth.uid);
+      
       allow create: if request.auth != null && (
-        request.resource.data.clientId == request.auth.uid || 
-        isAdmin()
+        isAdmin() || 
+        request.resource.data.clientId == request.auth.uid
       );
     }
 
