@@ -30,7 +30,9 @@ import {
   Plus,
   Coins,
   AppWindow,
-  Activity
+  Activity,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import {
   Sheet,
@@ -39,6 +41,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import Image from 'next/image';
 
 export default function Home() {
@@ -237,11 +246,49 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trajetória Futurista */}
+      {/* Seção Presença e Atendimento (Segmentos) */}
+      <section className="py-32 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="grid lg:grid-cols-12 gap-16 items-center">
+            <div className="lg:col-span-7 relative h-[600px]">
+              <Image 
+                src="https://picsum.photos/seed/rtm-map/1200/900" 
+                alt="Presença RTM" 
+                fill 
+                className="object-cover rounded-[4rem] shadow-2xl"
+                data-ai-hint="world map"
+              />
+              <div className="absolute -bottom-10 -right-10 bg-primary p-10 rounded-[3rem] shadow-2xl text-white hidden md:block">
+                <p className="text-5xl font-black mb-2">99.9%</p>
+                <p className="text-xs font-bold uppercase tracking-widest opacity-80">Disponibilidade de Rede</p>
+              </div>
+            </div>
+            <div className="lg:col-span-5 space-y-8">
+              <Badge className="bg-primary/10 text-primary border-none px-4 py-1 uppercase font-black tracking-widest text-[10px]">Arquitetura de Excelência</Badge>
+              <h2 className="text-4xl font-bold font-headline text-slate-900 leading-tight">Atendemos todos os segmentos do setor financeiro</h2>
+              <p className="text-lg text-slate-600 leading-relaxed">
+                Nossa topologia contempla todas as soluções RTM integradas de ponta a ponta. Oferecemos um ecossistema completo para Bancos, Fintechs, Corretoras e Adquirentes.
+              </p>
+              <div className="space-y-4">
+                 <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <PieChart className="text-primary size-8" />
+                    <span className="font-bold text-slate-700 uppercase tracking-tighter">Distribuição Inteligente por Segmento</span>
+                 </div>
+                 <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <Layers className="text-primary size-8" />
+                    <span className="font-bold text-slate-700 uppercase tracking-tighter">Topologia de Soluções Integradas</span>
+                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trajetória Futurista com Carrossel */}
       <section id="trajetoria" className="py-32 bg-slate-950 text-white overflow-hidden relative">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 -left-20 size-[500px] bg-primary/10 blur-[120px] rounded-full"></div>
-          <div className="absolute bottom-1/4 -right-20 size-[500px] bg-primary/5 blur-[120px] rounded-full"></div>
+          <div className="absolute top-1/4 -left-20 size-[500px] bg-primary/10 blur-[120px] rounded-full opacity-50"></div>
+          <div className="absolute bottom-1/4 -right-20 size-[500px] bg-primary/5 blur-[120px] rounded-full opacity-50"></div>
         </div>
 
         <div className="container mx-auto px-6 relative z-10">
@@ -253,93 +300,133 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <FuturisticMilestone 
-              year="1997" 
-              title="Fundação" 
-              text="Nasce a RTM - Rede de Telecomunicações para o Mercado." 
-              icon={History}
-            />
-            <FuturisticMilestone 
-              year="2001" 
-              title="SPB" 
-              text="Implantação da rede do SPB." 
-              icon={Network}
-            />
-            <FuturisticMilestone 
-              year="2002" 
-              title="Contingência" 
-              text="Oferta de Site de Contingência." 
-              icon={ShieldCheck}
-            />
-            <FuturisticMilestone 
-              year="2003" 
-              title="SWIFT" 
-              text="Estrutura para conexão à SWIFT." 
-              icon={Zap}
-            />
-            <FuturisticMilestone 
-              year="2011" 
-              title="Data Center" 
-              text="Data Center para o mercado financeiro." 
-              icon={Server}
-            />
-            <FuturisticMilestone 
-              year="2014" 
-              title="Cloud" 
-              text="Solução de Cloud." 
-              icon={Cloud}
-            />
-            <FuturisticMilestone 
-              year="2016" 
-              title="Traders" 
-              text="Mesa de operações financeiras." 
-              icon={PhoneCall}
-            />
-            <FuturisticMilestone 
-              year="2017" 
-              title="SaaS" 
-              text="1ª solução de SaaS para o mercado de pagamentos." 
-              icon={AppWindow}
-            />
-            <FuturisticMilestone 
-              year="2018" 
-              title="Hybrid Cloud" 
-              text="Conexão segura com nuvens públicas." 
-              icon={Layers}
-            />
-            <FuturisticMilestone 
-              year="2020" 
-              title="PIX" 
-              text="Soluções de segurança e infraestrutura para o Pix." 
-              icon={Zap}
-            />
-            <FuturisticMilestone 
-              year="2022" 
-              title="Hub Fundos" 
-              text="Lançamento da Plataforma Hub Fundos." 
-              icon={LayoutGrid}
-            />
-            <FuturisticMilestone 
-              year="2023" 
-              title="Blockchain" 
-              text="Infraestrutura de Blockchain para Drex/Tokenização." 
-              icon={LinkIcon}
-            />
-            <FuturisticMilestone 
-              year="2024" 
-              title="Conciliação" 
-              text="Nova funcionalidade do Hub Pagamentos para conciliação de vendas." 
-              icon={Activity}
-            />
-            <FuturisticMilestone 
-              year="2025" 
-              title="Expansão" 
-              text="Aquisição da Galgo S.A. e expansão dos serviços para a indústria de fundos." 
-              icon={Rocket}
-              isHighlight
-            />
-          </div>
+          <Carousel
+            opts={{
+              align: "start",
+              loop: false,
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-6">
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <FuturisticMilestone 
+                  year="1997" 
+                  title="Fundação" 
+                  text="Nasce a RTM - Rede de Telecomunicações para o Mercado." 
+                  icon={History}
+                />
+              </CarouselItem>
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <FuturisticMilestone 
+                  year="2001" 
+                  title="SPB" 
+                  text="Implantação da rede do SPB." 
+                  icon={Network}
+                />
+              </CarouselItem>
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <FuturisticMilestone 
+                  year="2002" 
+                  title="Contingência" 
+                  text="Oferta de Site de Contingência." 
+                  icon={ShieldCheck}
+                />
+              </CarouselItem>
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <FuturisticMilestone 
+                  year="2003" 
+                  title="SWIFT" 
+                  text="Estrutura para conexão à SWIFT." 
+                  icon={Zap}
+                />
+              </CarouselItem>
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <FuturisticMilestone 
+                  year="2011" 
+                  title="Data Center" 
+                  text="Data Center para o mercado financeiro." 
+                  icon={Server}
+                />
+              </CarouselItem>
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <FuturisticMilestone 
+                  year="2014" 
+                  title="Cloud" 
+                  text="Solução de Cloud." 
+                  icon={Cloud}
+                />
+              </CarouselItem>
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <FuturisticMilestone 
+                  year="2016" 
+                  title="Traders" 
+                  text="Mesa de operações financeiras." 
+                  icon={PhoneCall}
+                />
+              </CarouselItem>
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <FuturisticMilestone 
+                  year="2017" 
+                  title="SaaS" 
+                  text="1ª solução de SaaS para o mercado de pagamentos." 
+                  icon={AppWindow}
+                />
+              </CarouselItem>
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <FuturisticMilestone 
+                  year="2018" 
+                  title="Hybrid Cloud" 
+                  text="Conexão segura com nuvens públicas." 
+                  icon={Layers}
+                />
+              </CarouselItem>
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <FuturisticMilestone 
+                  year="2020" 
+                  title="PIX" 
+                  text="Soluções de segurança e infraestrutura para o Pix." 
+                  icon={Zap}
+                />
+              </CarouselItem>
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <FuturisticMilestone 
+                  year="2022" 
+                  title="Hub Fundos" 
+                  text="Lançamento da Plataforma Hub Fundos." 
+                  icon={LayoutGrid}
+                />
+              </CarouselItem>
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <FuturisticMilestone 
+                  year="2023" 
+                  title="Blockchain" 
+                  text="Infraestrutura de Blockchain para Drex/Tokenização." 
+                  icon={LinkIcon}
+                />
+              </CarouselItem>
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <FuturisticMilestone 
+                  year="2024" 
+                  title="Conciliação" 
+                  text="Nova funcionalidade do Hub Pagamentos para conciliação de vendas." 
+                  icon={Activity}
+                />
+              </CarouselItem>
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                <FuturisticMilestone 
+                  year="2025" 
+                  title="Expansão" 
+                  text="Aquisição da Galgo S.A. e expansão dos serviços para a indústria de fundos." 
+                  icon={Rocket}
+                  isHighlight
+                />
+              </CarouselItem>
+            </CarouselContent>
+            <div className="flex justify-end gap-4 mt-12">
+              <CarouselPrevious className="static translate-y-0 size-14 border-2 border-primary/20 bg-slate-900 text-white hover:bg-primary hover:text-white transition-all rounded-2xl" />
+              <CarouselNext className="static translate-y-0 size-14 border-2 border-primary/20 bg-slate-900 text-white hover:bg-primary hover:text-white transition-all rounded-2xl" />
+            </div>
+          </Carousel>
         </div>
       </section>
 
@@ -396,7 +483,7 @@ function FuturisticMilestone({
   isHighlight?: boolean 
 }) {
   return (
-    <div className={`relative group p-8 rounded-3xl border transition-all duration-500 overflow-hidden ${
+    <div className={`relative group p-8 rounded-3xl border transition-all duration-500 overflow-hidden h-full min-h-[320px] flex flex-col justify-between ${
       isHighlight 
         ? "bg-primary/10 border-primary/40 shadow-lg shadow-primary/10" 
         : "bg-slate-900/50 border-slate-800 hover:border-primary/50 hover:bg-slate-900"
@@ -432,4 +519,3 @@ function FuturisticMilestone({
     </div>
   );
 }
-
