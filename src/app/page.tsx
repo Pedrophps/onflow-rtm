@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +26,9 @@ import {
   Layers,
   Link as LinkIcon,
   Rocket,
-  Activity
+  Activity,
+  Sun,
+  Moon
 } from 'lucide-react';
 import {
   Sheet,
@@ -44,8 +47,21 @@ import {
 import { HeroBackground } from '@/components/hero-background';
 
 export default function Home() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Lógica para alternar o tema manipulando a classe .dark no HTML
+  const toggleTheme = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-white dark:bg-slate-950 selection:bg-primary/10 font-body text-foreground">
+    <main className="min-h-screen bg-white dark:bg-slate-950 selection:bg-primary/10 font-body text-foreground transition-colors duration-500">
       {/* Header Section */}
       <header className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-border/50">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
@@ -62,9 +78,23 @@ export default function Home() {
               <a href="#servicos" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Serviços Críticos</a>
               <a href="#trajetoria" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Trajetória</a>
             </nav>
-            <Button size="sm" className="rounded-full px-6 font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary/20" asChild>
-              <Link href="/login">Acessar Portal</Link>
-            </Button>
+            
+            <div className="flex items-center gap-2">
+              {/* Botão de Tema (Dark/Light) */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleTheme} 
+                className="rounded-full text-muted-foreground hover:text-primary"
+                title={isDarkMode ? "Mudar para Tema Claro" : "Mudar para Tema Escuro"}
+              >
+                {isDarkMode ? <Sun className="size-5" /> : <Moon className="size-5" />}
+              </Button>
+
+              <Button size="sm" className="rounded-full px-6 font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary/20" asChild>
+                <Link href="/login">Acessar Portal</Link>
+              </Button>
+            </div>
 
             <Sheet>
               <SheetTrigger asChild>
@@ -80,6 +110,9 @@ export default function Home() {
                   <a href="#sobre" className="text-lg font-bold font-headline">Sobre</a>
                   <a href="#servicos" className="text-lg font-bold font-headline">Serviços Críticos</a>
                   <a href="#trajetoria" className="text-lg font-bold font-headline">Trajetória</a>
+                  <button onClick={toggleTheme} className="text-left text-lg font-bold font-headline flex items-center gap-2">
+                    {isDarkMode ? <><Sun className="size-5" /> Tema Claro</> : <><Moon className="size-5" /> Tema Escuro</>}
+                  </button>
                   <hr />
                   <Link href="/login" className="text-lg font-bold font-headline text-primary">Login</Link>
                 </nav>
@@ -90,7 +123,7 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center bg-white dark:bg-slate-950 overflow-hidden pt-20">
+      <section className="relative min-h-[90vh] flex items-center bg-transparent overflow-hidden pt-20">
         <HeroBackground />
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-left duration-700">
@@ -111,7 +144,7 @@ export default function Home() {
       </section>
 
       {/* Sobre Section */}
-      <section id="sobre" className="py-32 bg-white dark:bg-background border-b border-border/50">
+      <section id="sobre" className="py-32 bg-white dark:bg-slate-950 border-b border-border/50 transition-colors duration-500">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center space-y-8 mb-24">
             <h2 className="text-4xl lg:text-5xl font-bold font-headline text-primary tracking-tight">
@@ -171,7 +204,7 @@ export default function Home() {
       </section>
 
       {/* Serviços Críticos Section */}
-      <section id="servicos" className="py-32 bg-slate-50 dark:bg-slate-900/50">
+      <section id="servicos" className="py-32 bg-slate-50 dark:bg-slate-900/50 transition-colors duration-500">
         <div className="container mx-auto px-6 text-foreground">
           <div className="text-center mb-20 space-y-4">
             <h2 className="text-5xl font-bold font-headline tracking-tighter text-slate-900 dark:text-white uppercase">Serviços Críticos</h2>
@@ -255,7 +288,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-20 border-t bg-white dark:bg-slate-950">
+      <footer className="py-20 border-t bg-white dark:bg-slate-950 transition-colors duration-500">
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-12">
             <div className="space-y-4 text-center md:text-left">
