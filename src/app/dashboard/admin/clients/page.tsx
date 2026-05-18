@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserProfile, Product, OnboardingInstance } from "@/lib/types";
-import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal, Package, Phone, FileText, CheckCircle2 } from "lucide-react";
+import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal, Package, Phone, FileText, CheckCircle2, Lock } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -48,10 +48,6 @@ export default function ClientsAdminPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const productsMap = useMemo(() => {
-    return dbProducts.reduce((acc, p) => ({ ...acc, [p.id!]: p.name }), {} as Record<string, string>);
-  }, [dbProducts]);
-
   const pendingClients = useMemo(() => {
     return clients.filter(c => c.status === 'pending' || !c.clientCode);
   }, [clients]);
@@ -66,6 +62,7 @@ export default function ClientsAdminPage() {
   };
 
   const toggleProduct = (productId: string) => {
+    if (!isComercial) return; // Suporte não pode alterar produtos
     setSelectedProductIds(prev => 
       prev.includes(productId) 
         ? prev.filter(id => id !== productId) 
@@ -74,14 +71,14 @@ export default function ClientsAdminPage() {
   };
 
   const handleApprove = async () => {
-    if (!selectedClient?.id || isSubmitting) return;
+    if (!selectedClient?.id || isSubmitting || !isComercial) return;
     setIsSubmitting(true);
     
     const clientRef = doc(db, "users", selectedClient.id);
     const updateData = {
       status: 'approved',
       clientCode: clientCode,
-      activeProduct: selectedProductIds[0] || "", // Mantém o primeiro como principal por compatibilidade
+      activeProduct: selectedProductIds[0] || "",
       phoneNumber: phoneNumber,
       commercialNotes: commercialNotes,
       approvedAt: new Date().toISOString(),
@@ -89,10 +86,8 @@ export default function ClientsAdminPage() {
     };
 
     try {
-      // 1. Atualizar Perfil do Usuário
       await updateDoc(clientRef, updateData);
 
-      // 2. Criar Instâncias de Onboarding para cada produto selecionado (se não existirem)
       const instancesRef = collection(db, "onboardingInstances");
       const existingInstancesSnap = await getDocs(query(instancesRef, where("clientId", "==", selectedClient.id)));
       const existingProductIds = existingInstancesSnap.docs.map(d => d.data().productId);
@@ -238,19 +233,34 @@ export default function ClientsAdminPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Configuração de Acesso RTM</DialogTitle>
-            <DialogDescription>Defina os parâmetros institucionais para {selectedClient?.institutionName}</DialogDescription>
+            <DialogTitle>{isComercial ? "Configuração de Acesso RTM" : "Visualização de Parâmetros"}</DialogTitle>
+            <DialogDescription>
+              {isComercial 
+                ? `Defina os parâmetros institucionais para ${selectedClient?.institutionName}` 
+                : `Consulta de dados de acesso para ${selectedClient?.institutionName}`}
+            </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-6 py-4">
             <div className="space-y-2">
               <Label>ID RTM do Cliente</Label>
-              <Input value={clientCode} onChange={(e) => setClientCode(e.target.value)} placeholder="Ex: RTM-BR-001" />
+              <Input 
+                value={clientCode} 
+                onChange={(e) => setClientCode(e.target.value)} 
+                placeholder="Ex: RTM-BR-001" 
+                disabled={!isComercial}
+              />
             </div>
             <div className="space-y-2">
               <Label>Telefone de Contato</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                <Input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="(00) 00000-0000" className="pl-10" />
+                <Input 
+                  value={phoneNumber} 
+                  onChange={(e) => setPhoneNumber(e.target.value)} 
+                  placeholder="(00) 00000-0000" 
+                  className="pl-10" 
+                  disabled={!isComercial}
+                />
               </div>
             </div>
 
@@ -262,10 +272,10 @@ export default function ClientsAdminPage() {
                 ) : dbProducts.length > 0 ? dbProducts.map((prod) => (
                   <div 
                     key={prod.id} 
-                    className={`flex items-center space-x-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${selectedProductIds.includes(prod.id!) ? 'border-primary bg-primary/5' : 'border-slate-100 hover:border-slate-200'}`}
+                    className={`flex items-center space-x-3 p-3 rounded-xl border-2 transition-all ${isComercial ? 'cursor-pointer' : 'cursor-default'} ${selectedProductIds.includes(prod.id!) ? 'border-primary bg-primary/5' : 'border-slate-100 hover:border-slate-200'}`}
                     onClick={() => toggleProduct(prod.id!)}
                   >
-                    <Checkbox checked={selectedProductIds.includes(prod.id!)} />
+                    <Checkbox checked={selectedProductIds.includes(prod.id!)} disabled={!isComercial} />
                     <div className="flex flex-col">
                       <span className="text-xs font-bold leading-none">{prod.name}</span>
                       <span className="text-[10px] text-muted-foreground truncate w-40">{prod.description}</span>
@@ -287,17 +297,27 @@ export default function ClientsAdminPage() {
               <Textarea 
                 value={commercialNotes} 
                 onChange={(e) => setCommercialNotes(e.target.value)} 
-                placeholder="Insira boas-vindas, orientações iniciais ou avisos específicos para este cliente..."
+                placeholder={isComercial ? "Insira boas-vindas, orientações iniciais ou avisos específicos para este cliente..." : "Nenhuma nota inserida pelo comercial."}
                 className="min-h-[100px]"
+                disabled={!isComercial}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-            <Button disabled={!clientCode || selectedProductIds.length === 0 || isSubmitting} onClick={handleApprove}>
-              {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
-              Confirmar Ativação
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              {isComercial ? "Cancelar" : "Fechar"}
             </Button>
+            {isComercial && (
+              <Button disabled={!clientCode || selectedProductIds.length === 0 || isSubmitting} onClick={handleApprove}>
+                {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
+                Confirmar Ativação
+              </Button>
+            )}
+            {!isComercial && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground italic">
+                <Lock className="size-3" /> Apenas o comercial pode editar estes dados.
+              </div>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
