@@ -30,5 +30,8 @@ Este documento é a fonte única de verdade (Single Source of Truth) para o proj
 - **Estética**: Remoção de ícones estáticos nos botões de rodapé para uma interface mais limpa e focada no texto.
 - **Feedback**: Mantido apenas o loader de processamento quando em submissão.
 
+## [UPDATE - V1.21 - AJUSTE DE NOMENCLATURA]
+- **UX**: Alteração do botão de criação de etapa de "Salvar Etapa" para "Adicionar" para refletir a ação de inclusão na lista.
+
 ---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*

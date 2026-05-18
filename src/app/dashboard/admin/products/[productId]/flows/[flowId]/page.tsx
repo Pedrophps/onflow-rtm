@@ -198,7 +198,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                     <Button variant="outline" onClick={() => setIsNewStepOpen(false)}>Cancelar</Button>
                     <Button disabled={!newStep.name || isSubmitting} onClick={handleCreateStep} className="gap-2 bg-primary hover:bg-primary/90">
                       {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-                      Salvar Etapa
+                      Adicionar
                     </Button>
                   </DialogFooter>
                 </DialogContent>
