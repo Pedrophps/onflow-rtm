@@ -5,6 +5,7 @@ export type UserRole = 'admin' | 'client';
 export type AdminType = 'suporte' | 'comercial';
 export type ResponsibleRole = 'suporte' | 'comercial' | 'cliente' | 'infraestrutura' | 'compliance';
 export type StepType = 'upload' | 'form';
+export type InstanceStatus = 'pending' | 'active' | 'completed' | 'blocked';
 
 export interface UserProfile {
   id?: string;
@@ -62,6 +63,20 @@ export interface FlowStep {
   status: 'active' | 'inactive';
   createdAt: string;
   updatedAt: any;
+}
+
+export interface OnboardingInstance {
+  id?: string;
+  clientId: string;
+  productId: string;
+  flowId?: string;
+  techId?: string;
+  status: InstanceStatus;
+  currentStepOrder: number;
+  startedAt: string;
+  updatedAt: any;
+  institutionName?: string;
+  productName?: string;
 }
 
 export interface OnboardingStage {

@@ -32,6 +32,21 @@
         "createdAt": { "type": "string" },
         "createdBy": { "type": "string" }
       }
+    },
+    "OnboardingInstance": {
+      "title": "Instância de Onboarding",
+      "description": "Execução real de um fluxo de ativação para um cliente específico.",
+      "type": "object",
+      "properties": {
+        "clientId": { "type": "string" },
+        "productId": { "type": "string" },
+        "flowId": { "type": "string" },
+        "techId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "active", "completed", "blocked"] },
+        "currentStepOrder": { "type": "number" },
+        "startedAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
     }
   },
   "firestore": {
@@ -46,6 +61,9 @@
     },
     "/products/{productId}/activationFlows/{flowId}/steps/{stepId}": {
       "description": "Subcoleção de etapas técnicas de um fluxo de ativação."
+    },
+    "/onboardingInstances/{instanceId}": {
+      "schema": { "$ref": "#/backend/entities/OnboardingInstance" }
     }
   }
 }

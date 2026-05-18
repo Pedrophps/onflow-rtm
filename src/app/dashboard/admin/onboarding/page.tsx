@@ -1,145 +1,241 @@
 
-"use client";
+'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, GripVertical, Edit3, Trash2, Settings2, FileText, Type, BarChart3, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useState, useMemo } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  ClipboardList, 
+  Users, 
+  Clock, 
+  CheckCircle2, 
+  AlertCircle, 
+  Loader2, 
+  ArrowRight, 
+  UserPlus, 
+  Building2,
+  Briefcase,
+  Zap
+} from "lucide-react";
+import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
+import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc } from "firebase/firestore";
+import { useMemo, useState } from "react";
+import { UserProfile, OnboardingInstance, Product } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useFirestore, useCollection } from "@/firebase";
-import { collection, query, orderBy } from "firebase/firestore";
 
 export default function OnboardingManagement() {
   const db = useFirestore();
+  const { user } = useUser();
+  const { toast } = useToast();
   
-  // Query para buscar fluxos do banco de dados
-  const flowsQuery = useMemo(() => query(collection(db, "onboardingFlows")), [db]);
-  const { data: dbFlows, loading: flowsLoading } = useCollection<any>(flowsQuery);
+  const [activeTab, setActiveTab] = useState("available");
 
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  // 1. Buscar Clientes Aprovados sem Técnico Assinado
+  const clientsQuery = useMemo(() => query(
+    collection(db, "users"), 
+    where("role", "==", "client"),
+    where("status", "==", "approved")
+  ), [db]);
+  const { data: approvedClients, loading: clientsLoading } = useCollection<UserProfile>(clientsQuery);
 
-  // Fallback para dados locais se o banco estiver vazio
-  const initialTemplates = [
-    {
-      id: "template-1",
-      name: "Onboarding Standard B2B",
-      stagesCount: 6,
-      activeClients: 42,
-      lastUpdate: "Há 2 dias"
+  // 2. Buscar Instâncias de Onboarding Ativas
+  const instancesQuery = useMemo(() => query(
+    collection(db, "onboardingInstances")
+  ), [db]);
+  const { data: instances, loading: instancesLoading } = useCollection<OnboardingInstance>(instancesQuery);
+
+  // 3. Filtrar Atividades Disponíveis (Aprovados sem instância ativa ou sem techId)
+  const availableActivities = useMemo(() => {
+    return approvedClients.filter(client => {
+      const hasInstance = instances.find(inst => inst.clientId === client.id);
+      return !hasInstance || !hasInstance.techId;
+    });
+  }, [approvedClients, instances]);
+
+  // 4. Filtrar Meus Onboardings
+  const myOnboardings = useMemo(() => {
+    return instances.filter(inst => inst.techId === user?.uid && inst.status === 'active');
+  }, [instances, user]);
+
+  const handleAssumeActivity = async (client: UserProfile) => {
+    if (!user) return;
+
+    const instanceData = {
+      clientId: client.id,
+      institutionName: client.institutionName || client.displayName,
+      productId: client.activeProduct,
+      techId: user.uid,
+      status: 'active',
+      currentStepOrder: 1,
+      startedAt: new Date().toISOString(),
+      updatedAt: serverTimestamp()
+    };
+
+    try {
+      const existingInstance = instances.find(inst => inst.clientId === client.id);
+      
+      if (existingInstance?.id) {
+        await updateDoc(doc(db, "onboardingInstances", existingInstance.id), {
+          techId: user.uid,
+          status: 'active',
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        await addDoc(collection(db, "onboardingInstances"), instanceData);
+      }
+
+      toast({
+        title: "Atividade Assumida",
+        description: `Você agora é o responsável técnico pela ativação da ${client.institutionName}.`,
+      });
+      setActiveTab("my");
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao assumir",
+        description: "Não foi possível vincular o técnico a esta atividade."
+      });
     }
-  ];
-
-  const displayFlows = dbFlows.length > 0 ? dbFlows : initialTemplates;
-  const currentFlow = selectedTemplate || displayFlows[0];
+  };
 
   return (
     <DashboardLayout role="admin">
       <div className="space-y-8">
         <div className="flex justify-between items-end">
           <div>
-            <h1 className="text-3xl font-bold font-headline">Fluxos de Onboarding</h1>
-            <p className="text-muted-foreground">Crie e organize as sequências de etapas para seus clientes.</p>
+            <h1 className="text-3xl font-bold font-headline text-slate-900">Gestão de Onboarding</h1>
+            <p className="text-muted-foreground">Assuma atividades técnico-comerciais e gerencie a jornada dos clientes.</p>
           </div>
-          <Button className="gap-2">
-            <Plus className="size-4" /> Novo Fluxo
-          </Button>
+          <div className="flex items-center gap-2 text-xs font-bold text-primary bg-primary/5 px-4 py-2 rounded-full border border-primary/10">
+            <Briefcase className="size-3.5" />
+            ANALISTA RESPONSÁVEL
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-4 space-y-4">
-            <h3 className="font-semibold text-lg flex items-center gap-2 px-1">
-              Seus Modelos
-            </h3>
-            {flowsLoading ? (
-              <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
-            ) : displayFlows.map((template) => (
-              <Card 
-                key={template.id} 
-                className={cn(
-                  "cursor-pointer transition-all hover:border-primary/50",
-                  currentFlow?.id === template.id ? "border-primary ring-2 ring-primary/5" : ""
-                )}
-                onClick={() => setSelectedTemplate(template)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-bold">{template.name}</h4>
-                      <div className="flex gap-2 mt-2">
-                        <Badge variant="secondary" className="text-[10px]">{template.stagesCount || 0} etapas</Badge>
-                        <Badge variant="outline" className="text-[10px]">{template.activeClients || 0} clientes</Badge>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="icon" className="size-8"><Settings2 className="size-4" /></Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-slate-100 p-1 h-12 rounded-xl">
+            <TabsTrigger value="available" className="rounded-lg px-8 gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <Zap className="size-4" />
+              Atividades Disponíveis
+              <Badge variant="secondary" className="ml-2 bg-slate-200">{availableActivities.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="my" className="rounded-lg px-8 gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <ClipboardList className="size-4" />
+              Meus Onboardings
+              <Badge variant="secondary" className="ml-2 bg-slate-200">{myOnboardings.length}</Badge>
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="lg:col-span-8 space-y-6">
-            <div className="bg-white rounded-2xl border p-6 space-y-6">
-              <div className="flex items-center justify-between border-b pb-4">
-                <div>
-                  <h3 className="text-xl font-bold font-headline">{currentFlow?.name}</h3>
-                  <p className="text-sm text-muted-foreground">Arraste para reordenar as etapas</p>
+          <TabsContent value="available" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+            <div className="grid gap-4">
+              {clientsLoading || instancesLoading ? (
+                <div className="flex justify-center p-20"><Loader2 className="animate-spin text-primary size-8" /></div>
+              ) : availableActivities.length > 0 ? (
+                availableActivities.map((client) => (
+                  <Card key={client.id} className="hover:border-primary/40 transition-all border-l-4 border-l-amber-500">
+                    <CardContent className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                      <div className="flex items-start gap-4">
+                        <div className="size-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+                          <Building2 className="size-6" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-3">
+                            <h3 className="font-bold text-lg text-slate-900">{client.institutionName}</h3>
+                            <Badge variant="outline" className="text-[10px] uppercase">{client.activeProduct || 'Sem Produto'}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">Validado pelo Comercial em {client.approvedAt ? new Date(client.approvedAt).toLocaleDateString() : 'N/A'}</p>
+                          <div className="flex gap-4 mt-2">
+                            <span className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                              <Users className="size-3" /> Resp: {client.displayName}
+                            </span>
+                            <span className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                              <AlertCircle className="size-3" /> Status: Aguardando Técnico
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <Button 
+                        className="gap-2 rounded-full font-bold shadow-lg shadow-primary/10 px-8"
+                        onClick={() => handleAssumeActivity(client)}
+                      >
+                        <UserPlus className="size-4" />
+                        Assumir Atividade
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="p-20 text-center border-2 border-dashed rounded-3xl space-y-4">
+                  <CheckCircle2 className="size-12 mx-auto text-emerald-500/20" />
+                  <div className="space-y-1">
+                    <p className="text-lg font-bold">Tudo limpo por aqui!</p>
+                    <p className="text-sm text-muted-foreground">Não há novas atividades validadas pelo comercial aguardando suporte.</p>
+                  </div>
                 </div>
-                <Button variant="outline" size="sm">Editar Detalhes</Button>
-              </div>
-
-              <div className="space-y-3">
-                {[
-                  { title: "Boas Vindas", type: "Informação", req: "Cadastro básico" },
-                  { title: "Contrato e Documentação", type: "Upload", req: "2 arquivos PDF" },
-                  { title: "Configuração Técnica", type: "Formulário", req: "Dados de API" },
-                  { title: "Call de Alinhamento", type: "Agendamento", req: "Data/Hora" },
-                ].map((stage, i) => (
-                  <div key={i} className="flex items-center gap-4 p-4 rounded-xl border bg-white hover:shadow-sm transition-all group">
-                    <GripVertical className="size-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
-                    <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
-                      {i + 1}
-                    </div>
-                    <div className="flex-1">
-                      <h5 className="font-semibold text-sm">{stage.title}</h5>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                          <FileText className="size-3" /> {stage.type}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                          <Type className="size-3" /> {stage.req}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="size-8"><Edit3 className="size-4" /></Button>
-                      <Button variant="ghost" size="icon" className="size-8 text-destructive hover:bg-destructive/10"><Trash2 className="size-4" /></Button>
-                    </div>
-                  </div>
-                ))}
-                
-                <Button variant="dashed" className="w-full py-8 border-2 rounded-xl text-muted-foreground hover:text-primary hover:border-primary gap-2">
-                  <Plus className="size-4" /> Adicionar Nova Etapa
-                </Button>
-              </div>
+              )}
             </div>
+          </TabsContent>
 
-            <Card className="bg-muted/50 border-dashed border-2">
-              <CardContent className="p-8 text-center space-y-4">
-                <div className="size-12 rounded-full bg-white mx-auto flex items-center justify-center shadow-sm">
-                  <BarChart3 className="size-6 text-primary" />
+          <TabsContent value="my" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+            <div className="grid gap-4 md:grid-cols-2">
+              {instancesLoading ? (
+                <div className="col-span-full flex justify-center p-20"><Loader2 className="animate-spin text-primary size-8" /></div>
+              ) : myOnboardings.length > 0 ? (
+                myOnboardings.map((inst) => (
+                  <Card key={inst.id} className="hover:border-primary/40 transition-all overflow-hidden group">
+                    <CardHeader className="bg-slate-50/50 border-b p-4">
+                      <div className="flex justify-between items-center">
+                        <Badge variant="default" className="bg-primary text-[9px] uppercase font-black">Em Execução</Badge>
+                        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">Iniciado em {new Date(inst.startedAt).toLocaleDateString()}</span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-6">
+                      <div className="space-y-2">
+                        <h4 className="font-bold text-xl text-slate-900">{inst.institutionName}</h4>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Zap className="size-4 text-primary" />
+                          <span>Ativação: <strong>{inst.productId}</strong></span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-end">
+                          <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Etapa Atual</span>
+                          <span className="text-xs font-bold text-primary">Ação Requerida</span>
+                        </div>
+                        <div className="p-4 rounded-xl bg-slate-900 text-white flex items-center justify-between group-hover:bg-primary transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className="size-8 rounded-lg bg-white/10 flex items-center justify-center font-bold text-xs">
+                              {inst.currentStepOrder}
+                            </div>
+                            <span className="font-bold text-sm">Validar Documentação Técnica</span>
+                          </div>
+                          <ArrowRight className="size-5 opacity-50" />
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 pt-2">
+                        <Button variant="outline" className="flex-1 rounded-xl font-bold border-2 text-xs">Acompanhar Histórico</Button>
+                        <Button className="flex-1 rounded-xl font-bold shadow-md text-xs">Próxima Etapa</Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="col-span-full p-20 text-center border-2 border-dashed rounded-3xl space-y-4">
+                  <ClipboardList className="size-12 mx-auto text-slate-200" />
+                  <div className="space-y-1">
+                    <p className="text-lg font-bold">Você não assumiu nenhuma atividade ainda</p>
+                    <p className="text-sm text-muted-foreground">Vá até a aba de atividades disponíveis para iniciar um novo atendimento técnico.</p>
+                  </div>
                 </div>
-                <div className="max-w-sm mx-auto space-y-1">
-                  <h4 className="font-bold">Dica de Performance</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Modelos com até 5 etapas têm uma taxa de conclusão 40% maior. Tente simplificar seu fluxo se possível.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );

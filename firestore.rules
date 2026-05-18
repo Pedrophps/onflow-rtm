@@ -3,25 +3,21 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Função auxiliar para verificar se o usuário é Administrador do tipo Suporte
     function isSupportAdmin() {
       return request.auth != null && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.adminType == 'suporte';
     }
 
-    // Função auxiliar para verificar se o usuário é qualquer tipo de Administrador RTM
     function isAdmin() {
       return request.auth != null && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Regras para Perfis de Usuário
     match /users/{userId} {
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Regras para o Catálogo de Produtos e Hierarquia de Workflows
     match /products/{productId} {
       allow read: if request.auth != null;
       allow write: if isSupportAdmin();
@@ -37,16 +33,17 @@ service cloud.firestore {
       }
     }
 
-    // Regras para Submissões de Onboarding (Interações)
+    match /onboardingInstances/{instanceId} {
+      allow read: if request.auth != null && (resource.data.clientId == request.auth.uid || isAdmin());
+      allow write: if isSupportAdmin();
+    }
+
     match /submissions/{submissionId} {
-      // Admins podem ler e gerenciar tudo
-      // Clientes podem ler e gerenciar apenas suas próprias submissões
       allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if request.auth != null;
       allow update, delete: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
-    // Regras para OnboardingFlows (Templates Legados/Debug)
     match /onboardingFlows/{flowId} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
