@@ -33,7 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
-import { doc, collection, query, where, addDoc, serverTimestamp } from "firebase/firestore";
+import { doc, collection, query, where, addDoc, serverTimestamp, getDocs } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -48,6 +48,7 @@ export default function ActivationsPage() {
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   const [expandedStage, setExpandedStage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [realProductId, setRealProductId] = useState<string | null>(null);
 
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
@@ -66,21 +67,42 @@ export default function ActivationsPage() {
     instances.find(inst => inst.id === selectedInstanceId), 
   [instances, selectedInstanceId]);
 
-  // 3. Buscar Dados do Produto Selecionado
-  const productRef = useMemo(() => selectedInstance?.productId ? doc(db, "products", selectedInstance.productId) : null, [db, selectedInstance]);
+  // Buscar Produtos para resolver nomes amigáveis e IDs
+  const productsQuery = useMemo(() => (user ? query(collection(db, "products")) : null), [db, user]);
+  const { data: dbProducts } = useCollection<Product>(productsQuery);
+
+  // 3. Resolver ID do Produto (Garante que busca na subcoleção técnica correta)
+  useEffect(() => {
+    if (selectedInstance && dbProducts.length > 0) {
+      const productId = selectedInstance.productId;
+      const productById = dbProducts.find(p => p.id === productId);
+      
+      if (productById) {
+        setRealProductId(productById.id!);
+      } else {
+        const foundProductByName = dbProducts.find(p => p.name.toLowerCase() === productId.toLowerCase());
+        if (foundProductByName) {
+          setRealProductId(foundProductByName.id!);
+        } else {
+          setRealProductId(productId);
+        }
+      }
+    }
+  }, [selectedInstance, dbProducts]);
+
+  const productRef = useMemo(() => realProductId ? doc(db, "products", realProductId) : null, [db, realProductId]);
   const { data: product } = useDoc<Product>(productRef);
 
-  // 4. Buscar Etapas do Fluxo do Produto Selecionado
+  // 4. Buscar Etapas do Fluxo (Transparência total)
   const stepsQuery = useMemo(() => 
-    (selectedInstance?.productId && selectedInstance?.flowId) ? query(
-      collection(db, "products", selectedInstance.productId, "activationFlows", selectedInstance.flowId, "steps")
+    (realProductId && selectedInstance?.flowId) ? query(
+      collection(db, "products", realProductId, "activationFlows", selectedInstance.flowId, "steps")
     ) : null, 
-  [db, selectedInstance]);
+  [db, realProductId, selectedInstance]);
   const { data: rawSteps, loading: stepsLoading } = useCollection<FlowStep>(stepsQuery);
   
   const steps = useMemo(() => [...rawSteps].sort((a, b) => a.order - b.order), [rawSteps]);
 
-  // Efeito para mudar de aba quando um produto é selecionado
   useEffect(() => {
     if (selectedInstanceId) {
       setActiveTab("journey");
@@ -110,7 +132,7 @@ export default function ActivationsPage() {
       await addDoc(collection(db, "submissions"), submissionData);
       toast({
         title: "Evidência Enviada",
-        description: `Sua interação na etapa "${step.name}" foi registrada para análise.`
+        description: `Sua interação na etapa "${step.name}" foi registrada.`
       });
       setExpandedStage(null);
     } catch (e) {
@@ -141,34 +163,34 @@ export default function ActivationsPage() {
       <DashboardLayout role="client">
         <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
           <Loader2 className="size-8 animate-spin text-primary" />
-          <p className="text-muted-foreground font-medium text-sm">Carregando seus produtos...</p>
+          <p className="text-muted-foreground font-medium text-sm">Carregando jornada técnica...</p>
         </div>
       </DashboardLayout>
     );
   }
 
   const currentStepOrder = selectedInstance?.currentStepOrder || 1;
-  const progress = steps.length > 0 ? ((currentStepOrder - 1) / steps.length) * 100 : 0;
+  const progress = steps.length > 0 ? (Math.max(0, currentStepOrder - 1) / steps.length) * 100 : 0;
 
   return (
     <DashboardLayout role="client">
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold font-headline text-slate-900">Ativações Técnicas</h1>
-          <p className="text-muted-foreground">Gerencie a jornada de ativação dos seus produtos RTM.</p>
+          <h1 className="text-3xl font-bold font-headline text-slate-900">Jornada de Ativação</h1>
+          <p className="text-muted-foreground">Confira as etapas técnicas e envie as evidências necessárias.</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           <TabsList className="bg-slate-100 p-1 h-12 rounded-xl">
             <TabsTrigger value="selection" className="rounded-lg px-8 gap-2 data-[state=active]:bg-white">
-              <LayoutGrid className="size-4" /> Selecionar Produto
+              <LayoutGrid className="size-4" /> Meus Produtos
             </TabsTrigger>
             <TabsTrigger 
               value="journey" 
               disabled={!selectedInstanceId} 
               className="rounded-lg px-8 gap-2 data-[state=active]:bg-white"
             >
-              <Zap className="size-4" /> Jornada Técnica
+              <Zap className="size-4" /> Fluxo de Trabalho
             </TabsTrigger>
           </TabsList>
 
@@ -178,7 +200,7 @@ export default function ActivationsPage() {
                 <Card 
                   key={inst.id} 
                   className={cn(
-                    "cursor-pointer transition-all hover:border-primary group relative overflow-hidden",
+                    "cursor-pointer transition-all hover:border-primary group overflow-hidden border-2",
                     selectedInstanceId === inst.id ? "border-primary ring-2 ring-primary/10" : "border-slate-200"
                   )}
                   onClick={() => handleSelectInstance(inst.id!)}
@@ -188,35 +210,25 @@ export default function ActivationsPage() {
                       <div className="size-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                         <Package className="size-6" />
                       </div>
-                      <Badge variant={inst.status === 'active' ? 'default' : 'secondary'} className="uppercase text-[10px]">
-                        {inst.status === 'active' ? 'Em Ativação' : inst.status}
+                      <Badge variant={inst.techId ? 'default' : 'secondary'} className="uppercase text-[9px] font-bold">
+                        {inst.techId ? 'Atendimento Iniciado' : 'Fila de Espera'}
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <CardTitle className="text-xl mb-1">{inst.productId}</CardTitle>
-                      <CardDescription className="text-xs">ID RTM: {profile?.clientCode || 'Pendente'}</CardDescription>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase">
-                        <span>Progresso Técnico</span>
-                        <span>Etapa {inst.currentStepOrder}</span>
-                      </div>
-                      <Progress value={25} className="h-1.5" />
+                      <CardTitle className="text-xl mb-1 truncate">{inst.productId}</CardTitle>
+                      <CardDescription className="text-xs">Iniciado em: {new Date(inst.startedAt).toLocaleDateString()}</CardDescription>
                     </div>
                     <Button variant="ghost" className="w-full justify-between font-bold text-xs group-hover:text-primary p-0">
-                      Gerenciar Ativação <ArrowRight className="size-4" />
+                      Ver Progresso Técnico <ArrowRight className="size-4" />
                     </Button>
                   </CardContent>
                 </Card>
               )) : (
                 <div className="col-span-full p-20 text-center border-2 border-dashed rounded-3xl space-y-4 bg-white">
                   <ShieldAlert className="size-12 mx-auto text-amber-500/20" />
-                  <div className="space-y-1">
-                    <p className="text-lg font-bold">Nenhum produto em ativação</p>
-                    <p className="text-sm text-muted-foreground max-sm mx-auto">Sua conta institucional ainda não possui processos técnicos iniciados pelo suporte RTM.</p>
-                  </div>
+                  <p className="text-sm text-muted-foreground">Você ainda não possui produtos ativos para este CNPJ.</p>
                 </div>
               )}
             </div>
@@ -225,41 +237,39 @@ export default function ActivationsPage() {
           <TabsContent value="journey" className="animate-in fade-in slide-in-from-right duration-500">
             {selectedInstance ? (
               <div className="space-y-8">
-                {/* Header do Produto Selecionado */}
+                {/* Header do Progresso */}
                 <div className="bg-white rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
                   {!selectedInstance.flowId && (
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-12 text-center space-y-4">
+                    <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-12 text-center space-y-4">
                       <Settings2 className="size-12 text-amber-500 animate-spin" />
                       <div className="space-y-1">
-                        <h3 className="text-xl font-bold">Aguardando Configuração do Suporte</h3>
-                        <p className="text-sm text-muted-foreground max-w-md">Nossa equipe técnica está definindo o roteiro de etapas para este produto. Em breve você poderá acompanhar a jornada completa aqui.</p>
+                        <h3 className="text-xl font-bold text-slate-900">Roteiro em Definição</h3>
+                        <p className="text-sm text-muted-foreground max-w-md">O analista de suporte <strong>{selectedInstance.techName || 'técnico'}</strong> está configurando o seu roteiro de ativação. Em breve as etapas aparecerão aqui.</p>
                       </div>
                     </div>
                   )}
 
-                  <div className="absolute top-0 right-0 p-8 opacity-5">
-                    <Zap className="size-32 text-primary" />
-                  </div>
-                  
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
                     <div className="space-y-2">
-                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 px-3 py-1">
-                        <CheckCircle2 className="size-3.5" /> Ativação Selecionada
+                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 px-3 py-1 font-bold">
+                        <CheckCircle2 className="size-3.5" /> JORNADA ATIVA
                       </Badge>
                       <h2 className="text-3xl font-bold font-headline">{product?.name || selectedInstance.productId}</h2>
-                      <p className="text-muted-foreground font-medium">Analista Responsável: <span className="text-foreground">{selectedInstance.techName || 'Pendente'}</span></p>
+                      <p className="text-muted-foreground font-medium">Analista RTM: <span className="text-foreground font-bold">{selectedInstance.techName || 'Pendente'}</span></p>
                     </div>
                     <div className="text-right">
                       <span className="text-5xl font-black text-primary">{Math.round(progress)}%</span>
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Conclusão</p>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Concluído</p>
                     </div>
                   </div>
                   <Progress value={progress} className="h-3 rounded-full" />
                 </div>
 
-                {/* Lista de Etapas */}
+                {/* Lista de Etapas (Transparência Total) */}
                 <div className="space-y-6">
-                  <h3 className="text-lg font-bold font-headline flex items-center gap-2">Fluxo de Trabalho Técnico</h3>
+                  <h3 className="text-lg font-bold font-headline flex items-center gap-2">
+                    <ClipboardList className="size-5 text-primary" /> Etapas do Projeto
+                  </h3>
                   
                   {stepsLoading ? (
                     <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" /></div>
@@ -269,33 +279,28 @@ export default function ActivationsPage() {
                         const isCompleted = step.order < currentStepOrder;
                         const isCurrent = step.order === currentStepOrder;
                         const isFuture = step.order > currentStepOrder;
-                        const isClientResponsible = step.responsible === 'cliente';
                         const isExpanded = expandedStage === step.id;
 
                         return (
                           <div key={step.id} className="relative">
                             <div className={cn(
-                              "absolute -left-[29px] top-1 size-6 rounded-full border-2 flex items-center justify-center transition-all z-10 bg-white shadow-sm",
+                              "absolute -left-[29px] top-1 size-6 rounded-full border-2 flex items-center justify-center transition-all z-10 bg-white",
                               isCompleted ? "border-emerald-500 bg-emerald-500 text-white" : 
                               isCurrent ? "border-primary bg-primary text-white animate-pulse" : 
                               "border-slate-200 text-slate-400"
                             )}>
                               {isCompleted ? <CheckCircle2 className="size-3.5" /> : 
-                               isCurrent ? <Circle className="size-2 fill-current" /> :
                                <span className="text-[10px] font-bold">{step.order}</span>}
                             </div>
                             
                             <Card className={cn(
                               "transition-all duration-300",
-                              isCurrent ? "ring-2 ring-primary/20 shadow-lg border-primary/20" : 
+                              isCurrent ? "ring-2 ring-primary/20 shadow-lg border-primary/40" : 
                               isFuture ? "opacity-60" : "hover:border-primary/30"
                             )}>
                               <CardHeader 
-                                className={cn(
-                                  "p-5 flex flex-row items-center justify-between space-y-0",
-                                  !isFuture && "cursor-pointer"
-                                )}
-                                onClick={() => !isFuture && setExpandedStage(isExpanded ? null : step.id || null)}
+                                className="p-5 flex flex-row items-center justify-between cursor-pointer"
+                                onClick={() => setExpandedStage(isExpanded ? null : step.id || null)}
                               >
                                 <div className="flex-1 space-y-1">
                                   <div className="flex items-center gap-3">
@@ -303,68 +308,59 @@ export default function ActivationsPage() {
                                       "text-base font-bold",
                                       isCompleted ? "text-slate-400" : "text-slate-800"
                                     )}>{step.name}</CardTitle>
-                                    <Badge variant="secondary" className="text-[9px] uppercase font-bold bg-slate-50 text-slate-600 gap-1">
+                                    <Badge variant="secondary" className="text-[9px] uppercase font-bold bg-slate-100 gap-1">
                                       {getResponsibleIcon(step.responsible)}
-                                      <span className="text-slate-900">{step.responsible}</span>
+                                      {step.responsible}
                                     </Badge>
                                   </div>
                                   <CardDescription className="text-sm line-clamp-1">{step.description}</CardDescription>
                                 </div>
-                                {!isFuture && (isExpanded ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />)}
-                                {isFuture && <Lock className="size-4 text-slate-300" />}
+                                {isExpanded ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
                               </CardHeader>
 
-                              {isExpanded && !isFuture && (
+                              {isExpanded && (
                                 <CardContent className="p-5 pt-0 border-t bg-slate-50/30">
                                   <div className="mt-5 space-y-6">
                                     <div className="grid md:grid-cols-2 gap-4">
                                        <div className="space-y-1">
-                                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SLA Estimado</p>
-                                          <p className="text-xs font-bold flex items-center gap-2"><Clock className="size-3" /> {step.estimatedTimeInHours} horas úteis</p>
+                                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SLA de Atendimento</p>
+                                          <p className="text-xs font-bold flex items-center gap-2"><Clock className="size-3" /> {step.estimatedTimeInHours}h Úteis</p>
                                        </div>
                                        <div className="space-y-1">
-                                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Tipo de Interação</p>
-                                          <p className="text-xs font-bold flex items-center gap-2"><FileEdit className="size-3" /> {step.type === 'upload' ? 'Upload de Evidência' : 'Formulário Técnico'}</p>
+                                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Ação</p>
+                                          <p className="text-xs font-bold flex items-center gap-2"><FileEdit className="size-3" /> {step.type === 'upload' ? 'Envio de Arquivo' : 'Preenchimento'}</p>
                                        </div>
                                     </div>
 
-                                    {!isClientResponsible ? (
-                                      <div className="p-4 rounded-2xl bg-white border border-slate-200 flex gap-3 items-center">
-                                        <Loader2 className="size-5 text-primary animate-spin shrink-0" />
-                                        <div className="space-y-0.5">
-                                          <p className="text-xs font-bold text-slate-600 uppercase">Processamento RTM ({step.responsible})</p>
-                                          <p className="text-[11px] text-slate-500">Esta etapa está sendo tratada internamente. Notificaremos você ao concluir.</p>
-                                        </div>
-                                      </div>
-                                    ) : isCompleted ? (
-                                      <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex gap-3 items-center">
-                                        <CheckCircle2 className="size-5 text-emerald-500 shrink-0" />
-                                        <div className="space-y-0.5">
-                                          <p className="text-xs font-bold text-emerald-700 uppercase">Concluído</p>
-                                          <p className="text-[11px] text-emerald-600">Sua interação nesta etapa foi validada.</p>
-                                        </div>
-                                      </div>
-                                    ) : (
+                                    {isCurrent && step.responsible === 'cliente' ? (
                                       <div className="space-y-4">
-                                        <div className="space-y-2">
-                                          <Label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Sua Ação Necessária</Label>
-                                          <div className="border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center bg-white group hover:border-primary cursor-pointer transition-all">
-                                            <FileUp className="size-8 mb-3 text-primary/40 group-hover:text-primary group-hover:scale-110 transition-all" />
-                                            <p className="text-sm font-bold text-slate-700">Clique para enviar a evidência</p>
-                                            <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold tracking-tighter">PDF, PNG ou JPG</p>
-                                          </div>
+                                        <div className="border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center bg-white group hover:border-primary cursor-pointer transition-all">
+                                          <FileUp className="size-8 mb-3 text-primary/40 group-hover:text-primary" />
+                                          <p className="text-sm font-bold text-slate-700">Clique para enviar evidência</p>
                                         </div>
-                                        <div className="flex justify-end pt-2">
+                                        <div className="flex justify-end">
                                           <Button 
-                                            size="sm" 
-                                            className="gap-2 rounded-full px-8 font-bold shadow-md"
+                                            className="gap-2 rounded-full px-8 font-bold"
                                             onClick={() => handleSendEvidence(step)}
                                             disabled={isSubmitting}
                                           >
                                             {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-3.5" />}
-                                            Confirmar Envio
+                                            Finalizar Minha Ação
                                           </Button>
                                         </div>
+                                      </div>
+                                    ) : isCurrent ? (
+                                      <div className="p-4 rounded-xl bg-white border border-slate-200 flex gap-3 items-center">
+                                        <Loader2 className="size-5 text-primary animate-spin" />
+                                        <p className="text-xs text-slate-500 font-medium">Aguardando processamento interno RTM ({step.responsible}).</p>
+                                      </div>
+                                    ) : isFuture ? (
+                                      <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                                        <Lock className="size-3.5" /> Etapa bloqueada até a conclusão da anterior.
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-2 text-xs text-emerald-600 font-bold uppercase">
+                                        <CheckCircle2 className="size-3.5" /> Etapa Concluída com Sucesso
                                       </div>
                                     )}
                                   </div>
@@ -377,8 +373,7 @@ export default function ActivationsPage() {
                     </div>
                   ) : (
                     <div className="p-10 text-center border-2 border-dashed rounded-3xl bg-slate-50/50">
-                      <Settings2 className="size-8 mx-auto text-slate-300 mb-2" />
-                      <p className="text-sm text-muted-foreground">O roteiro técnico ainda não possui etapas cadastradas.</p>
+                      <p className="text-sm text-muted-foreground">O roteiro selecionado ainda não possui etapas cadastradas pelo Suporte.</p>
                     </div>
                   )}
                 </div>
@@ -386,7 +381,7 @@ export default function ActivationsPage() {
             ) : (
               <div className="p-20 text-center border-2 border-dashed rounded-3xl bg-white space-y-4">
                 <Package className="size-12 mx-auto text-muted-foreground/20" />
-                <p className="text-muted-foreground">Por favor, selecione um produto na aba ao lado para visualizar as etapas.</p>
+                <p className="text-muted-foreground">Selecione um produto para visualizar a jornada.</p>
               </div>
             )}
           </TabsContent>
