@@ -107,4 +107,12 @@ A arquitetura é dividida em:
 - **Motivo**: UX - Melhoria na usabilidade e controle do usuário sobre as credenciais e navegação.
 
 ---
+
+## [UPDATE - V1.9 - CORREÇÃO DE IMPORTE E ESTABILIDADE]
+- **Correção**: Ajuste do caminho de importação do componente `Tabs` em `src/app/login/page.tsx`.
+- **Antigo**: `@/tabs` (causava erro de módulo não encontrado).
+- **Novo**: `@/components/ui/tabs`.
+- **Motivo**: Alinhamento com a estrutura de diretórios padrão do ShadCN e correção de erro de build reportado pelo usuário.
+
+---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*
