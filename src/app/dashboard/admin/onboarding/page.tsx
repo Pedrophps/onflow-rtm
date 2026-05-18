@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,7 +34,9 @@ import {
   HardDrive,
   Headset,
   Lock,
-  LayoutGrid
+  LayoutGrid,
+  ArrowLeft,
+  RotateCcw
 } from "lucide-react";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, getDocs, orderBy } from "firebase/firestore";
@@ -67,7 +68,7 @@ export default function OnboardingManagement() {
   const [availableFlows, setAvailableFlows] = useState<ActivationFlow[]>([]);
   const [selectedFlowId, setSelectedFlowId] = useState("");
   const [isSavingFlow, setIsSavingFlow] = useState(false);
-  const [isAdvancing, setIsAdvancing] = useState(false);
+  const [isUpdatingStep, setIsUpdatingStep] = useState(false);
   const [isFetchingFlows, setIsFetchingFlows] = useState(false);
 
   // Estados para Visão de Jornada Integrada
@@ -243,21 +244,27 @@ export default function OnboardingManagement() {
       .finally(() => setIsSavingFlow(false));
   };
 
-  const handleAdvanceStep = async (instanceId: string, currentStep: number) => {
-    if (isAdvancing) return;
-    setIsAdvancing(true);
+  const handleUpdateCurrentStep = async (instanceId: string, newStepOrder: number) => {
+    if (isUpdatingStep || newStepOrder < 1) return;
+    setIsUpdatingStep(true);
 
     const instanceRef = doc(db, "onboardingInstances", instanceId);
     try {
       await updateDoc(instanceRef, {
-        currentStepOrder: currentStep + 1,
+        currentStepOrder: newStepOrder,
+        status: newStepOrder > journeySteps.length ? 'completed' : 'active',
         updatedAt: serverTimestamp()
       });
-      toast({ title: "Etapa Concluída" });
+      
+      const isAdvance = newStepOrder > (selectedJourneyInstance?.currentStepOrder || 0);
+      toast({ 
+        title: isAdvance ? "Etapa Concluída" : "Etapa Retornada",
+        description: isAdvance ? `Avançamos para a etapa ${newStepOrder}.` : `Retornamos para a etapa ${newStepOrder}.`
+      });
     } catch (e) {
-      toast({ variant: "destructive", title: "Erro ao avançar" });
+      toast({ variant: "destructive", title: "Erro ao atualizar jornada" });
     } finally {
-      setIsAdvancing(false);
+      setIsUpdatingStep(false);
     }
   };
 
@@ -270,7 +277,7 @@ export default function OnboardingManagement() {
   };
 
   const getResponsibleIcon = (role: string) => {
-    const iconClass = "size-3.5 text-slate-500";
+    const iconClass = "size-3.5 text-slate-600";
     switch (role) {
       case 'suporte': return <Headset className={iconClass} />;
       case 'comercial': return <ShieldCheck className={iconClass} />;
@@ -484,22 +491,47 @@ export default function OnboardingManagement() {
                                       <div className="p-4 rounded-xl bg-white border border-slate-200 text-sm text-slate-700 leading-relaxed font-medium">
                                         {step.description}
                                       </div>
-                                      {isCurrent && (
-                                        <div className="flex justify-end pt-4 border-t">
-                                          <Button className="font-bold gap-2 rounded-full px-8 w-full" onClick={() => handleAdvanceStep(selectedJourneyInstance.id!, step.order)} disabled={isAdvancing}>
-                                            {isAdvancing ? <Loader2 className="size-4 animate-spin" /> : <ChevronRight className="size-4" />}
-                                            Concluir Etapa {step.order}
+                                      {isCurrent && isSupport && (
+                                        <div className="flex gap-3 pt-4 border-t">
+                                          {step.order > 1 && (
+                                            <Button 
+                                              variant="outline" 
+                                              className="flex-1 font-bold gap-2 rounded-full border-2" 
+                                              onClick={() => handleUpdateCurrentStep(selectedJourneyInstance.id!, step.order - 1)} 
+                                              disabled={isUpdatingStep}
+                                            >
+                                              <ArrowLeft className="size-4" /> Voltar
+                                            </Button>
+                                          )}
+                                          <Button 
+                                            className="flex-[2] font-bold gap-2 rounded-full px-8" 
+                                            onClick={() => handleUpdateCurrentStep(selectedJourneyInstance.id!, step.order + 1)} 
+                                            disabled={isUpdatingStep}
+                                          >
+                                            {isUpdatingStep ? <Loader2 className="size-4 animate-spin" /> : <ChevronRight className="size-4" />}
+                                            {step.order === journeySteps.length ? "Finalizar" : "Concluir Etapa"}
+                                          </Button>
+                                        </div>
+                                      )}
+                                      {!isCurrent && isSupport && step.order < (selectedJourneyInstance.currentStepOrder || 1) && (
+                                        <div className="pt-4 border-t">
+                                          <Button 
+                                            variant="ghost" 
+                                            className="w-full font-bold gap-2 text-slate-400 hover:text-primary"
+                                            onClick={() => handleUpdateCurrentStep(selectedJourneyInstance.id!, step.order)}
+                                            disabled={isUpdatingStep}
+                                          >
+                                            <RotateCcw className="size-3.5" /> Reabrir esta etapa
                                           </Button>
                                         </div>
                                       )}
                                     </div>
                                     <div className="lg:col-span-2">
-                                      {/* Log de Interação - Admins interagem em TODAS as etapas */}
                                       <StepInteractions 
                                         instanceId={selectedJourneyInstance.id!}
                                         stepId={step.id!}
                                         clientId={selectedJourneyInstance.clientId}
-                                        canInteract={isAdminUser} // Admins podem interagir sempre
+                                        canInteract={isAdminUser}
                                         userName={profile?.displayName}
                                         userRole={profile?.adminType || 'admin'}
                                       />
