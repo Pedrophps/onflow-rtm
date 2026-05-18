@@ -14,9 +14,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mail, Lock, Loader2, Building2, UserCircle, ShieldCheck, Headset } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/tabs';
+import { 
+  Mail, 
+  Lock, 
+  Loader2, 
+  Building2, 
+  UserCircle, 
+  ShieldCheck, 
+  Headset, 
+  Eye, 
+  EyeOff, 
+  ArrowLeft 
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -26,6 +38,7 @@ export default function LoginPage() {
   const { user: currentUser, loading: authLoading } = useUser();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
+  const [showPassword, setShowPassword] = useState(false);
   
   // Form states
   const [cnpj, setCnpj] = useState('');
@@ -119,7 +132,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6">
+    <div className="min-h-screen flex items-center justify-center bg-background p-6 relative">
+      <div className="absolute top-8 left-8">
+        <Button variant="ghost" asChild className="gap-2 font-bold text-muted-foreground hover:text-primary">
+          <Link href="/">
+            <ArrowLeft className="size-4" />
+            Voltar
+          </Link>
+        </Button>
+      </div>
+
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold font-headline text-primary">OnFlow</h1>
@@ -148,7 +170,21 @@ export default function LoginPage() {
                     <Label>Senha</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                      <Input type="password" placeholder="••••••••" className="pl-10" required value={password} onChange={e => setPassword(e.target.value)} />
+                      <Input 
+                        type={showPassword ? "text" : "password"} 
+                        placeholder="••••••••" 
+                        className="pl-10 pr-10" 
+                        required 
+                        value={password} 
+                        onChange={e => setPassword(e.target.value)} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-3 text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
                     </div>
                   </div>
                   <Button type="submit" className="w-full font-bold h-12" disabled={loading}>
@@ -193,7 +229,23 @@ export default function LoginPage() {
 
                   <div className="space-y-2">
                     <Label>Senha de Acesso</Label>
-                    <Input type="password" placeholder="Mínimo 6 caracteres" required value={password} onChange={e => setPassword(e.target.value)} />
+                    <div className="relative">
+                      <Input 
+                        type={showPassword ? "text" : "password"} 
+                        placeholder="Mínimo 6 caracteres" 
+                        className="pr-10"
+                        required 
+                        value={password} 
+                        onChange={e => setPassword(e.target.value)} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-3 text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
+                    </div>
                   </div>
                   <Button type="submit" className="w-full font-bold h-12" disabled={loading}>Criar Minha Conta</Button>
                 </CardContent>

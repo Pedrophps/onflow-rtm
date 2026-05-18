@@ -100,4 +100,11 @@ A arquitetura é dividida em:
 - **Motivo**: Facilitação de testes rápidos de interface sem comprometer a limpeza visual severamente.
 
 ---
+
+## [UPDATE - V1.8 - REFINAMENTOS DE LOGIN]
+- **Melhoria**: Adição de funcionalidade de alternância de visibilidade para o campo de senha (ícone de olho).
+- **Melhoria**: Adição de um botão "Voltar" na tela de login para facilitar a navegação para a Homepage.
+- **Motivo**: UX - Melhoria na usabilidade e controle do usuário sobre as credenciais e navegação.
+
+---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*
