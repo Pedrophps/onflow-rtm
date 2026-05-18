@@ -3,12 +3,12 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Função auxiliar para obter dados do perfil do usuário de forma direta
+    // Função auxiliar otimizada para obter dados do perfil
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    // Verifica se o usuário é um Administrador (Suporte ou Comercial)
+    // Verifica se o usuário tem papel de admin
     function isAdmin() {
       return request.auth != null && getUserData().role == 'admin';
     }
@@ -40,23 +40,29 @@ service cloud.firestore {
     }
 
     match /onboardingInstances/{instanceId} {
-      allow list: if request.auth != null && (isAdmin() || resource.data.clientId == request.auth.uid);
-      allow get: if request.auth != null && (isAdmin() || resource.data.clientId == request.auth.uid);
+      allow list: if request.auth != null && (resource.data.clientId == request.auth.uid || isAdmin());
+      allow get: if request.auth != null && (resource.data.clientId == request.auth.uid || isAdmin());
       allow write: if isAdmin();
     }
 
     match /interactions/{interactionId} {
-      // Permite leitura se for Admin (vê tudo) ou se for o dono do clientId (vê as suas)
-      // Importante: Admins passam pelo isAdmin(). Clientes passam pela segunda condição.
-      allow read: if request.auth != null && (isAdmin() || (resource.data.clientId == request.auth.uid));
-      allow create: if request.auth != null;
+      // Prioriza a verificação de propriedade para evitar chamadas get() desnecessárias para clientes
+      allow read: if request.auth != null && (
+        resource.data.clientId == request.auth.uid || 
+        isAdmin()
+      );
+      // Garante que o cliente só crie interações para si mesmo
+      allow create: if request.auth != null && (
+        request.resource.data.clientId == request.auth.uid || 
+        isAdmin()
+      );
     }
 
     match /submissions/{submissionId} {
-      allow list: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
-      allow get: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow list: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+      allow get: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow update, delete: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     match /onboardingFlows/{flowId} {

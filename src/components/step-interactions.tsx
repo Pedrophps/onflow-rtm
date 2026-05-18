@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { collection, query, where, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
@@ -35,10 +35,12 @@ export function StepInteractions({
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
 
-  // Consulta otimizada para respeitar as Security Rules
-  // Filtramos por clientId, instanceId e stepId para garantir que o Admin veja apenas o contexto correto
+  // Consulta rigorosa: o clientId deve ser fornecido e corresponder ao filtro esperado pelas regras
   const interactionsQuery = useMemo(() => {
     if (!instanceId || !stepId || !clientId || !user) return null;
+    
+    // Importante: Onde o cliente está listando, o clientId na query deve ser o dele
+    // No caso do suporte, ele passa o clientId do cliente específico que ele está atendendo
     return query(
       collection(db, 'interactions'),
       where('clientId', '==', clientId),
@@ -58,8 +60,8 @@ export function StepInteractions({
     const interactionData = {
       instanceId,
       stepId,
-      clientId,
-      userId: user.uid,
+      clientId, // ID do cliente dono do onboarding
+      userId: user.uid, // ID de quem está escrevendo (admin ou o próprio cliente)
       userName: userName || user.displayName || user.email?.split('@')[0],
       userRole: userRole || 'usuário',
       message: message.trim(),
@@ -79,7 +81,7 @@ export function StepInteractions({
   };
 
   const simulateFileUpload = () => {
-    const fileName = prompt('Simular Upload: Digite o nome do arquivo (ex: vpn_config.pdf)');
+    const fileName = prompt('Simular Upload: Digite o nome do arquivo (ex: comprovante_config.pdf)');
     if (fileName) {
       handleSendMessage(undefined, fileName);
     }
@@ -94,7 +96,9 @@ export function StepInteractions({
 
       <ScrollArea className="flex-1 p-4">
         {loading ? (
-          <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary/20" /></div>
+          <div className="flex justify-center py-10">
+            <Loader2 className="animate-spin text-primary/20" />
+          </div>
         ) : interactions.length > 0 ? (
           <div className="space-y-4">
             {interactions.map((msg) => {
@@ -117,7 +121,9 @@ export function StepInteractions({
                       )}>
                         <FileText className="size-4" />
                         <span className="text-xs font-medium truncate max-w-[150px]">{msg.fileName}</span>
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 ml-auto"><Paperclip className="size-3" /></Button>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 ml-auto">
+                          <Paperclip className="size-3" />
+                        </Button>
                       </div>
                     )}
                   </div>
