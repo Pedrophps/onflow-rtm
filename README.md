@@ -33,5 +33,9 @@ Este documento é a fonte única de verdade (Single Source of Truth) para o proj
 ## [UPDATE - V1.21 - AJUSTE DE NOMENCLATURA]
 - **UX**: Alteração do botão de criação de etapa de "Salvar Etapa" para "Adicionar" para refletir a ação de inclusão na lista.
 
+## [UPDATE - V1.22 - REFINAMENTOS DE INTERFACE]
+- **UX**: Remoção da mensagem "Arraste para reordenar (Em breve)" na lista de etapas.
+- **Estética**: Correção de contraste nos ícones e textos de responsáveis (alterado de branco para cores visíveis sobre fundo claro).
+
 ---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*

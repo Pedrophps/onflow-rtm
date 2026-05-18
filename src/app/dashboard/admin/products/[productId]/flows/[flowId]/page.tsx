@@ -115,13 +115,14 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
   };
 
   const getResponsibleIcon = (role: string) => {
+    const iconClass = "size-3.5 text-slate-600";
     switch (role) {
-      case 'suporte': return <Headset className="size-3" />;
-      case 'comercial': return <ShieldCheck className="size-3" />;
-      case 'cliente': return <User className="size-3" />;
-      case 'infraestrutura': return <HardDrive className="size-3" />;
-      case 'compliance': return <CheckCircle2 className="size-3" />;
-      default: return <User className="size-3" />;
+      case 'suporte': return <Headset className={iconClass} />;
+      case 'comercial': return <ShieldCheck className={iconClass} />;
+      case 'cliente': return <User className={iconClass} />;
+      case 'infraestrutura': return <HardDrive className={iconClass} />;
+      case 'compliance': return <CheckCircle2 className={iconClass} />;
+      default: return <User className={iconClass} />;
     }
   };
 
@@ -213,7 +214,6 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
               <span>Sequência de Execução</span>
               <Badge variant="outline" className="rounded-sm bg-white">{steps.length} Etapas</Badge>
             </div>
-            <p className="text-[10px] text-muted-foreground italic">Arraste para reordenar (Em breve)</p>
           </div>
           
           <div className="p-6 space-y-4">
@@ -246,7 +246,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                       <div className="flex items-center gap-6">
                         <div className="flex flex-col items-end gap-1">
                           <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Responsável</span>
-                          <Badge variant="secondary" className="gap-1.5 py-1 px-3 text-[10px] uppercase font-bold bg-slate-100">
+                          <Badge variant="secondary" className="gap-1.5 py-1 px-3 text-[10px] uppercase font-bold bg-slate-100 text-slate-700 border-slate-200">
                             {getResponsibleIcon(step.responsible)}
                             {step.responsible}
                           </Badge>
@@ -254,7 +254,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                         
                         <div className="flex flex-col items-end gap-1">
                           <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Tipo</span>
-                          <span className="text-xs font-medium flex items-center gap-1.5">
+                          <span className="text-xs font-medium flex items-center gap-1.5 text-slate-900">
                             <FileEdit className="size-3.5 text-primary" />
                             {step.type === 'upload' ? 'Upload' : 'Form'}
                           </span>
