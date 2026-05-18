@@ -26,5 +26,9 @@ Este documento é a fonte única de verdade (Single Source of Truth) para o proj
 - **Bug Fix**: Correção do tratamento de números no SLA para evitar a exibição de `NaN`.
 - **Lógica de Publicação**: Fluxos publicados agora alteram seu status para `active`, sinalizando prontidão para instanciamento.
 
+## [UPDATE - V1.20 - REFINAMENTO ESTÉTICO DOS BOTÕES]
+- **Estética**: Remoção de ícones estáticos nos botões de rodapé para uma interface mais limpa e focada no texto.
+- **Feedback**: Mantido apenas o loader de processamento quando em submissão.
+
 ---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*

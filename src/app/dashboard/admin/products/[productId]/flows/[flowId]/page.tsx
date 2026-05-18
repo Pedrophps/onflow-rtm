@@ -197,7 +197,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                   <DialogFooter className="gap-2 sm:gap-0">
                     <Button variant="outline" onClick={() => setIsNewStepOpen(false)}>Cancelar</Button>
                     <Button disabled={!newStep.name || isSubmitting} onClick={handleCreateStep} className="gap-2 bg-primary hover:bg-primary/90">
-                      {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                      {isSubmitting && <Loader2 className="size-4 animate-spin" />}
                       Salvar Etapa
                     </Button>
                   </DialogFooter>
@@ -300,16 +300,16 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
               onClick={() => handleUpdateFlowStatus(false)}
               disabled={isSubmitting}
             >
-              {isSubmitting ? <Loader2 className="size-4 animate-spin mr-2" /> : <Save className="size-4 mr-2" />}
+              {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
               Salvar Rascunho
             </Button>
             
             <Button 
-              className="font-bold gap-2 px-8 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90"
+              className="font-bold px-8 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90"
               onClick={() => handleUpdateFlowStatus(true)}
               disabled={isSubmitting}
             >
-              {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Rocket className="size-4" />}
+              {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
               Publicar Fluxo
             </Button>
           </div>
