@@ -3,7 +3,7 @@
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
-import { collection, query, addDoc, serverTimestamp, doc } from "firebase/firestore";
+import { collection, query, addDoc, serverTimestamp, doc, deleteDoc } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,8 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Product, ActivationFlow, UserProfile } from "@/lib/types";
-import { Plus, GitFork, ArrowRight, Loader2, Package, ArrowLeft, Clock } from "lucide-react";
+import { Plus, GitFork, ArrowRight, Loader2, Package, ArrowLeft, Clock, Trash2 } from "lucide-react";
 import { useState, useMemo, use } from "react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -66,6 +67,19 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ produ
       toast({ variant: "destructive", title: "Erro ao criar", description: "Acesso negado. Apenas o suporte pode criar fluxos." });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteFlow = async (e: React.MouseEvent, flowId: string) => {
+    e.stopPropagation();
+    if (!user || !isSupport) return;
+    
+    const flowRef = doc(db, "products", productId, "activationFlows", flowId);
+    try {
+      await deleteDoc(flowRef);
+      toast({ title: "Fluxo Excluído", description: "O roteiro técnico foi removido com sucesso." });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Erro ao excluir", description: "Não foi possível remover o fluxo." });
     }
   };
 
@@ -185,8 +199,39 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ produ
                           <p className="text-[10px] font-bold text-muted-foreground uppercase">Status</p>
                           <p className="text-xs font-bold text-emerald-600">{flow.published ? 'Ativo' : 'Rascunho'}</p>
                         </div>
-                        <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
-                          <ArrowRight className="size-5" />
+                        <div className="flex items-center gap-2">
+                          {isSupport && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="size-10 rounded-full text-slate-400 hover:text-destructive hover:bg-destructive/10"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir Fluxo Técnico?</AlertDialogTitle>
+                                  <AlertDialogDescription>Esta ação é irreversível e removerá o roteiro e todas as suas etapas.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={(e) => handleDeleteFlow(e, flow.id!)} 
+                                    className="bg-destructive text-white hover:bg-destructive/90"
+                                  >
+                                    Excluir Fluxo
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                          <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
+                            <ArrowRight className="size-5" />
+                          </div>
                         </div>
                       </div>
                     </CardContent>
