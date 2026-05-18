@@ -36,15 +36,19 @@ export default function ClientsAdminPage() {
   const clientsQuery = useMemo(() => query(collection(db, "users"), where("role", "==", "client")), [db]);
   const { data: clients, loading: clientsLoading } = useCollection<UserProfile>(clientsQuery);
 
-  // Buscar Produtos Reais (Cadastrados pelo Suporte)
+  // Buscar Produtos Reais
   const productsQuery = useMemo(() => query(collection(db, "products")), [db]);
   const { data: dbProducts, loading: productsLoading } = useCollection<Product>(productsQuery);
 
   const [selectedClient, setSelectedClient] = useState<UserProfile | null>(null);
   const [clientCode, setClientCode] = useState("");
-  const [activeProduct, setActiveProduct] = useState("");
+  const [activeProductId, setActiveProductId] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const productsMap = useMemo(() => {
+    return dbProducts.reduce((acc, p) => ({ ...acc, [p.id!]: p.name }), {} as Record<string, string>);
+  }, [dbProducts]);
 
   const pendingClients = useMemo(() => {
     return clients.filter(c => c.status === 'pending' || !c.clientCode || !c.activeProduct);
@@ -53,7 +57,7 @@ export default function ClientsAdminPage() {
   const openApprovalDialog = (client: UserProfile) => {
     setSelectedClient(client);
     setClientCode(client.clientCode || "");
-    setActiveProduct(client.activeProduct || "");
+    setActiveProductId(client.activeProduct || "");
     setPhoneNumber(client.phoneNumber || "");
     setIsDialogOpen(true);
   };
@@ -65,7 +69,7 @@ export default function ClientsAdminPage() {
     const updateData = {
       status: 'approved',
       clientCode: clientCode,
-      activeProduct: activeProduct,
+      activeProduct: activeProductId, // Agora armazena o ID
       phoneNumber: phoneNumber,
       approvedAt: new Date().toISOString(),
       updatedAt: serverTimestamp()
@@ -177,7 +181,9 @@ export default function ClientsAdminPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-mono text-xs">{client.clientCode || "-"}</TableCell>
-                      <TableCell className="text-xs">{client.activeProduct || "-"}</TableCell>
+                      <TableCell className="text-xs">
+                        {productsMap[client.activeProduct!] || client.activeProduct || "-"}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" onClick={() => openApprovalDialog(client)}><MoreHorizontal className="size-4" /></Button>
                       </TableCell>
@@ -214,13 +220,13 @@ export default function ClientsAdminPage() {
             </div>
             <div className="space-y-2">
               <Label>Produto Contratado</Label>
-              <Select onValueChange={setActiveProduct} value={activeProduct}>
+              <Select onValueChange={setActiveProductId} value={activeProductId}>
                 <SelectTrigger>
                   <SelectValue placeholder={productsLoading ? "Carregando produtos..." : "Selecione o produto principal"} />
                 </SelectTrigger>
                 <SelectContent>
                   {dbProducts.length > 0 ? dbProducts.map((prod) => (
-                    <SelectItem key={prod.id} value={prod.name}>
+                    <SelectItem key={prod.id} value={prod.id!}>
                       <div className="flex items-center gap-2">
                         <Package className="size-3 text-primary/60" />
                         {prod.name}
@@ -237,7 +243,7 @@ export default function ClientsAdminPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-            <Button disabled={!clientCode || !activeProduct || productsLoading} onClick={handleApprove}>Confirmar Ativação</Button>
+            <Button disabled={!clientCode || !activeProductId || productsLoading} onClick={handleApprove}>Confirmar Ativação</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

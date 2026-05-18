@@ -1,3 +1,4 @@
+
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -28,7 +29,7 @@ import {
   GitFork
 } from "lucide-react";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
-import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, limit, getDocs } from "firebase/firestore";
+import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, getDocs } from "firebase/firestore";
 import { useMemo, useState } from "react";
 import { UserProfile, OnboardingInstance, ActivationFlow, Product } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +56,13 @@ export default function OnboardingManagement() {
   const [selectedFlowId, setSelectedFlowId] = useState("");
   const [isSavingFlow, setIsSavingFlow] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
+
+  // Mapeamento de Produtos
+  const productsQuery = useMemo(() => query(collection(db, "products")), [db]);
+  const { data: dbProducts } = useCollection<Product>(productsQuery);
+  const productsMap = useMemo(() => {
+    return dbProducts.reduce((acc, p) => ({ ...acc, [p.id!]: p.name }), {} as Record<string, string>);
+  }, [dbProducts]);
 
   // 1. Buscar Clientes Aprovados
   const clientsQuery = useMemo(() => query(
@@ -103,7 +111,7 @@ export default function OnboardingManagement() {
     const instanceData = {
       clientId: client.id,
       institutionName: client.institutionName || client.displayName,
-      productId: client.activeProduct,
+      productId: client.activeProduct, // Aqui deve ser o ID
       techId: user.uid,
       techName: user.displayName || 'Analista Suporte',
       status: 'active',
@@ -139,6 +147,11 @@ export default function OnboardingManagement() {
     setTargetInstance(instance);
     setSelectedFlowId("");
     
+    if (!instance.productId) {
+       toast({ variant: "destructive", title: "Erro", description: "Produto não identificado nesta instância." });
+       return;
+    }
+
     // Buscar fluxos reais para o produto
     const flowsRef = collection(db, "products", instance.productId, "activationFlows");
     const q = query(flowsRef, where("published", "==", true));
@@ -240,7 +253,7 @@ export default function OnboardingManagement() {
                                 <h3 className="text-xl font-bold text-slate-900">{client.institutionName}</h3>
                                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                   <span className="flex items-center gap-1"><Building2 className="size-3" /> {client.cnpj}</span>
-                                  <span className="flex items-center gap-1 font-bold text-primary"><Zap className="size-3" /> {client.activeProduct}</span>
+                                  <span className="flex items-center gap-1 font-bold text-primary"><Zap className="size-3" /> {productsMap[client.activeProduct!] || client.activeProduct}</span>
                                 </div>
                               </div>
                               <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Aguardando Técnico</Badge>
@@ -296,7 +309,7 @@ export default function OnboardingManagement() {
                         <div className="space-y-1">
                           <h4 className="font-bold text-xl">{inst.institutionName}</h4>
                           <p className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Briefcase className="size-3.5" /> Ativação: <strong>{inst.productId}</strong>
+                            <Briefcase className="size-3.5" /> Ativação: <strong>{productsMap[inst.productId] || inst.productId}</strong>
                           </p>
                         </div>
                         
@@ -365,7 +378,7 @@ export default function OnboardingManagement() {
                           <span className="text-[10px] text-muted-foreground">{item.cnpj}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-[11px] font-bold text-primary">{item.activeProduct}</TableCell>
+                      <TableCell className="text-[11px] font-bold text-primary">{productsMap[item.activeProduct!] || item.activeProduct}</TableCell>
                       <TableCell>
                         <Badge variant={item.activationStatus === 'assumido' ? 'default' : 'secondary'} className="text-[9px] uppercase">
                           {item.activationStatus === 'assumido' ? 'Em Atendimento' : 'Aguardando Suporte'}
@@ -415,7 +428,7 @@ export default function OnboardingManagement() {
             </div>
             <DialogTitle>Definir Roteiro Técnico</DialogTitle>
             <DialogDescription>
-              Selecione o fluxo de ativação que será aplicado à instituição <strong>{targetInstance?.institutionName}</strong> para o produto <strong>{targetInstance?.productId}</strong>.
+              Selecione o fluxo de ativação que será aplicado à instituição <strong>{targetInstance?.institutionName}</strong> para o produto <strong>{productsMap[targetInstance?.productId!] || targetInstance?.productId}</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="py-6 space-y-4">
@@ -501,7 +514,7 @@ export default function OnboardingManagement() {
                 <Label className="text-[10px] uppercase font-bold text-primary tracking-widest">Produto Contratado</Label>
                 <div className="flex items-center gap-2 font-black text-xl text-primary">
                   <Zap className="size-5 fill-current" />
-                  {selectedClientForFicha?.activeProduct || 'Não atribuído'}
+                  {productsMap[selectedClientForFicha?.activeProduct!] || selectedClientForFicha?.activeProduct || 'Não atribuído'}
                 </div>
               </div>
               <div className="text-right space-y-1">
