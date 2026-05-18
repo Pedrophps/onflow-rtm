@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mail, Lock, Loader2, Building2 } from 'lucide-react';
+import { Mail, Lock, Loader2, Building2, UserCircle, ShieldCheck, Headset } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
@@ -54,6 +54,12 @@ export default function LoginPage() {
     }
   }, [currentUser, authLoading, fastRedirect]);
 
+  const fillFields = (e: string, p: string) => {
+    setEmail(e);
+    setPassword(p);
+    setActiveTab('login');
+  };
+
   const handleSignUp = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (loading) return;
@@ -66,7 +72,7 @@ export default function LoginPage() {
       const role = isAdminEmail(email) ? 'admin' : 'client';
       const userRef = doc(db, 'users', result.user.uid);
 
-      setDoc(userRef, {
+      await setDoc(userRef, {
         email,
         role,
         status: role === 'admin' ? 'approved' : 'pending',
@@ -74,9 +80,7 @@ export default function LoginPage() {
         institutionName: role === 'client' ? institutionName : 'RTM',
         cnpj: role === 'client' ? cnpj : '',
         createdAt: new Date().toISOString()
-      }, { merge: true }).catch((err) => {
-        console.warn("Erro ao salvar perfil no cadastro:", err);
-      });
+      }, { merge: true });
 
       fastRedirect(email);
     } catch (error: any) {
@@ -196,6 +200,40 @@ export default function LoginPage() {
               </form>
             </TabsContent>
           </Tabs>
+
+          {/* Atalhos de Preenchimento (Apenas para Testes) */}
+          <div className="p-4 bg-muted/30 border-t space-y-3">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Auto-preenchimento de Teste</p>
+            <div className="grid grid-cols-3 gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-primary/50 transition-colors"
+                onClick={() => fillFields('suporte@rtm.net.br', '123456')}
+              >
+                <Headset className="size-3" />
+                Suporte
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-primary/50 transition-colors"
+                onClick={() => fillFields('comercial@rtm.net.br', '123456')}
+              >
+                <ShieldCheck className="size-3" />
+                Comercial
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-primary/50 transition-colors"
+                onClick={() => fillFields('cliente@exemplo.com.br', '123456')}
+              >
+                <UserCircle className="size-3" />
+                Cliente
+              </Button>
+            </div>
+          </div>
         </Card>
       </div>
     </div>

@@ -93,4 +93,11 @@ A arquitetura é dividida em:
 - **Motivo**: Centralização das ferramentas técnicas no Hub de Diagnóstico (rodapé da home), tornando a jornada de login mais limpa e próxima de um ambiente de produção.
 
 ---
+
+## [UPDATE - V1.7 - REINTRODUÇÃO DE ATALHOS DE AUTO-PREENCHIMENTO]
+- **Mudança**: Reintrodução dos botões de suporte, comercial e cliente na tela de Login.
+- **Lógica**: Os botões agora possuem função EXCLUSIVA de preencher os campos de e-mail e senha. O disparo do login deve ser manual pelo usuário para garantir controle do fluxo.
+- **Motivo**: Facilitação de testes rápidos de interface sem comprometer a limpeza visual severamente.
+
+---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*
