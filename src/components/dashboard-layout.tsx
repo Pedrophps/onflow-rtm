@@ -24,7 +24,8 @@ import {
   LogOut,
   ChevronRight,
   Loader2,
-  Package
+  Package,
+  Zap
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -56,9 +57,9 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
         { title: "Relatórios", icon: BarChart3, href: "/dashboard/admin/reports" },
       ]
     : [
-        { title: "Minha Jornada", icon: LayoutDashboard, href: "/dashboard/client" },
+        { title: "Ativações", icon: Zap, href: "/dashboard/client" },
         { title: "Documentos", icon: ClipboardList, href: "/dashboard/client/docs" },
-        { title: "Suporte", icon: Settings, href: "/dashboard/client/support" },
+        { title: "Suporte RTM", icon: Settings, href: "/dashboard/client/support" },
       ];
 
   if (loading) {

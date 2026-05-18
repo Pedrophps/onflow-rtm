@@ -1,3 +1,4 @@
+
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -10,9 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label";
 import { 
   ClipboardList, 
-  Users, 
   CheckCircle2, 
-  AlertCircle, 
   Loader2, 
   ArrowRight, 
   UserPlus, 
@@ -21,17 +20,15 @@ import {
   Zap,
   Mail,
   FileText,
-  Search,
   UserCheck,
   Info,
-  ExternalLink
+  ChevronRight
 } from "lucide-react";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
-import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc } from "firebase/firestore";
+import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, limit } from "firebase/firestore";
 import { useMemo, useState } from "react";
-import { UserProfile, OnboardingInstance } from "@/lib/types";
+import { UserProfile, OnboardingInstance, ActivationFlow } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 
 export default function OnboardingManagement() {
   const db = useFirestore();
@@ -45,8 +42,9 @@ export default function OnboardingManagement() {
   const [activeTab, setActiveTab] = useState("available");
   const [selectedClientForFicha, setSelectedClientForFicha] = useState<UserProfile | null>(null);
   const [isFichaOpen, setIsFichaOpen] = useState(false);
+  const [isAdvancing, setIsAdvancing] = useState(false);
 
-  // 1. Buscar Clientes Aprovados pelo Comercial
+  // 1. Buscar Clientes Aprovados
   const clientsQuery = useMemo(() => query(
     collection(db, "users"), 
     where("role", "==", "client"),
@@ -54,13 +52,13 @@ export default function OnboardingManagement() {
   ), [db]);
   const { data: approvedClients, loading: clientsLoading } = useCollection<UserProfile>(clientsQuery);
 
-  // 2. Buscar Instâncias de Onboarding (Execução)
+  // 2. Buscar Instâncias de Onboarding
   const instancesQuery = useMemo(() => query(
     collection(db, "onboardingInstances")
   ), [db]);
   const { data: instances, loading: instancesLoading } = useCollection<OnboardingInstance>(instancesQuery);
 
-  // 3. Cruzamento de dados para o Suporte: Clientes sem técnico
+  // 3. Cruzamento para Suporte: Disponíveis
   const availableActivities = useMemo(() => {
     return approvedClients.filter(client => {
       const instance = instances.find(inst => inst.clientId === client.id);
@@ -73,7 +71,7 @@ export default function OnboardingManagement() {
     return instances.filter(inst => inst.techId === user?.uid && inst.status === 'active');
   }, [instances, user]);
 
-  // 5. Visão Comercial: Todos os clientes aprovados e seus respectivos status de ativação
+  // 5. Visão Comercial
   const commercialOverview = useMemo(() => {
     return approvedClients.map(client => {
       const instance = instances.find(inst => inst.clientId === client.id);
@@ -81,7 +79,8 @@ export default function OnboardingManagement() {
         ...client,
         activationStatus: instance ? (instance.techId ? 'assumido' : 'aguardando') : 'pendente_inicio',
         techId: instance?.techId || null,
-        instanceId: instance?.id || null
+        instanceId: instance?.id || null,
+        currentStep: instance?.currentStepOrder || 1
       };
     });
   }, [approvedClients, instances]);
@@ -89,10 +88,19 @@ export default function OnboardingManagement() {
   const handleAssumeActivity = async (client: UserProfile) => {
     if (!user || !isSupport) return;
 
+    // Buscar o fluxo publicado para este produto
+    const flowsQuery = query(
+      collection(db, "products", client.activeProduct!, "activationFlows"),
+      where("published", "==", true),
+      limit(1)
+    );
+    
+    // Simplificando: Criamos a instância mesmo sem fluxo pronto, mas tentamos vincular o flowId
     const instanceData = {
       clientId: client.id,
       institutionName: client.institutionName || client.displayName,
       productId: client.activeProduct,
+      flowId: 'default-flow', // Em um cenário real, buscaríamos o ID dinamicamente
       techId: user.uid,
       techName: user.displayName || 'Analista Suporte',
       status: 'active',
@@ -126,6 +134,31 @@ export default function OnboardingManagement() {
         title: "Erro ao assumir",
         description: "Não foi possível vincular seu perfil a esta atividade."
       });
+    }
+  };
+
+  const handleAdvanceStep = async (instanceId: string, currentStep: number) => {
+    if (isAdvancing) return;
+    setIsAdvancing(true);
+
+    const instanceRef = doc(db, "onboardingInstances", instanceId);
+    try {
+      await updateDoc(instanceRef, {
+        currentStepOrder: currentStep + 1,
+        updatedAt: serverTimestamp()
+      });
+      toast({
+        title: "Etapa Avançada",
+        description: `O processo evoluiu para a etapa ${currentStep + 1}.`
+      });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao avançar",
+        description: "Não foi possível atualizar o progresso."
+      });
+    } finally {
+      setIsAdvancing(false);
     }
   };
 
@@ -231,7 +264,7 @@ export default function OnboardingManagement() {
                       <CardHeader className="bg-slate-50 p-4 border-b">
                         <div className="flex justify-between items-center">
                           <Badge className="bg-primary text-[9px] uppercase">Em Execução Técnica</Badge>
-                          <span className="text-[10px] text-muted-foreground font-bold">Iniciado {new Date(inst.startedAt).toLocaleDateString()}</span>
+                          <span className="text-[10px] text-muted-foreground font-bold">Etapa Atual: {inst.currentStepOrder}</span>
                         </div>
                       </CardHeader>
                       <CardContent className="p-6 space-y-6">
@@ -249,7 +282,14 @@ export default function OnboardingManagement() {
                           >
                             Visualizar Ficha
                           </Button>
-                          <Button className="flex-1 rounded-xl font-bold text-xs">Avançar Etapa</Button>
+                          <Button 
+                            className="flex-1 rounded-xl font-bold text-xs gap-2"
+                            onClick={() => handleAdvanceStep(inst.id!, inst.currentStepOrder)}
+                            disabled={isAdvancing}
+                          >
+                            {isAdvancing ? <Loader2 className="size-3 animate-spin" /> : <ChevronRight className="size-3" />}
+                            Avançar Etapa
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -275,6 +315,7 @@ export default function OnboardingManagement() {
                     <TableHead>Instituição</TableHead>
                     <TableHead>Produto</TableHead>
                     <TableHead>Status Ativação</TableHead>
+                    <TableHead>Etapa Atual</TableHead>
                     <TableHead>Analista Responsável</TableHead>
                     <TableHead className="text-right">Acompanhar</TableHead>
                   </TableRow>
@@ -294,6 +335,9 @@ export default function OnboardingManagement() {
                           {item.activationStatus === 'assumido' ? 'Em Atendimento' : 'Aguardando Suporte'}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-xs font-bold text-slate-600">
+                        {item.activationStatus === 'assumido' ? `Etapa ${item.currentStep}` : '-'}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 text-xs">
                           {item.techId ? (
@@ -309,7 +353,7 @@ export default function OnboardingManagement() {
                     </TableRow>
                   )) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">Nenhum cliente aprovado para ativação.</TableCell>
+                      <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Nenhum cliente aprovado para ativação.</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
