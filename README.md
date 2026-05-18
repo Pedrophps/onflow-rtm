@@ -1,31 +1,31 @@
 
 # OnFlow RTM - Hub Integrador de Onboarding
 
-O **OnFlow RTM** é a plataforma central de orquestração para ativação de serviços financeiros no ecossistema RTM. O sistema foi projetado para eliminar silos entre os times Comercial e Suporte, oferecendo ao Cliente Institucional uma jornada de ativação transparente, previsível e em tempo real.
+O **OnFlow RTM** é a plataforma central de orquestração para ativação de serviços financeiros no ecossistema RTM.
 
 ---
 
-## 🛡️ POLÍTICA DE VERSIONAMENTO ADITIVO
-Este documento segue uma **Política de Persistência**: informações obsoletas são ~~tachadas~~, nunca apagadas. Novos blocos de atualização são inseridos no topo da seção de logs.
+## 🚀 INTEGRAÇÃO VIA POSTMAN (TESTE DE API)
 
----
+Para testar a ingestão automática de dados via ERP usando a IA (OpenRouter/NVIDIA), utilize os seguintes parâmetros:
 
-## 💰 CUSTOS E ESCALABILIDADE (FREE TIER FRIENDLY)
-O projeto foi estruturado para operar com **custo zero** durante as fases de Prototipagem, QA e MVP:
-- **IA (Genkit + Gemini 1.5 Flash)**: Utiliza a cota gratuita do Google AI Studio para processamento de e-mails e automação.
-- **Database & Auth (Firebase)**: Roda sobre o plano Spark (gratuito), suportando milhares de interações mensais sem faturamento.
-- **Infraestrutura**: Frontend otimizado para baixo consumo de Edge Runtime.
+### 1. Configuração do Request
+- **Método**: `POST`
+- **URL**: `http://localhost:9002/api/erp/process` (ou a URL do seu ambiente)
+- **Auth**: `Bearer Token`
+- **Token**: `RTM-TEST-TOKEN-2024`
 
----
+### 2. Headers
+- `Content-Type: application/json`
+- `Authorization: Bearer RTM-TEST-TOKEN-2024`
 
-## 🚀 CICLO OPERACIONAL (WORKFLOW)
-
-O ciclo de vida de um cliente no OnFlow segue quatro macro-fases:
-
-1. **Admissão (Self-Service)**: O cliente realiza o cadastro institucional (CNPJ, Razão Social, Contato). O estado inicial é `pending`.
-2. **Qualificação (Comercial)**: O time Comercial valida os dados, atribui o **ID RTM (Client Code)**, define o produto contratado e libera o acesso.
-3. **Engajamento Técnico (Suporte)**: O Suporte visualiza o novo cliente na fila de "Disponíveis". Um analista assume a responsabilidade técnica e vincula o **Roteiro Técnico (Flow)** adequado ao produto.
-4. **Execução e Entrega**: Cliente e Suporte interagem em uma timeline síncrona. O Suporte avança as etapas conforme as evidências são validadas no log de interações até a conclusão final.
+### 3. Body (Raw JSON)
+```json
+{
+  "subject": "[ATIVAÇÃO] SOLICITAÇÃO #2024-001 - BANCO ALPHA",
+  "body": "Prezado Suporte RTM,\n\nSolicitamos a ativação do produto MENSAGERIA SWIFT para o cliente BANCO ALPHA S.A., CNPJ 12.345.678/0001-99.\n\nAtenciosamente,\nERP Comercial."
+}
+```
 
 ---
 
@@ -33,24 +33,19 @@ O ciclo de vida de um cliente no OnFlow segue quatro macro-fases:
 
 ### 🏢 Cliente Institucional
 - **Acompanhamento**: Visualiza o progresso percentual da sua ativação.
-- **Interação**: Envia mensagens e evidências (arquivos) exclusivamente nas etapas sob sua responsabilidade.
+- **Interação**: Envia mensagens e evidências (arquivos).
 
 ### 💼 Gestão Comercial (Admin)
-- **Aprovação**: Atua como o "Gatekeeper" do sistema, aprovando novos acessos.
-- **Relacionamento**: Insere notas comerciais que aparecem como "Boas-vindas" no dashboard do cliente.
+- **Aprovação**: Atua como o "Gatekeeper", aprovando novos acessos.
 
 ### 🎧 Suporte Técnico (Admin)
-- **Catálogo**: Gerencia os produtos e cria os roteiros de etapas (Fluxos).
 - **Operação**: Assume atendimentos e valida as configurações de infraestrutura.
 
 ---
 
-## 🛠️ ARQUITETURA TÉCNICA
-
-- **Frontend**: Next.js 15 (App Router).
-- **IA**: Genkit para triagem automática de e-mails do ERP.
-- **Persistência**: Firebase Firestore Real-time.
-- **Segurança**: RBAC via Firestore Security Rules.
+## 💰 CUSTOS E ESCALABILIDADE (FREE TIER FRIENDLY)
+- **IA (OpenRouter + NVIDIA)**: Processamento de e-mails e automação de triagem.
+- **Database & Auth (Firebase)**: Roda sobre o plano Spark (gratuito).
 
 ---
 *Identificando para integrar. Entender para atender. Conhecer para evoluir.*
