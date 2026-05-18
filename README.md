@@ -5,19 +5,20 @@ O **OnFlow RTM** é a plataforma central de orquestração para ativação de se
 
 ---
 
-## 🚀 INTEGRAÇÃO VIA POSTMAN (TESTE DE API)
+## 🚀 INTEGRAÇÃO VIA POSTMAN (IMPORTANTE)
 
-Para testar a ingestão automática de dados via ERP usando a IA (OpenRouter/NVIDIA), utilize os seguintes parâmetros:
+Como este projeto está rodando em um ambiente de nuvem, você **não pode** usar `localhost` no seu Postman local.
 
-### 1. Configuração do Request
+### 1. Como obter a URL correta
+1. No painel do seu editor, procure pelo ícone de **Preview** ou abra a URL que o sistema gerou para visualizar o app.
+2. A URL será algo como `https://9002-port-xxxxxxxx.googleusercontent.com`.
+3. Use esta URL base para suas chamadas de API.
+
+### 2. Configuração do Request no Postman
 - **Método**: `POST`
-- **URL**: `http://localhost:9002/api/erp/process` (ou a URL do seu ambiente)
+- **URL**: `https://SUA-URL-GERADA/api/erp/process`
 - **Auth**: `Bearer Token`
 - **Token**: `RTM-TEST-TOKEN-2024`
-
-### 2. Headers
-- `Content-Type: application/json`
-- `Authorization: Bearer RTM-TEST-TOKEN-2024`
 
 ### 3. Body (Raw JSON)
 ```json
