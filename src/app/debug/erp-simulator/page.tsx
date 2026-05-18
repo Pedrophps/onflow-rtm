@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useFirestore, useUser } from '@/firebase';
 import { processAutomationFromEmail } from '@/lib/automation-service';
-import { Loader2, Mail, Zap, CheckCircle2, AlertTriangle, ArrowRight, Database, ShieldCheck, Cog, ClipboardList, Globe, Copy } from 'lucide-react';
+import { Loader2, Mail, Zap, CheckCircle2, AlertTriangle, ArrowRight, Database, ShieldCheck, Cog, ClipboardList, Globe, Copy, Code } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,11 @@ ERP OnFlow`);
 
   const webhookUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/webhook/erp-email` : '/api/webhook/erp-email';
 
+  const jsonExample = JSON.stringify({
+    subject: subject,
+    body: body
+  }, null, 2);
+
   const handleSimulate = async () => {
     if (!user) return;
     setIsProcessing(true);
@@ -60,9 +66,9 @@ ERP OnFlow`);
     }
   };
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (text: string, title: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "Copiado!", description: "URL do Webhook copiada para a área de transferência." });
+    toast({ title: title, description: "Copiado para a área de transferência." });
   };
 
   return (
@@ -79,27 +85,47 @@ ERP OnFlow`);
         </div>
 
         {/* Informações do Webhook Real */}
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="p-6 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                   <Globe className="size-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900">Endpoint de Integração Real</h3>
-                  <p className="text-xs text-muted-foreground">Configure seu ERP ou serviço de e-mail para enviar POST JSON para este endereço:</p>
+                  <h3 className="font-bold text-slate-900">Endpoint Webhook</h3>
+                  <p className="text-xs text-muted-foreground">URL para integração real via POST.</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 bg-white p-2 px-4 rounded-xl border font-mono text-[10px] text-primary font-bold">
-                {webhookUrl}
-                <Button variant="ghost" size="icon" className="size-6" onClick={() => copyToClipboard(webhookUrl)}>
+              <div className="flex items-center gap-2 bg-white p-2 px-4 rounded-xl border font-mono text-[10px] text-primary font-bold overflow-hidden">
+                <span className="truncate">{webhookUrl}</span>
+                <Button variant="ghost" size="icon" className="size-6 shrink-0" onClick={() => copyToClipboard(webhookUrl, "URL Copiada")}>
                   <Copy className="size-3" />
                 </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 bg-white">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
+                  <Code className="size-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900">Exemplo para Postman</h3>
+                  <p className="text-xs text-muted-foreground">JSON pronto para testar o POST.</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 bg-slate-50 p-2 px-4 rounded-xl border font-mono text-[9px] text-slate-500 overflow-hidden">
+                <span className="truncate">{"{ \"subject\": \"...\", \"body\": \"...\" }"}</span>
+                <Button variant="ghost" size="icon" className="size-6 shrink-0" onClick={() => copyToClipboard(jsonExample, "JSON Copiado")}>
+                  <Copy className="size-3" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Guia Visual do Processo */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
