@@ -186,7 +186,7 @@ export default function Home() {
                 <h4 className="font-bold uppercase tracking-wider text-xs text-muted-foreground">Valores</h4>
                 <div className="flex flex-wrap gap-2">
                   {["Foco no cliente", "Desenvolvimento de Pessoas", "Equipe", "Confiança", "Inovação"].map((val) => (
-                    <span key={val} className="px-3 py-1 rounded-full bg-white border font-medium text-sm text-secondary-foreground">{val}</span>
+                    <span key={val} className="px-3 py-1 rounded-full bg-white border font-medium text-sm text-slate-700">{val}</span>
                   ))}
                 </div>
               </div>
