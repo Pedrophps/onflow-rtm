@@ -4,7 +4,7 @@
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { FlowStep, UserProfile, Product, OnboardingInstance, ActivationFlow } from "@/lib/types";
+import { FlowStep, UserProfile, Product, OnboardingInstance } from "@/lib/types";
 import { 
   CheckCircle2, 
   ChevronDown, 
@@ -16,7 +16,6 @@ import {
   Loader2, 
   Zap, 
   Lock, 
-  Circle, 
   ArrowRight, 
   Package, 
   LayoutGrid,
@@ -26,8 +25,7 @@ import {
   ShieldCheck,
   FileEdit,
   Settings2,
-  ClipboardList,
-  FileText
+  ClipboardList
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -35,7 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
-import { doc, collection, query, where, addDoc, serverTimestamp, getDocs } from "firebase/firestore";
+import { doc, collection, query, where, addDoc, serverTimestamp } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -67,7 +65,9 @@ export default function ActivationsPage() {
     instances.find(inst => inst.id === selectedInstanceId), 
   [instances, selectedInstanceId]);
 
-  const productsQuery = useMemo(() => (user ? query(collection(db, "products")) : null), [db, user]);
+  const productsQuery = useMemo(() => 
+    user ? query(collection(db, "products")) : null, 
+  [db, user]);
   const { data: dbProducts } = useCollection<Product>(productsQuery);
 
   useEffect(() => {
@@ -88,14 +88,16 @@ export default function ActivationsPage() {
     }
   }, [selectedInstance, dbProducts]);
 
-  const productRef = useMemo(() => realProductId ? doc(db, "products", realProductId) : null, [db, realProductId]);
+  const productRef = useMemo(() => 
+    (user && realProductId) ? doc(db, "products", realProductId) : null, 
+  [db, user, realProductId]);
   const { data: product } = useDoc<Product>(productRef);
 
   const stepsQuery = useMemo(() => 
-    (realProductId && selectedInstance?.flowId) ? query(
+    (user && realProductId && selectedInstance?.flowId) ? query(
       collection(db, "products", realProductId, "activationFlows", selectedInstance.flowId, "steps")
     ) : null, 
-  [db, realProductId, selectedInstance]);
+  [db, user, realProductId, selectedInstance]);
   const { data: rawSteps, loading: stepsLoading } = useCollection<FlowStep>(stepsQuery);
   
   const steps = useMemo(() => [...rawSteps].sort((a, b) => a.order - b.order), [rawSteps]);
