@@ -199,40 +199,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Segmentos e Soluções */}
-      <section className="py-32 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="grid lg:grid-cols-12 gap-16 items-center">
-            <div className="lg:col-span-7 relative h-[600px]">
-              <Image 
-                src="https://picsum.photos/seed/rtm-map/1200/900" 
-                alt="Presença RTM" 
-                fill 
-                className="object-cover rounded-[4rem] shadow-2xl"
-                data-ai-hint="world map"
-              />
-            </div>
-            <div className="lg:col-span-5 space-y-8">
-              <Badge className="bg-primary/10 text-primary border-none px-4 py-1 uppercase font-black tracking-widest text-[10px]">Arquitetura de Excelência</Badge>
-              <h2 className="text-4xl font-bold font-headline text-slate-900 leading-tight">Atendemos todos os segmentos do setor financeiro</h2>
-              <p className="text-lg text-slate-600 leading-relaxed">
-                Nossa topologia contempla todas as soluções RTM integradas de ponta a ponta. Oferecemos um ecossistema completo para Bancos, Fintechs, Corretoras e Adquirentes.
-              </p>
-              <div className="space-y-4">
-                 <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <PieChart className="text-primary size-8" />
-                    <span className="font-bold text-slate-700 uppercase tracking-tighter text-sm">Distribuição Inteligente por Segmento</span>
-                 </div>
-                 <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <Layers className="text-primary size-8" />
-                    <span className="font-bold text-slate-700 uppercase tracking-tighter text-sm">Topologia de Soluções Integradas</span>
-                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Trajetória Futurista em Carrossel */}
       <section id="trajetoria" className="py-32 bg-slate-950 text-white overflow-hidden relative">
         <div className="container mx-auto px-6 relative z-10">
