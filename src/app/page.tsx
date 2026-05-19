@@ -9,26 +9,26 @@ import {
   ArrowRight, 
   ShieldCheck, 
   Globe, 
-  Building2,
-  Network,
-  Database,
-  FileCheck,
-  Lock,
-  PhoneCall,
-  Menu,
-  Zap,
-  Server,
-  TrendingUp,
-  MapPin,
-  LayoutGrid,
-  History,
-  Cloud,
-  Layers,
-  Link as LinkIcon,
-  Rocket,
-  Activity,
-  Sun,
-  Moon
+  Building2, 
+  Network, 
+  Database, 
+  FileCheck, 
+  Lock, 
+  PhoneCall, 
+  Menu, 
+  Zap, 
+  Server, 
+  TrendingUp, 
+  MapPin, 
+  LayoutGrid, 
+  History, 
+  Cloud, 
+  Layers, 
+  Link as LinkIcon, 
+  Rocket, 
+  Activity, 
+  Sun, 
+  Moon 
 } from 'lucide-react';
 import {
   Sheet,
@@ -61,8 +61,8 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-white dark:bg-slate-950 selection:bg-primary/10 font-body text-foreground transition-colors duration-500">
-      {/* Header Section */}
-      <header className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-border/50">
+      {/* Header Section - Transparência removida */}
+      <header className="fixed top-0 w-full z-50 bg-white dark:bg-slate-950 border-b border-border/50 shadow-sm">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2 font-headline font-bold text-2xl text-primary">

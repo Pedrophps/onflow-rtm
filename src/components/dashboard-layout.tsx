@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -148,7 +147,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
           </SidebarFooter>
         </Sidebar>
         <SidebarInset className="bg-background">
-          <header className="flex h-16 items-center border-b px-6 bg-card/50 backdrop-blur-md sticky top-0 z-10">
+          <header className="flex h-16 items-center border-b px-6 bg-card sticky top-0 z-10 shadow-sm transition-colors">
             <SidebarTrigger className="-ml-1 mr-4" />
             <div className="flex-1">
               <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-widest">
