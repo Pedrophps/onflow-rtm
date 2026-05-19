@@ -1,4 +1,3 @@
-
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -250,23 +249,23 @@ export default function ClientsAdminPage() {
           <div className="grid grid-cols-2 gap-6 py-4">
             <div className="space-y-2">
               <Label className="text-foreground">ID RTM do Cliente</Label>
-              <Input 
+              <input 
                 value={clientCode} 
                 onChange={(e) => setClientCode(e.target.value)} 
                 placeholder="Ex: RTM-BR-001" 
                 disabled={!isComercial}
-                className="bg-card text-foreground"
+                className="flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
             <div className="space-y-2">
               <Label className="text-foreground">Telefone de Contato</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                <Input 
+                <input 
                   value={phoneNumber} 
                   onChange={(e) => setPhoneNumber(e.target.value)} 
                   placeholder="(00) 00000-0000" 
-                  className="pl-10 bg-card text-foreground" 
+                  className="flex h-10 w-full rounded-md border border-input bg-card pl-10 pr-3 py-2 text-sm text-foreground ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" 
                   disabled={!isComercial}
                 />
               </div>
@@ -280,7 +279,7 @@ export default function ClientsAdminPage() {
                 ) : dbProducts.length > 0 ? dbProducts.map((prod) => (
                   <div 
                     key={prod.id} 
-                    className={`flex items-center space-x-3 p-3 rounded-xl border-2 transition-all ${isComercial ? 'cursor-pointer' : 'cursor-default'} ${selectedProductIds.includes(prod.id!) ? 'border-primary bg-primary/5' : 'border-slate-100 hover:border-slate-200'}`}
+                    className={`flex items-center space-x-3 p-3 rounded-xl border-2 transition-all ${isComercial ? 'cursor-pointer' : 'cursor-default'} ${selectedProductIds.includes(prod.id!) ? 'border-primary bg-primary/5' : 'border-slate-100 dark:border-slate-800 hover:border-slate-200'}`}
                     onClick={() => toggleProduct(prod.id!)}
                   >
                     <Checkbox checked={selectedProductIds.includes(prod.id!)} disabled={!isComercial} />
@@ -302,11 +301,11 @@ export default function ClientsAdminPage() {
                 <FileText className="size-4 text-primary" />
                 Informações Adicionais para o Cliente
               </Label>
-              <Textarea 
+              <textarea 
                 value={commercialNotes} 
                 onChange={(e) => setCommercialNotes(e.target.value)} 
                 placeholder={isComercial ? "Insira boas-vindas, orientações iniciais ou avisos específicos para este cliente..." : "Nenhuma nota inserida pelo comercial."}
-                className="min-h-[100px] bg-card text-foreground"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={!isComercial}
               />
             </div>

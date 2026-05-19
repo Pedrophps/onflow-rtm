@@ -80,7 +80,7 @@ export default function SelectProfilePage() {
 
         <div className="grid md:grid-cols-2 gap-8">
           <Card 
-            className="group hover:border-primary transition-all cursor-pointer border-2 shadow-sm hover:shadow-xl bg-white"
+            className="group hover:border-primary transition-all cursor-pointer border-2 shadow-sm hover:shadow-xl bg-card"
             onClick={() => handleSelect('suporte')}
           >
             <CardHeader className="pt-10 text-center">
@@ -98,7 +98,7 @@ export default function SelectProfilePage() {
           </Card>
 
           <Card 
-            className="group hover:border-secondary transition-all cursor-pointer border-2 shadow-sm hover:shadow-xl bg-white"
+            className="group hover:border-secondary transition-all cursor-pointer border-2 shadow-sm hover:shadow-xl bg-card"
             onClick={() => handleSelect('comercial')}
           >
             <CardHeader className="pt-10 text-center">
