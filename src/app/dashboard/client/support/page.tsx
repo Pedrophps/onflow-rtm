@@ -34,7 +34,6 @@ export default function ClientSupportPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile } = useDoc<UserProfile>(userRef);
 
-  // Buscar instâncias para mostrar os analistas responsáveis e habilitar o chat
   const instancesQuery = useMemo(() => 
     user ? query(
       collection(db, "onboardingInstances"),
@@ -45,25 +44,24 @@ export default function ClientSupportPage() {
 
   const { data: instances, loading: instancesLoading } = useCollection<OnboardingInstance>(instancesQuery);
 
-  // Seleciona a primeira instância ativa para o chat de suporte global
   const activeInstanceForChat = instances.length > 0 ? instances[0] : null;
 
   return (
     <DashboardLayout role="client">
       <div className="max-w-4xl mx-auto space-y-8 pb-12">
         <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold font-headline text-slate-900">Central de Suporte RTM</h1>
+          <h1 className="text-3xl font-bold font-headline text-slate-900 dark:text-white">Central de Suporte RTM</h1>
           <p className="text-muted-foreground">Estamos aqui para garantir a estabilidade da sua infraestrutura financeira.</p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          <Card className="hover:shadow-md transition-all border-2 border-slate-100">
+          <Card className="hover:shadow-md transition-all border-2 border-border bg-card">
             <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
               <div className="size-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary">
                 <Mail className="size-6" />
               </div>
               <div className="space-y-1">
-                <p className="font-bold text-slate-900">E-mail Técnico</p>
+                <p className="font-bold text-foreground">E-mail Técnico</p>
                 <p className="text-xs text-muted-foreground">suporte@rtm.net.br</p>
               </div>
               <Button variant="ghost" className="text-primary font-bold text-xs" asChild>
@@ -72,13 +70,13 @@ export default function ClientSupportPage() {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-md transition-all border-2 border-slate-100">
+          <Card className="hover:shadow-md transition-all border-2 border-border bg-card">
             <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
-              <div className="size-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
+              <div className="size-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
                 <Phone className="size-6" />
               </div>
               <div className="space-y-1">
-                <p className="font-bold text-slate-900">Telefone 24h</p>
+                <p className="font-bold text-foreground">Telefone 24h</p>
                 <p className="text-xs text-muted-foreground">0800 123 4567</p>
               </div>
               <Button variant="ghost" className="text-blue-600 font-bold text-xs">
@@ -88,7 +86,6 @@ export default function ClientSupportPage() {
           </Card>
         </div>
 
-        {/* Analistas Responsáveis */}
         <div className="space-y-4">
           <h3 className="text-lg font-bold font-headline flex items-center gap-2">
             <ShieldCheck className="size-5 text-primary" /> Seus Analistas Dedicados
@@ -98,37 +95,36 @@ export default function ClientSupportPage() {
               <div className="p-8 text-center border rounded-2xl"><Loader2 className="size-6 animate-spin mx-auto text-primary/20" /></div>
             ) : instances.length > 0 ? (
               instances.map((inst) => (
-                <Card key={inst.id} className="border-none shadow-sm bg-white overflow-hidden group">
+                <Card key={inst.id} className="border-none shadow-sm bg-card overflow-hidden group">
                   <div className="flex flex-col md:flex-row">
                     <div className="p-6 flex-1 flex items-center gap-4">
-                      <div className="size-12 rounded-full border-2 border-primary/10 flex items-center justify-center bg-slate-50 text-slate-400">
+                      <div className="size-12 rounded-full border-2 border-primary/10 flex items-center justify-center bg-muted text-muted-foreground">
                         <User className="size-6" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-slate-900">{inst.techName || "Analista a definir"}</p>
+                        <p className="text-sm font-bold text-foreground">{inst.techName || "Analista a definir"}</p>
                         <p className="text-xs text-muted-foreground">Analista Responsável pela Ativação</p>
                       </div>
                     </div>
-                    <div className="p-6 bg-slate-50 md:w-64 flex flex-col justify-center gap-1 border-l">
+                    <div className="p-6 bg-muted/30 md:w-64 flex flex-col justify-center gap-1 border-l border-border">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Produto</p>
                       <div className="flex items-center gap-2">
                         <Zap className="size-3 text-primary" />
-                        <span className="text-xs font-bold text-slate-700">{inst.productName || inst.productId}</span>
+                        <span className="text-xs font-bold text-foreground opacity-80">{inst.productName || inst.productId}</span>
                       </div>
                     </div>
                   </div>
                 </Card>
               ))
             ) : (
-              <div className="p-8 text-center border-2 border-dashed rounded-3xl space-y-2">
-                <AlertCircle className="size-8 mx-auto text-slate-200" />
+              <div className="p-8 text-center border-2 border-dashed rounded-3xl space-y-2 bg-card">
+                <AlertCircle className="size-8 mx-auto text-muted-foreground/20" />
                 <p className="text-sm text-muted-foreground">Nenhuma ativação técnica em curso com analista atribuído.</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Chat de Suporte */}
         <div className="space-y-4">
           <h3 className="text-lg font-bold font-headline flex items-center gap-2">
             <MessageSquareText className="size-5 text-primary" /> Chat de Suporte OnFlow
@@ -157,15 +153,14 @@ export default function ClientSupportPage() {
           )}
         </div>
 
-        {/* FAQ Section */}
         <div className="space-y-4">
           <h3 className="text-lg font-bold font-headline flex items-center gap-2">
             <Clock className="size-5 text-primary" /> Dúvidas Frequentes (FAQ)
           </h3>
-          <Card className="border-none shadow-xl bg-white p-6 rounded-3xl">
+          <Card className="border-none shadow-xl bg-card p-6 rounded-3xl">
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="item-1">
-                <AccordionTrigger className="text-left font-bold text-slate-700 hover:text-primary transition-colors">
+                <AccordionTrigger className="text-left font-bold text-foreground opacity-80 hover:text-primary transition-colors">
                   Qual o SLA médio de ativação técnica?
                 </AccordionTrigger>
                 <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
@@ -173,7 +168,7 @@ export default function ClientSupportPage() {
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-2">
-                <AccordionTrigger className="text-left font-bold text-slate-700 hover:text-primary transition-colors">
+                <AccordionTrigger className="text-left font-bold text-foreground opacity-80 hover:text-primary transition-colors">
                   Como enviar evidências de conformidade?
                 </AccordionTrigger>
                 <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
@@ -181,7 +176,7 @@ export default function ClientSupportPage() {
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-3">
-                <AccordionTrigger className="text-left font-bold text-slate-700 hover:text-primary transition-colors">
+                <AccordionTrigger className="text-left font-bold text-foreground opacity-80 hover:text-primary transition-colors">
                   Onde encontro os manuais de conectividade?
                 </AccordionTrigger>
                 <AccordionContent className="text-sm text-muted-foreground leading-relaxed">

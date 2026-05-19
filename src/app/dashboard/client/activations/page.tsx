@@ -1,4 +1,3 @@
-
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -114,7 +113,7 @@ export default function ActivationsPage() {
   };
 
   const getResponsibleIcon = (role: string) => {
-    const iconClass = "size-3.5 text-slate-600";
+    const iconClass = "size-3.5 text-slate-600 dark:text-slate-400";
     switch (role) {
       case 'suporte': return <Headset className={iconClass} />;
       case 'comercial': return <ShieldCheck className={iconClass} />;
@@ -151,19 +150,19 @@ export default function ActivationsPage() {
     <DashboardLayout role="client">
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold font-headline text-slate-900">Jornada de Ativação</h1>
+          <h1 className="text-3xl font-bold font-headline text-slate-900 dark:text-white">Jornada de Ativação</h1>
           <p className="text-muted-foreground">Confira as etapas técnicas e envie as evidências necessárias.</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="bg-slate-100 p-1 h-12 rounded-xl">
-            <TabsTrigger value="selection" className="rounded-lg px-8 gap-2 data-[state=active]:bg-white">
+          <TabsList className="bg-muted p-1 h-12 rounded-xl">
+            <TabsTrigger value="selection" className="rounded-lg px-8 gap-2 data-[state=active]:bg-card">
               <LayoutGrid className="size-4" /> Meus Produtos
             </TabsTrigger>
             <TabsTrigger 
               value="journey" 
               disabled={!selectedInstanceId} 
-              className="rounded-lg px-8 gap-2 data-[state=active]:bg-white"
+              className="rounded-lg px-8 gap-2 data-[state=active]:bg-card"
             >
               <Zap className="size-4" /> Fluxo de Trabalho
             </TabsTrigger>
@@ -175,8 +174,8 @@ export default function ActivationsPage() {
                 <Card 
                   key={inst.id} 
                   className={cn(
-                    "cursor-pointer transition-all hover:border-primary group overflow-hidden border-2",
-                    selectedInstanceId === inst.id ? "border-primary ring-2 ring-primary/10" : "border-slate-200"
+                    "cursor-pointer transition-all hover:border-primary group overflow-hidden border-2 bg-card",
+                    selectedInstanceId === inst.id ? "border-primary ring-2 ring-primary/10" : "border-border"
                   )}
                   onClick={() => handleSelectInstance(inst.id!)}
                 >
@@ -201,7 +200,7 @@ export default function ActivationsPage() {
                   </CardContent>
                 </Card>
               )) : (
-                <div className="col-span-full p-20 text-center border-2 border-dashed rounded-3xl space-y-4 bg-white">
+                <div className="col-span-full p-20 text-center border-2 border-dashed rounded-3xl space-y-4 bg-card">
                   <ShieldAlert className="size-12 mx-auto text-amber-500/20" />
                   <p className="text-sm text-muted-foreground">Você ainda não possui produtos ativos para este CNPJ.</p>
                 </div>
@@ -212,12 +211,12 @@ export default function ActivationsPage() {
           <TabsContent value="journey" className="animate-in fade-in slide-in-from-right duration-500">
             {selectedInstance ? (
               <div className="space-y-8">
-                <div className="bg-white rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
+                <div className="bg-card rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
                   {!selectedInstance.flowId && (
-                    <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-12 text-center space-y-4">
+                    <div className="absolute inset-0 bg-card/70 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-12 text-center space-y-4">
                       <Settings2 className="size-12 text-amber-500 animate-spin" />
                       <div className="space-y-1">
-                        <h3 className="text-xl font-bold text-slate-900">Roteiro em Definição</h3>
+                        <h3 className="text-xl font-bold text-foreground">Roteiro em Definição</h3>
                         <p className="text-sm text-muted-foreground max-w-md">O analista de suporte <strong>{selectedInstance.techName || 'técnico'}</strong> está configurando o seu roteiro de ativação. Em breve as etapas aparecerão aqui.</p>
                       </div>
                     </div>
@@ -225,7 +224,7 @@ export default function ActivationsPage() {
 
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
                     <div className="space-y-2">
-                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 px-3 py-1 font-bold">
+                      <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 gap-1.5 px-3 py-1 font-bold">
                         <CheckCircle2 className="size-3.5" /> JORNADA ATIVA
                       </Badge>
                       <h2 className="text-3xl font-bold font-headline">{product?.name || selectedInstance.productName || selectedInstance.productId}</h2>
@@ -237,7 +236,7 @@ export default function ActivationsPage() {
                       {predictedCompletionDate && (
                         <div className="mt-2 text-right">
                           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">conclusão prevista:</p>
-                          <p className="text-xs font-bold text-slate-700">{format(predictedCompletionDate, "dd/MM/yyyy")}</p>
+                          <p className="text-xs font-bold text-foreground opacity-80">{format(predictedCompletionDate, "dd/MM/yyyy")}</p>
                         </div>
                       )}
                     </div>
@@ -253,7 +252,7 @@ export default function ActivationsPage() {
                   {stepsLoading ? (
                     <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" /></div>
                   ) : steps.length > 0 ? (
-                    <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
+                    <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-border">
                       {steps.map((step) => {
                         const isCompleted = step.order < currentStepOrder;
                         const isCurrent = step.order === currentStepOrder;
@@ -263,17 +262,17 @@ export default function ActivationsPage() {
                         return (
                           <div key={step.id} className="relative">
                             <div className={cn(
-                              "absolute -left-[29px] top-1 size-6 rounded-full border-2 flex items-center justify-center transition-all z-10 bg-white",
+                              "absolute -left-[29px] top-1 size-6 rounded-full border-2 flex items-center justify-center transition-all z-10 bg-card",
                               isCompleted ? "border-emerald-500 bg-emerald-500 text-white" : 
                               isCurrent ? "border-primary bg-primary text-white animate-pulse" : 
-                              "border-slate-200 text-slate-400"
+                              "border-border text-muted-foreground"
                             )}>
                               {isCompleted ? <CheckCircle2 className="size-3.5" /> : 
                                <span className="text-[10px] font-bold">{step.order}</span>}
                             </div>
                             
                             <Card className={cn(
-                              "transition-all duration-300",
+                              "transition-all duration-300 bg-card",
                               isCurrent ? "ring-2 ring-primary/20 shadow-lg border-primary/40" : 
                               isFuture ? "opacity-60" : "hover:border-primary/30"
                             )}>
@@ -285,50 +284,49 @@ export default function ActivationsPage() {
                                   <div className="flex items-center gap-3">
                                     <CardTitle className={cn(
                                       "text-base font-bold",
-                                      isCompleted ? "text-slate-400" : "text-slate-800"
+                                      isCompleted ? "text-muted-foreground" : "text-foreground"
                                     )}>{step.name}</CardTitle>
-                                    <Badge variant="outline" className="text-[9px] uppercase font-bold bg-slate-50 text-slate-600 border-slate-200 gap-1 px-2 py-0.5">
+                                    <Badge variant="outline" className="text-[9px] uppercase font-bold bg-muted/20 text-muted-foreground border-border gap-1 px-2 py-0.5">
                                       {getResponsibleIcon(step.responsible)}
                                       {step.responsible}
                                     </Badge>
                                   </div>
                                   <CardDescription className="text-sm line-clamp-1">{step.description}</CardDescription>
                                 </div>
-                                {isExpanded ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
+                                {isExpanded ? <ChevronUp className="size-5 text-muted-foreground" /> : <ChevronDown className="size-5 text-muted-foreground" />}
                               </CardHeader>
 
                               {isExpanded && (
-                                <CardContent className="p-5 pt-0 border-t bg-slate-50/30">
+                                <CardContent className="p-5 pt-0 border-t bg-muted/10">
                                   <div className="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     <div className="lg:col-span-1 space-y-6">
                                       <div className="grid md:grid-cols-2 gap-4">
                                          <div className="space-y-1">
                                             <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">SLA de Atendimento</p>
-                                            <p className="text-xs font-bold flex items-center gap-2"><Clock className="size-3" /> {step.estimatedTimeInHours}h Úteis</p>
+                                            <p className="text-xs font-bold flex items-center gap-2 text-foreground"><Clock className="size-3" /> {step.estimatedTimeInHours}h Úteis</p>
                                          </div>
                                          <div className="space-y-1">
                                             <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Ação</p>
-                                            <p className="text-xs font-bold flex items-center gap-2"><FileEdit className="size-3" /> Envio de Evidência</p>
+                                            <p className="text-xs font-bold flex items-center gap-2 text-foreground"><FileEdit className="size-3" /> Envio de Evidência</p>
                                          </div>
                                       </div>
-                                      <div className="p-4 rounded-xl bg-white border border-slate-200 text-sm text-slate-700 leading-relaxed font-medium">
+                                      <div className="p-4 rounded-xl bg-card border border-border text-sm text-foreground opacity-90 leading-relaxed font-medium">
                                         {step.description}
                                       </div>
                                       
                                       {isCompleted && (
-                                        <div className="flex items-center gap-2 text-xs text-emerald-600 font-bold uppercase">
+                                        <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 font-bold uppercase">
                                           <CheckCircle2 className="size-3.5" /> Etapa Concluída
                                         </div>
                                       )}
                                       
                                       {isFuture && (
-                                        <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
                                           <Lock className="size-3.5" /> Etapa bloqueada
                                         </div>
                                       )}
                                     </div>
                                     <div className="lg:col-span-2">
-                                      {/* Log de Interação - Clientes interagem em SUAS etapas, mesmo que concluídas */}
                                       <StepInteractions 
                                         instanceId={selectedInstance.id!}
                                         stepId={step.id!}
@@ -347,14 +345,14 @@ export default function ActivationsPage() {
                       })}
                     </div>
                   ) : (
-                    <div className="p-10 text-center border-2 border-dashed rounded-3xl bg-slate-50/50">
+                    <div className="p-10 text-center border-2 border-dashed rounded-3xl bg-muted/10">
                       <p className="text-sm text-muted-foreground">O roteiro selecionado ainda não possui etapas cadastradas pelo Suporte.</p>
                     </div>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="p-20 text-center border-2 border-dashed rounded-3xl bg-white space-y-4">
+              <div className="p-20 text-center border-2 border-dashed rounded-3xl bg-card space-y-4">
                 <Package className="size-12 mx-auto text-muted-foreground/20" />
                 <p className="text-muted-foreground">Selecione um produto para visualizar a jornada.</p>
               </div>

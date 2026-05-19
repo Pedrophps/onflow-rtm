@@ -1,4 +1,3 @@
-
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -29,7 +28,6 @@ export default function ClientDashboardPage() {
   const [isUpdatingPhone, setIsUpdatingPhone] = useState(false);
   const [newPhone, setNewPhone] = useState("");
 
-  // 1. Buscar Instância de Onboarding Ativa
   const instanceQuery = useMemo(() => 
     user ? query(
       collection(db, "onboardingInstances"),
@@ -41,13 +39,11 @@ export default function ClientDashboardPage() {
   const { data: instances, loading: instanceLoading } = useCollection<OnboardingInstance>(instanceQuery);
   const instance = instances?.[0];
 
-  // 2. Buscar Todos os Produtos para mapeamento de ID (Necessário para achar o roteiro técnico)
   const productsQuery = useMemo(() => 
     user ? query(collection(db, "products")) : null, 
   [db, user]);
   const { data: dbProducts } = useCollection<Product>(productsQuery);
 
-  // 3. Resolver o ID Real do Produto (Lógica idêntica à aba Ativações)
   const realProductId = useMemo(() => {
     if (!instance || !dbProducts.length) return null;
     const productId = instance.productId;
@@ -57,7 +53,6 @@ export default function ClientDashboardPage() {
     return foundProductByName ? foundProductByName.id : productId;
   }, [instance, dbProducts]);
 
-  // 4. Buscar Etapas Reais usando o ID resolvido e o FlowId vinculado
   const stepsQuery = useMemo(() => 
     (realProductId && instance?.flowId) ? query(
       collection(db, "products", realProductId, "activationFlows", instance.flowId, "steps")
@@ -65,11 +60,9 @@ export default function ClientDashboardPage() {
   [db, realProductId, instance?.flowId]);
   const { data: steps, loading: stepsLoading } = useCollection<FlowStep>(stepsQuery);
 
-  // 5. Cálculos de Progresso e Datas
   const currentStepOrder = instance?.currentStepOrder || 1;
   const totalSteps = steps.length || 0;
   
-  // Fórmula sincronizada: (Etapa Atual - 1) / Total
   const progress = totalSteps > 0 
     ? Math.min(100, Math.round(((currentStepOrder - 1) / totalSteps) * 100)) 
     : 0;
@@ -141,22 +134,21 @@ export default function ClientDashboardPage() {
     <DashboardLayout role="client">
       <div className="space-y-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold font-headline text-slate-900">Visão Geral</h1>
+          <h1 className="text-3xl font-bold font-headline text-slate-900 dark:text-white">Visão Geral</h1>
           <p className="text-muted-foreground">Bem-vindo ao OnFlow, {profile?.displayName}. Aqui está o resumo atualizado da sua ativação.</p>
         </div>
 
-        {/* Alerta de Telefone Faltante */}
         {isPhoneMissing && (
-          <Card className="border-l-4 border-l-amber-500 bg-amber-50 shadow-sm animate-in slide-in-from-top duration-500">
+          <Card className="border-l-4 border-l-amber-500 bg-amber-50 dark:bg-amber-950/20 shadow-sm animate-in slide-in-from-top duration-500">
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex items-center gap-4">
-                  <div className="size-12 rounded-2xl bg-amber-200/50 flex items-center justify-center text-amber-700">
+                  <div className="size-12 rounded-2xl bg-amber-200/50 dark:bg-amber-500/20 flex items-center justify-center text-amber-700 dark:text-amber-500">
                     <Phone className="size-6" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="font-bold text-amber-900">Ação Necessária: Contato Telefônico</h3>
-                    <p className="text-xs text-amber-800/80">Para agilizar sua ativação técnica, precisamos de um telefone de contato direto.</p>
+                    <h3 className="font-bold text-amber-900 dark:text-amber-100">Ação Necessária: Contato Telefônico</h3>
+                    <p className="text-xs text-amber-800/80 dark:text-amber-200/60">Para agilizar sua ativação técnica, precisamos de um telefone de contato direto.</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-auto">
@@ -164,7 +156,7 @@ export default function ClientDashboardPage() {
                     placeholder="(00) 00000-0000" 
                     value={newPhone} 
                     onChange={handlePhoneChange}
-                    className="bg-white border-amber-200 w-full md:w-48"
+                    className="bg-card border-amber-200 dark:border-amber-900/50 w-full md:w-48"
                   />
                   <Button 
                     size="sm" 
@@ -181,17 +173,16 @@ export default function ClientDashboardPage() {
           </Card>
         )}
 
-        {/* Notas do Comercial */}
         {profile?.commercialNotes && (
-          <Card className="border-none bg-blue-50 shadow-sm border-l-4 border-l-blue-500">
+          <Card className="border-none bg-blue-50 dark:bg-blue-950/20 shadow-sm border-l-4 border-l-blue-500">
             <CardHeader className="pb-2">
-              <div className="flex items-center gap-2 text-blue-800">
+              <div className="flex items-center gap-2 text-blue-800 dark:text-blue-400">
                 <MessageSquare className="size-4" />
                 <CardTitle className="text-sm font-bold uppercase tracking-widest">Observações do Comercial</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-blue-900 leading-relaxed font-medium italic">
+              <p className="text-sm text-blue-900 dark:text-blue-100 leading-relaxed font-medium italic">
                 "{profile.commercialNotes}"
               </p>
             </CardContent>
@@ -199,18 +190,17 @@ export default function ClientDashboardPage() {
         )}
 
         <div className="grid gap-6 md:grid-cols-12">
-          {/* Status Card Sincronizado */}
-          <Card className="md:col-span-8 border-none shadow-xl bg-white overflow-hidden">
-            <CardHeader className="bg-slate-50 border-b">
+          <Card className="md:col-span-8 border-none shadow-xl bg-card overflow-hidden">
+            <CardHeader className="bg-muted/50 border-b">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3 text-primary">
                   <LayoutDashboard className="size-5" />
                   <CardTitle className="text-lg">Status da Ativação</CardTitle>
                 </div>
                 {instance ? (
-                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 uppercase text-[10px]">Ativação em Curso</Badge>
+                  <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 uppercase text-[10px]">Ativação em Curso</Badge>
                 ) : (
-                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 uppercase text-[10px]">Aguardando Suporte</Badge>
+                  <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800 uppercase text-[10px]">Aguardando Suporte</Badge>
                 )}
               </div>
             </CardHeader>
@@ -221,24 +211,24 @@ export default function ClientDashboardPage() {
                     <div className="space-y-4">
                       <div className="space-y-1">
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Produto Contratado</p>
-                        <h2 className="text-2xl font-bold text-slate-900">{instance.productName || profile?.activeProduct}</h2>
+                        <h2 className="text-2xl font-bold text-foreground">{instance.productName || profile?.activeProduct}</h2>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="flex flex-col">
                           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Etapa Atual</p>
                           <p className="text-sm font-bold text-primary">Etapa {currentStepOrder} de {totalSteps || '...'}</p>
                         </div>
-                        <div className="h-8 w-px bg-slate-200" />
+                        <div className="h-8 w-px bg-border" />
                         <div className="flex flex-col">
                           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Analista RTM</p>
-                          <p className="text-sm font-bold text-slate-700">{instance.techName || "A definir"}</p>
+                          <p className="text-sm font-bold text-foreground opacity-80">{instance.techName || "A definir"}</p>
                         </div>
                       </div>
                       {predictedCompletionDate && (
-                        <div className="flex items-center gap-2 p-2 px-3 bg-slate-50 rounded-lg border w-fit">
+                        <div className="flex items-center gap-2 p-2 px-3 bg-muted/30 rounded-lg border w-fit">
                           <Clock className="size-3.5 text-primary" />
                           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Conclusão Prevista:</span>
-                          <span className="text-xs font-black text-slate-700">{format(predictedCompletionDate, "dd/MM/yyyy")}</span>
+                          <span className="text-xs font-black text-foreground">{format(predictedCompletionDate, "dd/MM/yyyy")}</span>
                         </div>
                       )}
                     </div>
@@ -262,11 +252,11 @@ export default function ClientDashboardPage() {
                 </>
               ) : (
                 <div className="py-10 text-center space-y-4">
-                  <div className="size-16 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mx-auto">
+                  <div className="size-16 rounded-full bg-amber-50 dark:bg-amber-950/20 text-amber-500 flex items-center justify-center mx-auto">
                     <Clock className="size-8" />
                   </div>
                   <div className="space-y-1">
-                    <p className="font-bold text-slate-900">Seu fluxo ainda não foi iniciado</p>
+                    <p className="font-bold text-foreground">Seu fluxo ainda não foi iniciado</p>
                     <p className="text-sm text-muted-foreground max-w-sm mx-auto">Nossa equipe de suporte está preparando o seu ambiente para o início da ativação técnica.</p>
                   </div>
                 </div>
@@ -274,7 +264,6 @@ export default function ClientDashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Institutional Info */}
           <Card className="md:col-span-4 border-none shadow-xl bg-slate-900 text-white">
             <CardHeader>
               <CardTitle className="text-lg">Informações RTM</CardTitle>

@@ -73,7 +73,7 @@ export default function AdminPage() {
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 border-b pb-6">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold font-headline text-slate-900">Portal OnFlow</h1>
+            <h1 className="text-3xl font-bold font-headline text-slate-900 dark:text-white">Portal OnFlow</h1>
             <div className="flex items-center gap-2 text-primary font-bold">
               {currentView === 'suporte' ? (
                 <><Headset className="size-4" /><span>Visualização: SUPORTE TÉCNICO</span></>
@@ -85,7 +85,7 @@ export default function AdminPage() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-l-4 border-l-primary shadow-sm">
+          <Card className="border-l-4 border-l-primary shadow-sm bg-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Instituições</CardTitle>
               <Users className="size-4 text-primary" />
@@ -94,7 +94,7 @@ export default function AdminPage() {
               <div className="text-2xl font-bold">128</div>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-l-emerald-500 shadow-sm">
+          <Card className="border-l-4 border-l-emerald-500 shadow-sm bg-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Ativos</CardTitle>
               <CheckCircle2 className="size-4 text-emerald-500" />
@@ -103,7 +103,7 @@ export default function AdminPage() {
               <div className="text-2xl font-bold">84</div>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-l-amber-500 shadow-sm">
+          <Card className="border-l-4 border-l-amber-500 shadow-sm bg-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Pendentes</CardTitle>
               <Clock className="size-4 text-amber-500" />
@@ -112,7 +112,7 @@ export default function AdminPage() {
               <div className="text-2xl font-bold">32</div>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-l-destructive shadow-sm">
+          <Card className="border-l-4 border-l-destructive shadow-sm bg-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Alertas</CardTitle>
               <AlertCircle className="size-4 text-destructive" />
@@ -123,7 +123,7 @@ export default function AdminPage() {
           </Card>
         </div>
 
-        <Card className="bg-white">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="text-lg">Atividade de Onboarding</CardTitle>
           </CardHeader>
@@ -133,7 +133,10 @@ export default function AdminPage() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <RechartsTooltip />
+                <RechartsTooltip 
+                  contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+                  itemStyle={{ color: 'hsl(var(--primary))' }}
+                />
                 <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
