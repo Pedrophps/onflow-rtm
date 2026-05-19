@@ -5,7 +5,7 @@ Plataforma de alta precisão para orquestração e ativação de serviços finan
 
 ---
 
-## 🚀 GUIA DE INTEGRAÇÃO TÉCNICA (POSTMAN)
+## 🚀 GUIA DE INTEGRAÇÃO TÉCNICA (POWER AUTOMATE / POSTMAN)
 
 Para validar a ingestão automática via IA, utilize o endpoint público abaixo.
 
@@ -13,8 +13,7 @@ Para validar a ingestão automática via IA, utilize o endpoint público abaixo.
 `https://6000-firebase-studio-1779040400544.cluster-xvr5pmatm5a4gx76fmat6kxt6o.cloudworkstations.dev/api/erp/process`
 
 ### 2. Configuração de Autenticação
-- **Type**: `Bearer Token`
-- **Token**: `RTM-TEST-TOKEN-2024`
+- **Type**: `No Auth` (Rota simplificada para desenvolvimento)
 
 ### 3. Payload de Exemplo (JSON)
 ```json
@@ -27,7 +26,7 @@ Para validar a ingestão automática via IA, utilize o endpoint público abaixo.
 ---
 
 ## 🏗️ ARQUITETURA E STACK
-- **Engine de IA**: Genkit + OpenRouter (NVIDIA Nemotron Reasoning).
+- **Engine de IA**: Genkit + Google Gemini (NVIDIA Nemotron Reasoning).
 - **Backend**: Firebase Firestore (NoSQL) + Auth.
 - **Frontend**: Next.js 15 (Turbopack) + ShadCN UI + Tailwind CSS.
 - **Porta Operacional**: 6000 (Obrigatório para este ambiente).

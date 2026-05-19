@@ -3,21 +3,12 @@ import { initializeFirebase } from '@/firebase';
 import { processAutomationFromEmail } from '@/lib/automation-service';
 
 /**
- * API oficial para integração com Power Automate / ERP.
+ * API simplificada para integração com Power Automate / ERP.
  * Recebe o conteúdo extraído de e-mails para automação de onboarding.
+ * Rota sem autenticação conforme solicitado pelo usuário.
  */
 export async function POST(req: NextRequest) {
   try {
-    const authHeader = req.headers.get('authorization');
-    
-    // Segurança baseada em Token fixo para simplificar a integração com Power Automate
-    if (!authHeader || authHeader !== 'Bearer RTM-TEST-TOKEN-2024') {
-      return NextResponse.json(
-        { error: 'Não autorizado. Use o token configurado no Power Automate.' }, 
-        { status: 401 }
-      );
-    }
-
     const { firestore } = initializeFirebase();
     const data = await req.json();
 
@@ -34,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       status: 'success',
-      message: 'Dados extraídos via IA e instância criada.',
+      message: 'Dados extraídos via IA e instância criada com sucesso.',
       extracted: result.extracted,
       instanceId: result.instanceId
     });
@@ -51,7 +42,7 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     description: 'API OnFlow para Ingestão de E-mails via Power Automate',
-    auth: 'Bearer Token Required',
+    auth: 'None Required',
     methods: ['POST']
   });
 }
