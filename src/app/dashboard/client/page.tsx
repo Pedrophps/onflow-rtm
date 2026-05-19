@@ -4,9 +4,9 @@
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { UserProfile, Product, OnboardingInstance } from "@/lib/types";
+import { UserProfile, Product, OnboardingInstance, FlowStep } from "@/lib/types";
 import { CheckCircle2, Clock, ShieldAlert, Loader2, Zap, LayoutDashboard, Building2, UserCheck, ArrowRight, Phone, AlertCircle, Save, Info, MessageSquare } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
 import { doc, collection, query, where, limit, updateDoc, serverTimestamp } from "firebase/firestore";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 export default function ClientDashboardPage() {
   const { user } = useUser();
@@ -28,7 +29,7 @@ export default function ClientDashboardPage() {
   const [isUpdatingPhone, setIsUpdatingPhone] = useState(false);
   const [newPhone, setNewPhone] = useState("");
 
-  // Buscar Instância de Onboarding Ativa
+  // 1. Buscar Instância de Onboarding Ativa
   const instanceQuery = useMemo(() => 
     user ? query(
       collection(db, "onboardingInstances"),
@@ -40,21 +41,45 @@ export default function ClientDashboardPage() {
   const { data: instances, loading: instanceLoading } = useCollection<OnboardingInstance>(instanceQuery);
   const instance = instances?.[0];
 
-  // Buscar Produto
-  const productRef = useMemo(() => instance?.productId ? doc(db, "products", instance.productId) : null, [db, instance]);
-  const { data: product } = useDoc<Product>(productRef);
+  // 2. Buscar Todos os Produtos para mapeamento de ID (Necessário para achar o roteiro técnico)
+  const productsQuery = useMemo(() => 
+    user ? query(collection(db, "products")) : null, 
+  [db, user]);
+  const { data: dbProducts } = useCollection<Product>(productsQuery);
 
-  // Buscar Total de Etapas (Simulado para o Dashboard)
+  // 3. Resolver o ID Real do Produto (Lógica idêntica à aba Ativações)
+  const realProductId = useMemo(() => {
+    if (!instance || !dbProducts.length) return null;
+    const productId = instance.productId;
+    const productById = dbProducts.find(p => p.id === productId);
+    if (productById) return productById.id;
+    const foundProductByName = dbProducts.find(p => p.name.toLowerCase() === productId.toLowerCase());
+    return foundProductByName ? foundProductByName.id : productId;
+  }, [instance, dbProducts]);
+
+  // 4. Buscar Etapas Reais usando o ID resolvido e o FlowId vinculado
   const stepsQuery = useMemo(() => 
-    (instance?.productId && instance?.flowId) ? query(
-      collection(db, "products", instance.productId, "activationFlows", instance.flowId, "steps")
+    (realProductId && instance?.flowId) ? query(
+      collection(db, "products", realProductId, "activationFlows", instance.flowId, "steps")
     ) : null, 
-  [db, instance]);
-  const { data: steps, loading: stepsLoading } = useCollection(stepsQuery);
+  [db, realProductId, instance?.flowId]);
+  const { data: steps, loading: stepsLoading } = useCollection<FlowStep>(stepsQuery);
 
+  // 5. Cálculos de Progresso e Datas
   const currentStepOrder = instance?.currentStepOrder || 1;
-  const totalSteps = steps.length || 1;
-  const progress = Math.round(((currentStepOrder - 1) / totalSteps) * 100);
+  const totalSteps = steps.length || 0;
+  
+  // Fórmula sincronizada: (Etapa Atual - 1) / Total
+  const progress = totalSteps > 0 
+    ? Math.min(100, Math.round(((currentStepOrder - 1) / totalSteps) * 100)) 
+    : 0;
+
+  const predictedCompletionDate = useMemo(() => {
+    if (!instance?.startedAt || totalSteps === 0) return null;
+    const totalHours = steps.reduce((acc, step) => acc + (Number(step.estimatedTimeInHours) || 0), 0);
+    const startDate = new Date(instance.startedAt);
+    return new Date(startDate.getTime() + totalHours * 60 * 60 * 1000);
+  }, [instance, steps, totalSteps]);
 
   const formatPhone = (value: string) => {
     let v = value.replace(/\D/g, "");
@@ -99,12 +124,12 @@ export default function ClientDashboardPage() {
     }
   };
 
-  if (profileLoading || instanceLoading || stepsLoading) {
+  if (profileLoading || instanceLoading || (instance?.flowId && stepsLoading)) {
     return (
       <DashboardLayout role="client">
         <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
           <Loader2 className="size-8 animate-spin text-primary" />
-          <p className="text-muted-foreground font-medium text-sm">Preparando sua visão geral...</p>
+          <p className="text-muted-foreground font-medium text-sm">Sincronizando sua jornada técnica...</p>
         </div>
       </DashboardLayout>
     );
@@ -117,7 +142,7 @@ export default function ClientDashboardPage() {
       <div className="space-y-8">
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-bold font-headline text-slate-900">Visão Geral</h1>
-          <p className="text-muted-foreground">Bem-vindo ao OnFlow, {profile?.displayName}. Aqui está o resumo da sua jornada.</p>
+          <p className="text-muted-foreground">Bem-vindo ao OnFlow, {profile?.displayName}. Aqui está o resumo atualizado da sua ativação.</p>
         </div>
 
         {/* Alerta de Telefone Faltante */}
@@ -174,7 +199,7 @@ export default function ClientDashboardPage() {
         )}
 
         <div className="grid gap-6 md:grid-cols-12">
-          {/* Status Card */}
+          {/* Status Card Sincronizado */}
           <Card className="md:col-span-8 border-none shadow-xl bg-white overflow-hidden">
             <CardHeader className="bg-slate-50 border-b">
               <div className="flex justify-between items-center">
@@ -196,12 +221,12 @@ export default function ClientDashboardPage() {
                     <div className="space-y-4">
                       <div className="space-y-1">
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Produto Contratado</p>
-                        <h2 className="text-2xl font-bold text-slate-900">{product?.name || profile?.activeProduct}</h2>
+                        <h2 className="text-2xl font-bold text-slate-900">{instance.productName || profile?.activeProduct}</h2>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="flex flex-col">
                           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Etapa Atual</p>
-                          <p className="text-sm font-bold text-primary">Etapa {currentStepOrder} de {totalSteps}</p>
+                          <p className="text-sm font-bold text-primary">Etapa {currentStepOrder} de {totalSteps || '...'}</p>
                         </div>
                         <div className="h-8 w-px bg-slate-200" />
                         <div className="flex flex-col">
@@ -209,6 +234,13 @@ export default function ClientDashboardPage() {
                           <p className="text-sm font-bold text-slate-700">{instance.techName || "A definir"}</p>
                         </div>
                       </div>
+                      {predictedCompletionDate && (
+                        <div className="flex items-center gap-2 p-2 px-3 bg-slate-50 rounded-lg border w-fit">
+                          <Clock className="size-3.5 text-primary" />
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Conclusão Prevista:</span>
+                          <span className="text-xs font-black text-slate-700">{format(predictedCompletionDate, "dd/MM/yyyy")}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="text-right">
                       <span className="text-6xl font-black text-primary">{progress}%</span>
@@ -218,7 +250,7 @@ export default function ClientDashboardPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs font-bold text-muted-foreground uppercase">
                       <span>Progresso Técnico</span>
-                      <span>SLA Médio: 48h</span>
+                      <span>SLA Médio: {totalSteps * 48}h Estimadas</span>
                     </div>
                     <Progress value={progress} className="h-3 rounded-full" />
                   </div>
