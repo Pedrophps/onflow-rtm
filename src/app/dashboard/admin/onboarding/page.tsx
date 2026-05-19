@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
@@ -16,30 +17,31 @@ import {
   ArrowRight, 
   UserPlus, 
   Building2, 
-  Briefcase,
-  Zap,
-  Mail,
-  FileText,
-  UserCheck,
-  ChevronRight,
-  Phone,
-  Settings2,
-  GitFork,
-  AlertTriangle,
-  Clock,
-  ChevronUp,
-  ChevronDown,
-  User,
-  ShieldCheck,
-  HardDrive,
-  Headset,
-  Lock,
-  LayoutGrid,
-  ArrowLeft,
-  RotateCcw
+  Briefcase, 
+  Zap, 
+  Mail, 
+  FileText, 
+  UserCheck, 
+  ChevronRight, 
+  Phone, 
+  Settings2, 
+  GitFork, 
+  AlertTriangle, 
+  Clock, 
+  ChevronUp, 
+  ChevronDown, 
+  User, 
+  ShieldCheck, 
+  HardDrive, 
+  Headset, 
+  Lock, 
+  LayoutGrid, 
+  ArrowLeft, 
+  RotateCcw,
+  Trash2
 } from "lucide-react";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
-import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, getDocs, orderBy, deleteDoc } from "firebase/firestore";
 import { useMemo, useState, useEffect } from "react";
 import { UserProfile, OnboardingInstance, ActivationFlow, Product, FlowStep } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -158,6 +160,28 @@ export default function OnboardingManagement() {
       setActiveTab("my");
     } catch (e) {
       toast({ variant: "destructive", title: "Erro", description: "Falha ao assumir atividade." });
+    }
+  };
+
+  const handleDeleteInstance = async (id: string) => {
+    if (!id || !isSupport) return;
+    try {
+      await deleteDoc(doc(db, "onboardingInstances", id));
+      toast({ 
+        title: "Atendimento Removido", 
+        description: "O fluxo de ativação foi excluído com sucesso." 
+      });
+      if (journeyInstanceId === id) {
+        setJourneyInstanceId(null);
+        setJourneySteps([]);
+        setActiveTab("my");
+      }
+    } catch (e) {
+      toast({ 
+        variant: "destructive", 
+        title: "Erro na Remoção", 
+        description: "Não foi possível excluir o atendimento." 
+      });
     }
   };
 
@@ -383,7 +407,33 @@ export default function OnboardingManagement() {
                            <Badge variant="destructive" className="text-[9px] uppercase animate-pulse">Pendente Seleção</Badge>
                         )}
                       </div>
-                      <span className="text-[10px] text-muted-foreground font-bold">{new Date(inst.startedAt).toLocaleDateString()}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-muted-foreground font-bold">{new Date(inst.startedAt).toLocaleDateString()}</span>
+                        {isSupport && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="size-6 text-slate-400 hover:text-destructive transition-colors">
+                                <Trash2 className="size-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir Atendimento?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta ação removerá permanentemente a jornada de <strong>{inst.institutionName}</strong>. 
+                                  As interações registradas e arquivos enviados permanecerão na base para auditoria, mas o progresso atual será perdido.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteInstance(inst.id!)} className="bg-destructive text-white hover:bg-destructive/90 font-bold">
+                                  Excluir Atendimento
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </CardHeader>
                     <CardContent className="p-6 space-y-6">
                       <div className="space-y-1">
