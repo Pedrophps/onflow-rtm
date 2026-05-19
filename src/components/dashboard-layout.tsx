@@ -25,12 +25,16 @@ import {
   ChevronRight,
   Loader2,
   Package,
-  Zap
+  Zap,
+  Sun,
+  Moon
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUser, useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
+import { useState, useEffect } from "react";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -42,6 +46,23 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
   const router = useRouter();
   const { user, loading } = useUser();
   const auth = useAuth();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Sincroniza o estado visual com a classe atual no documento
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains('dark');
+    setIsDarkMode(isDark);
+  }, []);
+
+  const toggleTheme = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -73,8 +94,8 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <Sidebar className="border-r border-border">
+      <div className="flex min-h-screen w-full bg-background transition-colors duration-300">
+        <Sidebar className="border-r border-border bg-card">
           <SidebarHeader className="p-6">
             <Link href="/" className="flex items-center gap-2 font-headline font-bold text-2xl text-primary">
               OnFlow
@@ -106,10 +127,10 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
             <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-xl mb-4">
               <Avatar className="size-10 border-2 border-primary/20">
                 <AvatarImage src={`https://picsum.photos/seed/${user?.uid || role}/100/100`} />
-                <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || (role === 'admin' ? 'AD' : 'CL')}</AvatarFallback>
+                <AvatarFallback className="bg-primary text-primary-foreground">{user?.email?.charAt(0).toUpperCase() || (role === 'admin' ? 'AD' : 'CL')}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col overflow-hidden">
-                <span className="text-sm font-semibold truncate">{user?.displayName || (role === 'admin' ? 'Admin' : 'Cliente')}</span>
+                <span className="text-sm font-semibold truncate text-foreground">{user?.displayName || (role === 'admin' ? 'Admin' : 'Cliente')}</span>
                 <span className="text-[10px] text-muted-foreground truncate">{user?.email}</span>
               </div>
             </div>
@@ -126,13 +147,24 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <SidebarInset>
-          <header className="flex h-16 items-center border-b px-6 bg-white/50 backdrop-blur-md sticky top-0 z-10">
+        <SidebarInset className="bg-background">
+          <header className="flex h-16 items-center border-b px-6 bg-card/50 backdrop-blur-md sticky top-0 z-10">
             <SidebarTrigger className="-ml-1 mr-4" />
             <div className="flex-1">
               <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-widest">
                 OnFlow RTM / {pathname.split('/').pop()?.replace('-', ' ')}
               </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleTheme} 
+                className="rounded-full text-muted-foreground hover:text-primary transition-colors"
+                title={isDarkMode ? "Mudar para Tema Claro" : "Mudar para Tema Escuro"}
+              >
+                {isDarkMode ? <Sun className="size-5" /> : <Moon className="size-5" />}
+              </Button>
             </div>
           </header>
           <main className="flex-1 overflow-y-auto p-6 md:p-10">
