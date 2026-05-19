@@ -301,7 +301,7 @@ export default function OnboardingManagement() {
   };
 
   const getResponsibleIcon = (role: string) => {
-    const iconClass = "size-3.5 text-slate-600";
+    const iconClass = "size-3.5 text-muted-foreground";
     switch (role) {
       case 'suporte': return <Headset className={iconClass} />;
       case 'comercial': return <ShieldCheck className={iconClass} />;
@@ -326,21 +326,21 @@ export default function OnboardingManagement() {
     <DashboardLayout role="admin">
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold font-headline text-slate-900">Gestão de Onboarding</h1>
+          <h1 className="text-3xl font-bold font-headline text-foreground">Gestão de Onboarding</h1>
           <p className="text-muted-foreground">
             {isSupport ? "Monitore e avance a jornada técnica dos clientes ativados." : "Acompanhe a inicialização técnica do Comercial."}
           </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-slate-100 p-1 h-12 rounded-xl">
-            <TabsTrigger value="available" className="rounded-lg px-8 gap-2 data-[state=active]:bg-white">
+          <TabsList className="bg-muted p-1 h-12 rounded-xl">
+            <TabsTrigger value="available" className="rounded-lg px-8 gap-2 data-[state=active]:bg-background transition-colors">
               <Zap className="size-4" /> Disponíveis
             </TabsTrigger>
-            <TabsTrigger value="my" className="rounded-lg px-8 gap-2 data-[state=active]:bg-white">
+            <TabsTrigger value="my" className="rounded-lg px-8 gap-2 data-[state=active]:bg-background transition-colors">
               <ClipboardList className="size-4" /> Meus Atendimentos
             </TabsTrigger>
-            <TabsTrigger value="journey" disabled={!journeyInstanceId} className="rounded-lg px-8 gap-2 data-[state=active]:bg-white">
+            <TabsTrigger value="journey" disabled={!journeyInstanceId} className="rounded-lg px-8 gap-2 data-[state=active]:bg-background transition-colors">
               <LayoutGrid className="size-4" /> Jornada Técnica
             </TabsTrigger>
           </TabsList>
@@ -355,13 +355,13 @@ export default function OnboardingManagement() {
                         <div className="p-6 flex-1 space-y-4">
                           <div className="flex justify-between items-start">
                             <div className="space-y-1">
-                              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">{client.institutionName}</h3>
+                              <h3 className="text-xl font-bold text-foreground">{client.institutionName}</h3>
                               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1"><Building2 className="size-3" /> {client.cnpj}</span>
                                 <span className="flex items-center gap-1 font-bold text-primary"><Zap className="size-3" /> {productsMap[client.activeProduct!] || client.activeProduct}</span>
                               </div>
                             </div>
-                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Aguardando Analista</Badge>
+                            <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">Aguardando Analista</Badge>
                           </div>
                           <div className="grid grid-cols-2 gap-4 text-xs bg-muted/20 p-3 rounded-lg border">
                             <div className="space-y-1">
@@ -386,9 +386,9 @@ export default function OnboardingManagement() {
                   </Card>
                 ))
               ) : (
-                <div className="p-20 text-center border-2 border-dashed rounded-3xl space-y-4">
+                <div className="p-20 text-center border-2 border-dashed rounded-3xl space-y-4 bg-muted/5">
                   <CheckCircle2 className="size-12 mx-auto text-emerald-500/20" />
-                  <p className="text-muted-foreground">Nenhum cliente aprovado aguardando suporte no momento.</p>
+                  <p className="text-muted-foreground text-sm font-medium">Nenhum cliente aprovado aguardando suporte no momento.</p>
                 </div>
               )}
             </div>
@@ -398,8 +398,8 @@ export default function OnboardingManagement() {
             <div className="grid gap-4 md:grid-cols-2">
               {myOnboardings.length > 0 ? (
                 myOnboardings.map((inst) => (
-                  <Card key={inst.id} className="hover:border-primary/40 transition-all overflow-hidden border-2 bg-card">
-                    <CardHeader className="bg-muted/10 p-4 border-b flex flex-row justify-between items-center">
+                  <Card key={inst.id} className="hover:border-primary/40 transition-all overflow-hidden border-2 bg-card shadow-sm">
+                    <CardHeader className="bg-muted/30 p-4 border-b flex flex-row justify-between items-center">
                       <div className="flex items-center gap-2">
                         {inst.flowId ? (
                            <Badge className="bg-emerald-500 text-[9px] uppercase">Fluxo Ativo</Badge>
@@ -412,11 +412,11 @@ export default function OnboardingManagement() {
                         {isSupport && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="size-6 text-slate-400 hover:text-destructive transition-colors">
+                              <Button variant="ghost" size="icon" className="size-6 text-muted-foreground hover:text-destructive transition-colors">
                                 <Trash2 className="size-3.5" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent className="bg-card">
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Excluir Atendimento?</AlertDialogTitle>
                                 <AlertDialogDescription>
@@ -458,8 +458,8 @@ export default function OnboardingManagement() {
                   </Card>
                 ))
               ) : (
-                <div className="col-span-full p-20 text-center border-2 border-dashed rounded-3xl">
-                  <p className="text-muted-foreground">Você ainda não assumiu atendimentos.</p>
+                <div className="col-span-full p-20 text-center border-2 border-dashed rounded-3xl bg-muted/5">
+                  <p className="text-muted-foreground text-sm font-medium">Você ainda não assumiu atendimentos.</p>
                 </div>
               )}
             </div>
@@ -481,7 +481,7 @@ export default function OnboardingManagement() {
 
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
                     <div className="space-y-2">
-                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 px-3 py-1 font-bold">
+                      <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 gap-1.5 px-3 py-1 font-bold">
                         <CheckCircle2 className="size-3.5" /> JORNADA TÉCNICA
                       </Badge>
                       <h2 className="text-3xl font-bold font-headline text-foreground">{selectedJourneyInstance.institutionName} - {productsMap[selectedJourneyInstance.productId] || selectedJourneyInstance.productId}</h2>
@@ -496,12 +496,12 @@ export default function OnboardingManagement() {
                 </div>
 
                 <div className="space-y-6">
-                  <h3 className="text-lg font-bold font-headline flex items-center gap-2">
+                  <h3 className="text-lg font-bold font-headline flex items-center gap-2 text-foreground">
                     <ClipboardList className="size-5 text-primary" /> Etapas do Projeto
                   </h3>
                   
                   {journeySteps.length > 0 ? (
-                    <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
+                    <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-border">
                       {journeySteps.map((step) => {
                         const isCompleted = step.order < (selectedJourneyInstance.currentStepOrder || 1);
                         const isCurrent = step.order === (selectedJourneyInstance.currentStepOrder || 1);
@@ -513,7 +513,7 @@ export default function OnboardingManagement() {
                               "absolute -left-[29px] top-1 size-6 rounded-full border-2 flex items-center justify-center transition-all z-10 bg-background",
                               isCompleted ? "border-emerald-500 bg-emerald-500 text-white" : 
                               isCurrent ? "border-primary bg-primary text-white animate-pulse" : 
-                              "border-slate-200 text-slate-400"
+                              "border-border text-muted-foreground"
                             )}>
                               {isCompleted ? <CheckCircle2 className="size-3.5" /> : <span className="text-[10px] font-bold">{step.order}</span>}
                             </div>
@@ -525,17 +525,17 @@ export default function OnboardingManagement() {
                               <CardHeader className="p-5 flex flex-row items-center justify-between cursor-pointer" onClick={() => setExpandedStepId(isExpanded ? null : step.id!)}>
                                 <div className="flex-1 space-y-1">
                                   <div className="flex items-center gap-3">
-                                    <CardTitle className={cn("text-base font-bold", isCompleted ? "text-slate-400" : "text-foreground")}>{step.name}</CardTitle>
-                                    <Badge variant="outline" className="text-[9px] uppercase font-bold bg-muted/5 text-muted-foreground border-muted/20 gap-1 px-2 py-0.5">
+                                    <CardTitle className={cn("text-base font-bold", isCompleted ? "text-muted-foreground" : "text-foreground")}>{step.name}</CardTitle>
+                                    <Badge variant="outline" className="text-[9px] uppercase font-bold bg-muted/20 text-muted-foreground border-border gap-1 px-2 py-0.5">
                                       {getResponsibleIcon(step.responsible)} {step.responsible}
                                     </Badge>
                                   </div>
                                   <CardDescription className="text-sm line-clamp-1">{step.description}</CardDescription>
                                 </div>
-                                {isExpanded ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
+                                {isExpanded ? <ChevronUp className="size-5 text-muted-foreground" /> : <ChevronDown className="size-5 text-muted-foreground" />}
                               </CardHeader>
                               {isExpanded && (
-                                <CardContent className="p-5 pt-0 border-t bg-muted/5">
+                                <CardContent className="p-5 pt-0 border-t bg-muted/10">
                                   <div className="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     <div className="lg:col-span-1 space-y-6">
                                       <div className="grid grid-cols-2 gap-4">
@@ -577,7 +577,7 @@ export default function OnboardingManagement() {
                                         <div className="pt-4 border-t">
                                           <Button 
                                             variant="ghost" 
-                                            className="w-full font-bold gap-2 text-slate-400 hover:text-primary"
+                                            className="w-full font-bold gap-2 text-muted-foreground hover:text-primary transition-colors"
                                             onClick={() => handleUpdateCurrentStep(selectedJourneyInstance.id!, step.order)}
                                             disabled={isUpdatingStep}
                                           >
@@ -612,8 +612,8 @@ export default function OnboardingManagement() {
                 </div>
               </div>
             ) : (
-              <div className="p-20 text-center border-2 border-dashed rounded-3xl">
-                <p className="text-muted-foreground">Selecione um atendimento na aba anterior para ver a jornada.</p>
+              <div className="p-20 text-center border-2 border-dashed rounded-3xl bg-muted/5">
+                <p className="text-muted-foreground text-sm font-medium">Selecione um atendimento na aba anterior para ver a jornada.</p>
               </div>
             )}
           </TabsContent>
@@ -622,15 +622,15 @@ export default function OnboardingManagement() {
 
       {/* Diálogos Auxiliares */}
       <Dialog open={isFlowSelectionOpen} onOpenChange={setIsFlowSelectionOpen}>
-        <DialogContent className="rounded-3xl bg-background border-border">
+        <DialogContent className="rounded-3xl bg-card border-border shadow-xl">
           <DialogHeader>
             <DialogTitle className="text-foreground">Definir Roteiro Técnico</DialogTitle>
             <DialogDescription className="text-muted-foreground">Selecione o fluxo para {targetInstance?.institutionName}.</DialogDescription>
           </DialogHeader>
           <div className="py-6 space-y-4">
             <Select value={selectedFlowId} onValueChange={setSelectedFlowId}>
-              <SelectTrigger className="h-14 bg-card text-foreground border-border"><SelectValue placeholder="Selecione o roteiro..." /></SelectTrigger>
-              <SelectContent>
+              <SelectTrigger className="h-14 bg-background text-foreground border-border"><SelectValue placeholder="Selecione o roteiro..." /></SelectTrigger>
+              <SelectContent className="bg-card">
                 {availableFlows.map(f => (
                   <SelectItem key={f.id} value={f.id!}>
                     <span className="font-bold text-sm">{f.name}</span>
@@ -647,9 +647,9 @@ export default function OnboardingManagement() {
       </Dialog>
 
       <Dialog open={isFichaOpen} onOpenChange={setIsFichaOpen}>
-        <DialogContent className="max-w-2xl overflow-hidden rounded-3xl p-0 bg-background border-border">
+        <DialogContent className="max-w-2xl overflow-hidden rounded-3xl p-0 bg-card border-border shadow-2xl">
           <DialogHeader className="p-8 bg-slate-900 text-white"><DialogTitle>Ficha Técnica OnFlow</DialogTitle></DialogHeader>
-          <div className="p-8 space-y-8 bg-background">
+          <div className="p-8 space-y-8 bg-card">
             <div className="grid grid-cols-2 gap-8">
               <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">Instituição</Label><p className="font-bold text-foreground">{selectedClientForFicha?.institutionName}</p></div>
               <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">CNPJ</Label><p className="font-mono text-foreground">{selectedClientForFicha?.cnpj}</p></div>
@@ -660,7 +660,7 @@ export default function OnboardingManagement() {
               <div><Label className="text-[10px] uppercase font-bold text-primary">ID RTM</Label><p className="font-mono font-black text-lg text-foreground">{selectedClientForFicha?.clientCode || 'Pendente'}</p></div>
             </div>
           </div>
-          <DialogFooter className="p-6 bg-muted/5 border-t"><Button className="w-full font-bold" onClick={() => setIsFichaOpen(false)}>Fechar</Button></DialogFooter>
+          <DialogFooter className="p-6 bg-muted/10 border-t"><Button className="w-full font-bold" onClick={() => setIsFichaOpen(false)}>Fechar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>
