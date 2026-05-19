@@ -1,5 +1,7 @@
+
 'use client';
 
+import * as React from 'react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -44,10 +46,17 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 import { HeroBackground } from '@/components/hero-background';
 
 export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Plugin de Autoplay para o Carrossel
+  const autoplayPlugin = React.useMemo(
+    () => Autoplay({ delay: 3000, stopOnInteraction: true }),
+    []
+  );
 
   const toggleTheme = () => {
     const newMode = !isDarkMode;
@@ -61,7 +70,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-white dark:bg-slate-950 selection:bg-primary/10 font-body text-foreground transition-colors duration-500">
-      {/* Header Section - Transparência removida */}
+      {/* Header Section */}
       <header className="fixed top-0 w-full z-50 bg-white dark:bg-slate-950 border-b border-border/50 shadow-sm">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-8">
@@ -100,7 +109,7 @@ export default function Home() {
                   <Menu className="size-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right">
+              <SheetContent side="right" className="bg-card">
                 <SheetHeader className="text-left">
                   <SheetTitle className="font-headline text-primary">Menu RTM</SheetTitle>
                 </SheetHeader>
@@ -144,7 +153,7 @@ export default function Home() {
       {/* Sobre Section */}
       <section id="sobre" className="py-32 bg-white dark:bg-slate-950 border-b border-border/50 transition-colors duration-500">
         <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center space-y-8 mb-24">
+          <div className="max-w-4xl mx-auto text-center space-y-8 mb-24 animate-in fade-in slide-in-from-bottom duration-1000">
             <h2 className="text-4xl lg:text-5xl font-bold font-headline text-primary tracking-tight">
               Identificar para integrar. Entender para atender. Conhecer para evoluir.
             </h2>
@@ -163,39 +172,40 @@ export default function Home() {
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-10">
-                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center">
+                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/30 transition-colors">
                   <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Propósito</h4>
                   <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">Promover a evolução do Mercado Financeiro pela Tecnologia</p>
                 </div>
-                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center">
+                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/30 transition-colors">
                   <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Valores</h4>
                   <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">Foco no cliente, Desenvolvimento de Pessoas e Equipe, Confiança e Inovação</p>
                 </div>
-                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center">
+                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/30 transition-colors">
                   <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Posicionamento</h4>
                   <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">Identificar, Entender, Conhecer</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-900 p-12 rounded-[4rem] text-white shadow-2xl space-y-12 relative overflow-hidden">
+            <div className="bg-slate-900 p-12 rounded-[4rem] text-white shadow-2xl space-y-12 relative overflow-hidden group">
                <h3 className="text-3xl font-bold font-headline relative z-10">Nossa Presença</h3>
                <div className="space-y-8 relative z-10">
-                <div className="flex items-center gap-6">
-                  <div className="size-14 rounded-2xl bg-primary flex items-center justify-center"><MapPin className="text-white size-8" /></div>
+                <div className="flex items-center gap-6 group-hover:translate-x-2 transition-transform">
+                  <div className="size-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20"><MapPin className="text-white size-8" /></div>
                   <div>
                     <p className="text-2xl font-black">20 Estados + DF</p>
                     <p className="text-slate-400 font-medium">Cobertura em todas as 5 regiões do país.</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
-                  <div className="size-14 rounded-2xl bg-primary flex items-center justify-center"><Building2 className="text-white size-8" /></div>
+                <div className="flex items-center gap-6 group-hover:translate-x-2 transition-transform duration-500">
+                  <div className="size-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20"><Building2 className="text-white size-8" /></div>
                   <div>
                     <p className="text-2xl font-black">750+ Instituições</p>
                     <p className="text-slate-400 font-medium">Conectadas com estabilidade, segurança e rapidez.</p>
                   </div>
                 </div>
               </div>
+              <div className="absolute -bottom-20 -right-20 size-64 bg-primary/10 blur-3xl rounded-full"></div>
             </div>
           </div>
         </div>
@@ -224,7 +234,7 @@ export default function Home() {
       {/* Trajetória em Carrossel */}
       <section id="trajetoria" className="py-32 bg-slate-950 text-white overflow-hidden relative">
         <div className="container mx-auto px-6 relative z-10">
-          <div className="max-w-3xl mb-24 space-y-4">
+          <div className="max-w-3xl mb-24 space-y-4 animate-in fade-in slide-in-from-left duration-700">
             <Badge className="bg-primary/20 text-primary border-primary/30 px-4 py-1 uppercase font-black tracking-widest text-[10px]">Nossa Evolução</Badge>
             <h2 className="text-5xl lg:text-6xl font-bold font-headline tracking-tighter">Confira os destaques da nossa trajetória</h2>
             <p className="text-slate-400 text-xl font-light leading-relaxed">
@@ -232,30 +242,36 @@ export default function Home() {
             </p>
           </div>
           
-          <Carousel opts={{ align: "start", loop: false }} className="w-full">
+          <Carousel 
+            opts={{ align: "start", loop: true }} 
+            plugins={[autoplayPlugin]}
+            className="w-full"
+            onMouseEnter={() => autoplayPlugin.stop()}
+            onMouseLeave={() => autoplayPlugin.reset()}
+          >
             <CarouselContent className="-ml-6">
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-100">
                 <FuturisticMilestone year="1997" title="Fundação" text="Nasce a RTM - Rede de Telecomunicações para o Mercado." icon={History} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-200">
                 <FuturisticMilestone year="2001" title="SPB" text="Implantação da rede do SPB." icon={Network} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-300">
                 <FuturisticMilestone year="2002" title="Contingência" text="Oferta de Site de Contingência." icon={ShieldCheck} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-400">
                 <FuturisticMilestone year="2003" title="SWIFT" text="Estrutura para conexão à SWIFT." icon={Zap} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-500">
                 <FuturisticMilestone year="2011" title="Data Center" text="Data Center para o mercado financeiro." icon={Server} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-600">
                 <FuturisticMilestone year="2014" title="Cloud" text="Solução de Cloud." icon={Cloud} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-700">
                 <FuturisticMilestone year="2016" title="Traders" text="Mesa de operações financeiras." icon={PhoneCall} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-800">
                 <FuturisticMilestone year="2017" title="SaaS" text="1ª solução de SaaS para o mercado de pagamentos." icon={Zap} />
               </CarouselItem>
               <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
@@ -326,13 +342,13 @@ function ServiceCard({ icon: Icon, title, desc }: { icon: any, title: string, de
 
 function FuturisticMilestone({ year, title, text, icon: Icon, isHighlight = false }: any) {
   return (
-    <div className={`relative group p-8 rounded-3xl border transition-all duration-500 overflow-hidden h-full min-h-[320px] flex flex-col justify-between ${
+    <div className={`relative group p-8 rounded-3xl border transition-all duration-500 overflow-hidden h-full min-h-[320px] flex flex-col justify-between hover:shadow-2xl hover:scale-[1.02] ${
       isHighlight ? "bg-primary/10 border-primary/40 shadow-lg" : "bg-slate-900/50 border-slate-800 hover:border-primary/50 hover:bg-slate-900"
     }`}>
       <div className="relative z-10 space-y-6">
         <div className="flex items-center justify-between">
           <span className={`text-4xl font-black font-headline tracking-tighter ${isHighlight ? "text-primary" : "text-slate-600 group-hover:text-primary"}`}>{year}</span>
-          <div className={`size-12 rounded-xl flex items-center justify-center transition-all ${isHighlight ? "bg-primary text-white" : "bg-slate-800 text-slate-400 group-hover:text-primary"}`}>
+          <div className={`size-12 rounded-xl flex items-center justify-center transition-all ${isHighlight ? "bg-primary text-white" : "bg-slate-800 text-slate-400 group-hover:text-primary group-hover:shadow-[0_0_20px_rgba(211,47,47,0.4)]"}`}>
             <Icon className="size-6" />
           </div>
         </div>
@@ -341,6 +357,7 @@ function FuturisticMilestone({ year, title, text, icon: Icon, isHighlight = fals
           <p className="text-slate-400 text-sm leading-relaxed font-medium group-hover:text-slate-200">{text}</p>
         </div>
       </div>
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
     </div>
   );
 }
