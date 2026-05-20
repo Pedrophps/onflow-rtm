@@ -141,7 +141,7 @@ export default function Home() {
               Integramos o mercado financeiro brasileiro. Nossas soluções e ferramentas potencializam os resultados dos nossos clientes.
             </p>
             <div className="flex gap-4">
-              <Button size="lg" className="rounded-full px-10 h-14 font-bold gap-2 text-lg" asChild>
+              <Button size="lg" className="rounded-full px-10 h-14 font-bold gap-2 text-lg shadow-sm" asChild>
                 <Link href="/login">Começar Agora <ArrowRight className="size-6" /></Link>
               </Button>
             </div>
@@ -339,19 +339,19 @@ function ServiceCard({ icon: Icon, title, desc }: { icon: any, title: string, de
 
 function FuturisticMilestone({ year, title, text, icon: Icon, isHighlight = false }: any) {
   return (
-    <div className={`relative group p-8 rounded-3xl border transition-all duration-500 overflow-hidden h-full min-h-[350px] flex flex-col justify-between hover:scale-[1.02] ${
+    <div className={`relative group p-6 rounded-3xl border transition-all duration-500 overflow-hidden h-full min-h-[280px] flex flex-col justify-between hover:scale-[1.02] ${
       isHighlight ? "bg-primary/10 border-primary/40 shadow-sm" : "bg-slate-900/50 border-slate-800 hover:border-primary/50 hover:bg-slate-900"
     }`}>
-      <div className="relative z-10 space-y-6">
+      <div className="relative z-10 space-y-4">
         <div className="flex items-center justify-between">
-          <span className={`text-4xl font-black font-headline tracking-tighter ${isHighlight ? "text-primary" : "text-slate-600 group-hover:text-primary"}`}>{year}</span>
-          <div className={`size-12 rounded-xl flex items-center justify-center transition-all ${isHighlight ? "bg-primary text-white" : "bg-slate-800 text-slate-400 group-hover:text-primary"}`}>
-            <Icon className="size-6" />
+          <span className={`text-3xl font-black font-headline tracking-tighter ${isHighlight ? "text-primary" : "text-slate-600 group-hover:text-primary"}`}>{year}</span>
+          <div className={`size-10 rounded-xl flex items-center justify-center transition-all ${isHighlight ? "bg-primary text-white" : "bg-slate-800 text-slate-400 group-hover:text-primary"}`}>
+            <Icon className="size-5" />
           </div>
         </div>
-        <div className="space-y-2">
-          <h3 className="text-xl font-bold font-headline text-white group-hover:text-primary transition-colors">{title}</h3>
-          <p className="text-slate-400 text-sm leading-relaxed font-medium group-hover:text-slate-200">{text}</p>
+        <div className="space-y-1">
+          <h3 className="text-lg font-bold font-headline text-white group-hover:text-primary transition-colors">{title}</h3>
+          <p className="text-slate-400 text-xs leading-relaxed font-medium group-hover:text-slate-200 line-clamp-3">{text}</p>
         </div>
       </div>
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
