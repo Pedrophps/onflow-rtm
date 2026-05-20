@@ -25,6 +25,21 @@ Para validar a ingestão automática via IA, utilize o endpoint público abaixo.
 
 ---
 
+## 🗄️ ESTRUTURA DE DADOS (FIRESTORE)
+
+Abaixo, a definição das coleções e suas responsabilidades no ecossistema:
+
+| Coleção | Descrição | Responsável |
+| :--- | :--- | :--- |
+| `users` | Perfis de acesso, dados institucionais (CNPJ) e comerciais (OV). | Comercial |
+| `products` | Catálogo de serviços e templates de roteiros técnicos (Workflows). | Suporte |
+| `onboardingInstances` | Atendimentos em curso. Conecta Cliente, Produto e Analista. | Suporte |
+| `interactions` | Chat em tempo real e repositório de evidências/arquivos por etapa. | Sistema |
+| `system_logs` | Auditoria de eventos técnicos e resultados de extração da IA. | IA / DevOps |
+| `submissions` | Coleção de validação para testes de integridade e segurança. | QA |
+
+---
+
 ## 🏗️ ARQUITETURA E STACK
 - **Engine de IA**: Genkit + Google Gemini (NVIDIA Nemotron Reasoning).
 - **Backend**: Firebase Firestore (NoSQL) + Auth.
