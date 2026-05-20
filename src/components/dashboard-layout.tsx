@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -26,7 +27,8 @@ import {
   Package,
   Zap,
   Sun,
-  Moon
+  Moon,
+  Database
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -47,7 +49,6 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
   const auth = useAuth();
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Sincroniza o estado visual com a classe atual no documento
   useEffect(() => {
     const isDark = document.documentElement.classList.contains('dark');
     setIsDarkMode(isDark);
@@ -74,6 +75,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
         { title: "Produtos & Fluxos", icon: Package, href: "/dashboard/admin/products" },
         { title: "Gestão Onboarding", icon: ClipboardList, href: "/dashboard/admin/onboarding" },
         { title: "Clientes", icon: Users, href: "/dashboard/admin/clients" },
+        { title: "Audit de Dados", icon: Database, href: "/debug/audit" },
         { title: "Relatórios", icon: BarChart3, href: "/dashboard/admin/reports" },
       ]
     : [
@@ -85,7 +87,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <Loader2 className="size-8 animate-spin text-primary" />
       </div>
     );
@@ -147,8 +149,8 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
           </SidebarFooter>
         </Sidebar>
         <SidebarInset className="bg-background">
-          <header className="flex h-16 items-center border-b px-6 bg-card sticky top-0 z-10 shadow-sm transition-colors">
-            <SidebarTrigger className="-ml-1 mr-4" />
+          <header className="flex h-16 items-center border-b px-6 bg-card sticky top-0 z-50 shadow-sm transition-colors">
+            <SidebarTrigger className="-ml-1 mr-4 text-foreground" />
             <div className="flex-1">
               <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-widest">
                 OnFlow RTM / {pathname.split('/').pop()?.replace('-', ' ')}
