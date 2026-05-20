@@ -7,22 +7,21 @@ Plataforma de alta precisão para orquestração e ativação de serviços finan
 
 ## 🚀 GUIA DE INTEGRAÇÃO (API DIRETA)
 
-O OnFlow possui um endpoint de ingestão automática que deve ser chamado pelo seu ERP ou via Power Automate.
+O OnFlow possui um endpoint de ingestão estruturada que deve ser chamado pelo seu ERP ou via Power Automate.
 
 ### Endpoint de Ingestão (POST)
 `https://6000-firebase-studio-1779040400544.cluster-xvr5pmatm5a4gx76fmat6kxt6o.cloudworkstations.dev/api/erp/process`
 
-### Segurança
-**Autenticação:** Nenhuma (Rota Pública).
+### ⚠️ NOTA SOBRE ERRO 401 (POSTMAN)
+Se você tentar usar o Postman diretamente e receber **401 Unauthorized**, é devido à proteção do ambiente de desenvolvimento (Google Cloud Workstations).
+**Para testar agora:** Use o **Simulador ERP** dentro do próprio portal (disponível no rodapé da Home ou via link direto):
+`[URL-DO-APP]/debug/erp-simulator`
 
 ---
 
-## 🛠️ TESTE VIA POSTMAN (PASSO A PASSO)
+## 🛠️ PAYLOAD JSON (PASSO A PASSO)
 
-1. **Método:** Selecione `POST`.
-2. **URL:** Cole `https://6000-firebase-studio-1779040400544.cluster-xvr5pmatm5a4gx76fmat6kxt6o.cloudworkstations.dev/api/erp/process`.
-3. **Body:** Selecione `raw` -> `JSON`.
-4. **Payload:** Use o modelo abaixo:
+Use o modelo abaixo para enviar os dados:
 
 ```json
 {
@@ -37,20 +36,21 @@ O OnFlow possui um endpoint de ingestão automática que deve ser chamado pelo s
 }
 ```
 
-5. **Resultado:** Ao clicar em **Send**, o registro aparecerá instantaneamente na aba **"Disponíveis"** para o Suporte Técnico.
+### Resultado
+Ao enviar, o registro criará um usuário `approved` e disparará uma instância na aba **"Disponíveis"** para o Suporte Técnico.
 
 ---
 
 ## 🗄️ DICIONÁRIO DE DADOS (FIRESTORE)
 
 ### 1. Coleção `users`
-Contém os perfis institucionais. Registros criados via API recebem `status: "approved"` automaticamente. Cada documento representa um usuário ou empresa.
+Dados mestres. Cada documento é uma instituição. Registros via API já nascem com `status: "approved"`.
 
 ### 2. Coleção `onboardingInstances`
-São os projetos reais em andamento. Representam a jornada técnica de um cliente para um produto específico. Se `techId` for nulo, o projeto está aguardando um analista na fila.
+Projetos de ativação. Se `techId` for nulo, está na fila de espera. Se tiver `flowId`, o roteiro técnico já foi escolhido.
 
 ### 3. Coleção `products`
-O catálogo mestre que serve de modelo para os produtos. Contém as subcoleções de `steps` (etapas) que definem o roteiro técnico.
+Catálogo mestre. Onde ficam os roteiros técnicos (subcoleção `activationFlows/steps`).
 
 ---
 *Identificar para integrar. Entender para atender. Conhecer para evoluir.*

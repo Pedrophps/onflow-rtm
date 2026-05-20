@@ -4,7 +4,8 @@ import { processDirectIngestion } from '@/lib/automation-service';
 
 /**
  * API OnFlow para Ingestão Estruturada de Ativações.
- * Aberta para Power Automate / ERP (Sem Autenticação).
+ * Aberta para Power Automate / ERP (Sem Autenticação de Aplicação).
+ * Nota: Em ambientes de Workstation, requer autenticação do Proxy do Google.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     // Processa a ingestão direta criando Usuário + Instância
     const result = await processDirectIngestion(firestore, {
       institutionName: data.institutionName,
-      cnpj: data.cnpj || "00.000.000/0001-91", // Opcional, assume um padrão se não enviado
+      cnpj: data.cnpj || "00.000.000/0001-91",
       consultantName: data.consultantName,
       email: data.email,
       phoneNumber: data.phoneNumber,
@@ -60,7 +61,8 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   return NextResponse.json({
-    description: 'API OnFlow - Ingestão Direta (Sem Autenticação)',
+    status: 'online',
+    description: 'API OnFlow - Ingestão Direta (Ativa)',
     endpoint: '/api/erp/process',
     method: 'POST',
     payload_example: {
@@ -72,6 +74,7 @@ export async function GET() {
       productName: "MENSAGERIA SWIFT",
       commercialNotes: "Notas adicionais aqui",
       cnpj: "00.000.000/0000-00"
-    }
+    },
+    workstation_note: 'Se receber 401 no Postman, utilize o simulador interno em /debug/erp-simulator devido à proteção do Google Cloud.'
   });
 }
