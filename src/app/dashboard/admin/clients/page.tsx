@@ -1,3 +1,4 @@
+
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -13,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserProfile, Product, OnboardingInstance } from "@/lib/types";
-import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal, Package, Phone, FileText, CheckCircle2, Lock } from "lucide-react";
+import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal, Package, Phone, FileText, CheckCircle2, Lock, UserCircle, Hash, Mail } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -32,14 +33,14 @@ export default function ClientsAdminPage() {
   const currentView = profile?.adminType || searchParams.get('view');
   const isComercial = currentView === 'comercial';
   
-  // Buscar Clientes - Guardado com user
+  // Buscar Clientes
   const clientsQuery = useMemo(() => {
     if (!user) return null;
     return query(collection(db, "users"), where("role", "==", "client"));
   }, [db, user]);
   const { data: clients, loading: clientsLoading } = useCollection<UserProfile>(clientsQuery);
 
-  // Buscar Produtos Reais - Guardado com user
+  // Buscar Produtos Reais
   const productsQuery = useMemo(() => {
     if (!user) return null;
     return query(collection(db, "products"));
@@ -50,6 +51,9 @@ export default function ClientsAdminPage() {
   const [clientCode, setClientCode] = useState("");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [consultantName, setConsultantName] = useState("");
+  const [orderValue, setOrderValue] = useState("");
+  const [institutionName, setInstitutionName] = useState("");
   const [commercialNotes, setCommercialNotes] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,12 +67,15 @@ export default function ClientsAdminPage() {
     setClientCode(client.clientCode || "");
     setSelectedProductIds(client.activeProduct ? [client.activeProduct] : []);
     setPhoneNumber(client.phoneNumber || "");
+    setConsultantName(client.consultantName || "");
+    setOrderValue(client.orderValue || "");
+    setInstitutionName(client.institutionName || client.displayName || "");
     setCommercialNotes(client.commercialNotes || "");
     setIsDialogOpen(true);
   };
 
   const toggleProduct = (productId: string) => {
-    if (!isComercial) return; // Suporte não pode alterar produtos
+    if (!isComercial) return;
     setSelectedProductIds(prev => 
       prev.includes(productId) 
         ? prev.filter(id => id !== productId) 
@@ -86,6 +93,9 @@ export default function ClientsAdminPage() {
       clientCode: clientCode,
       activeProduct: selectedProductIds[0] || "",
       phoneNumber: phoneNumber,
+      consultantName: consultantName,
+      orderValue: orderValue,
+      institutionName: institutionName,
       commercialNotes: commercialNotes,
       approvedAt: new Date().toISOString(),
       updatedAt: serverTimestamp()
@@ -104,7 +114,7 @@ export default function ClientsAdminPage() {
           const product = dbProducts.find(p => p.id === pid);
           return addDoc(instancesRef, {
             clientId: selectedClient.id,
-            institutionName: selectedClient.institutionName || selectedClient.displayName,
+            institutionName: institutionName,
             productId: pid,
             productName: product?.name || pid,
             status: 'pending',
@@ -118,7 +128,7 @@ export default function ClientsAdminPage() {
 
       toast({
         title: "Acesso Configurado",
-        description: `O cliente ${selectedClient.institutionName} foi ativado com ${selectedProductIds.length} produtos.`
+        description: `O cliente ${institutionName} foi ativado com sucesso.`
       });
       setIsDialogOpen(false);
       setSelectedClient(null);
@@ -137,7 +147,7 @@ export default function ClientsAdminPage() {
     <DashboardLayout role="admin">
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold font-headline text-slate-900">Gestão de Clientes</h1>
+          <h1 className="text-3xl font-bold font-headline text-foreground">Gestão de Clientes</h1>
           <p className="text-muted-foreground">Gerencie o acesso institucional e aprovações do time Comercial.</p>
         </div>
 
@@ -148,7 +158,7 @@ export default function ClientsAdminPage() {
             </h3>
             
             {clientsLoading ? (
-              <div className="p-12 text-center bg-card rounded-xl border border-dashed">
+              <div className="p-12 text-center bg-card rounded-xl border border-dashed border-border">
                 <Loader2 className="size-6 animate-spin mx-auto text-primary" />
                 <p className="text-xs text-muted-foreground mt-2">Buscando instituições pendentes...</p>
               </div>
@@ -166,7 +176,7 @@ export default function ClientsAdminPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="text-[11px] space-y-1 bg-background p-3 rounded-lg border">
+                      <div className="text-[11px] space-y-1 bg-background p-3 rounded-lg border border-border">
                         <p className="text-muted-foreground">Responsável: <span className="text-foreground font-semibold">{client.displayName}</span></p>
                         <p className="text-amber-600 font-bold uppercase tracking-tighter">Aguardando Configuração</p>
                       </div>
@@ -178,14 +188,14 @@ export default function ClientsAdminPage() {
                 ))}
               </div>
             ) : (
-              <div className="p-8 text-center border border-dashed rounded-xl bg-muted/20 text-muted-foreground text-sm">
+              <div className="p-8 text-center border border-dashed rounded-xl bg-muted/20 text-muted-foreground text-sm border-border">
                 Nenhuma pendência de aprovação encontrada.
               </div>
             )}
           </section>
         )}
 
-        <Card className="bg-card">
+        <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="text-lg">Base de Clientes RTM</CardTitle>
             <CardDescription>Lista completa de instituições cadastradas no OnFlow.</CardDescription>
@@ -196,7 +206,7 @@ export default function ClientsAdminPage() {
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-border">
                     <TableHead>Instituição</TableHead>
                     <TableHead>Responsável</TableHead>
                     <TableHead>Status</TableHead>
@@ -206,22 +216,24 @@ export default function ClientsAdminPage() {
                 </TableHeader>
                 <TableBody>
                   {clients.length > 0 ? clients.map((client) => (
-                    <TableRow key={client.id}>
+                    <TableRow key={client.id} className="border-border">
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="font-bold">{client.institutionName || "-"}</span>
+                          <span className="font-bold text-foreground">{client.institutionName || "-"}</span>
                           <span className="text-[10px] text-muted-foreground">{client.cnpj || "-"}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-xs">{client.displayName}</TableCell>
+                      <TableCell className="text-xs text-foreground opacity-80">{client.displayName}</TableCell>
                       <TableCell>
                         <Badge variant={client.status === 'approved' && client.clientCode ? 'default' : 'secondary'} className="text-[10px] uppercase">
                           {client.status === 'approved' && client.clientCode ? 'Ativo' : 'Pendente'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-xs">{client.clientCode || "-"}</TableCell>
+                      <TableCell className="font-mono text-xs text-foreground">{client.clientCode || "-"}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => openApprovalDialog(client)}><MoreHorizontal className="size-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => openApprovalDialog(client)} className="text-muted-foreground hover:text-primary transition-colors">
+                          <MoreHorizontal className="size-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   )) : (
@@ -237,94 +249,172 @@ export default function ClientsAdminPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl bg-background border-border">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">{isComercial ? "Configuração de Acesso RTM" : "Visualização de Parâmetros"}</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
+        <DialogContent className="max-w-3xl bg-card border-border shadow-2xl rounded-3xl p-0 overflow-hidden">
+          <DialogHeader className="p-8 bg-slate-950 text-white">
+            <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-3">
+              <ShieldCheck className="size-6 text-primary" />
+              {isComercial ? "Configuração Comercial RTM" : "Visualização de Parâmetros"}
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
               {isComercial 
-                ? `Defina os parâmetros institucionais para ${selectedClient?.institutionName}` 
-                : `Consulta de dados de acesso para ${selectedClient?.institutionName}`}
+                ? `Capture os dados de venda para a ativação de ${selectedClient?.displayName}` 
+                : `Consulta de dados institucionais para ${selectedClient?.institutionName}`}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-6 py-4">
-            <div className="space-y-2">
-              <Label className="text-foreground">ID RTM do Cliente</Label>
-              <input 
-                value={clientCode} 
-                onChange={(e) => setClientCode(e.target.value)} 
-                placeholder="Ex: RTM-BR-001" 
-                disabled={!isComercial}
-                className="flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Telefone de Contato</Label>
+
+          <div className="p-8 grid grid-cols-2 gap-6 max-h-[70vh] overflow-y-auto">
+            {/* Campo: Instituição */}
+            <div className="col-span-2 md:col-span-1 space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Instituição</Label>
               <div className="relative">
-                <Phone className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                <input 
-                  value={phoneNumber} 
-                  onChange={(e) => setPhoneNumber(e.target.value)} 
-                  placeholder="(00) 00000-0000" 
-                  className="flex h-10 w-full rounded-md border border-input bg-card pl-10 pr-3 py-2 text-sm text-foreground ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" 
+                <Building2 className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                <Input 
+                  value={institutionName} 
+                  onChange={(e) => setInstitutionName(e.target.value)} 
                   disabled={!isComercial}
+                  className="pl-10 h-11 bg-background border-border rounded-xl"
                 />
               </div>
             </div>
 
-            <div className="col-span-2 space-y-4 border-t pt-4">
-              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Produtos para Ativação</Label>
+            {/* Campo: E-mail (Read Only) */}
+            <div className="col-span-2 md:col-span-1 space-y-2 opacity-80">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">E-mail de Contato</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                <Input 
+                  value={selectedClient?.email || ""} 
+                  disabled 
+                  className="pl-10 h-11 bg-muted/50 border-border rounded-xl cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            {/* Campo: Consultor RTM */}
+            <div className="col-span-2 md:col-span-1 space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Consultor RTM</Label>
+              <div className="relative">
+                <UserCircle className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Nome do Executivo de Contas"
+                  value={consultantName} 
+                  onChange={(e) => setConsultantName(e.target.value)} 
+                  disabled={!isComercial}
+                  className="pl-10 h-11 bg-background border-border rounded-xl"
+                />
+              </div>
+            </div>
+
+            {/* Campo: Telefone */}
+            <div className="col-span-2 md:col-span-1 space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Telefone</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                <Input 
+                  placeholder="(00) 00000-0000"
+                  value={phoneNumber} 
+                  onChange={(e) => setPhoneNumber(e.target.value)} 
+                  disabled={!isComercial}
+                  className="pl-10 h-11 bg-background border-border rounded-xl"
+                />
+              </div>
+            </div>
+
+            {/* Campo: OV */}
+            <div className="col-span-2 md:col-span-1 space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">OV (Ordem de Venda)</Label>
+              <div className="relative">
+                <Hash className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Ex: OV-2024-001"
+                  value={orderValue} 
+                  onChange={(e) => setOrderValue(e.target.value)} 
+                  disabled={!isComercial}
+                  className="pl-10 h-11 bg-background border-border rounded-xl"
+                />
+              </div>
+            </div>
+
+            {/* Campo: ID RTM */}
+            <div className="col-span-2 md:col-span-1 space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">ID RTM (Client Code)</Label>
+              <div className="relative">
+                <Package className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Ex: RTM-BR-001"
+                  value={clientCode} 
+                  onChange={(e) => setClientCode(e.target.value)} 
+                  disabled={!isComercial}
+                  className="pl-10 h-11 bg-background border-border rounded-xl font-mono text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Seleção de Produtos */}
+            <div className="col-span-2 space-y-4 border-t border-border pt-6">
+              <Label className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                <Zap className="size-4" /> Produtos para Ativação
+              </Label>
               <div className="grid grid-cols-2 gap-3">
                 {productsLoading ? (
                   <div className="col-span-2 py-4 text-center"><Loader2 className="size-4 animate-spin mx-auto text-primary" /></div>
                 ) : dbProducts.length > 0 ? dbProducts.map((prod) => (
                   <div 
                     key={prod.id} 
-                    className={`flex items-center space-x-3 p-3 rounded-xl border-2 transition-all ${isComercial ? 'cursor-pointer' : 'cursor-default'} ${selectedProductIds.includes(prod.id!) ? 'border-primary bg-primary/5' : 'border-slate-100 dark:border-slate-800 hover:border-slate-200'}`}
+                    className={`flex items-center space-x-3 p-4 rounded-2xl border-2 transition-all ${isComercial ? 'cursor-pointer' : 'cursor-default'} ${selectedProductIds.includes(prod.id!) ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30 bg-muted/20'}`}
                     onClick={() => toggleProduct(prod.id!)}
                   >
-                    <Checkbox checked={selectedProductIds.includes(prod.id!)} disabled={!isComercial} />
+                    <Checkbox checked={selectedProductIds.includes(prod.id!)} disabled={!isComercial} className="rounded-full border-primary" />
                     <div className="flex flex-col">
-                      <span className="text-xs font-bold leading-none text-foreground">{prod.name}</span>
-                      <span className="text-[10px] text-muted-foreground truncate w-40">{prod.description}</span>
+                      <span className="text-sm font-bold leading-none text-foreground">{prod.name}</span>
+                      <span className="text-[10px] text-muted-foreground mt-1 truncate w-40">{prod.description}</span>
                     </div>
                   </div>
                 )) : (
-                  <div className="col-span-2 p-4 text-center text-xs text-muted-foreground italic bg-muted/20 rounded-lg">
+                  <div className="col-span-2 p-4 text-center text-xs text-muted-foreground italic bg-muted/20 rounded-xl border border-dashed border-border">
                     Nenhum produto cadastrado pelo suporte.
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="col-span-2 space-y-2">
-              <Label className="flex items-center gap-2 text-foreground">
+            {/* Observações Importantes */}
+            <div className="col-span-2 space-y-2 border-t border-border pt-6">
+              <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                 <FileText className="size-4 text-primary" />
-                Informações Adicionais para o Cliente
+                Observações Importantes
               </Label>
-              <textarea 
+              <Textarea 
                 value={commercialNotes} 
                 onChange={(e) => setCommercialNotes(e.target.value)} 
-                placeholder={isComercial ? "Insira boas-vindas, orientações iniciais ou avisos específicos para este cliente..." : "Nenhuma nota inserida pelo comercial."}
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder={isComercial ? "Insira avisos críticos, prazos regulatórios ou particularidades técnicas..." : "Nenhuma nota inserida."}
+                className="min-h-[120px] bg-background border-border rounded-2xl text-sm leading-relaxed"
                 disabled={!isComercial}
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="text-foreground">
-              {isComercial ? "Cancelar" : "Fechar"}
-            </Button>
-            {isComercial && (
-              <Button disabled={!clientCode || selectedProductIds.length === 0 || isSubmitting} onClick={handleApprove}>
-                {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
-                Confirmar Ativação
-              </Button>
-            )}
+
+          <DialogFooter className="p-8 bg-muted/20 border-t border-border flex items-center justify-between">
             {!isComercial && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground italic">
-                <Lock className="size-3" /> Apenas o comercial pode editar estes dados.
+              <div className="flex items-center gap-2 text-xs text-muted-foreground italic font-medium">
+                <Lock className="size-3" /> Apenas o comercial pode editar estes parâmetros de venda.
               </div>
             )}
+            <div className="flex gap-3 ml-auto">
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-xl font-bold px-6 border-border hover:bg-background">
+                {isComercial ? "Cancelar" : "Fechar"}
+              </Button>
+              {isComercial && (
+                <Button 
+                  disabled={!clientCode || selectedProductIds.length === 0 || isSubmitting || !institutionName} 
+                  onClick={handleApprove}
+                  className="rounded-xl font-bold px-8 shadow-xl shadow-primary/20"
+                >
+                  {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
+                  Confirmar Ativação
+                </Button>
+              )}
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

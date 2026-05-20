@@ -16,6 +16,8 @@
         "clientCode": { "type": "string" },
         "activeProduct": { "type": "string" },
         "phoneNumber": { "type": "string" },
+        "consultantName": { "type": "string", "description": "Nome do consultor RTM responsável pela conta." },
+        "orderValue": { "type": "string", "description": "Número da Ordem de Venda (OV) ou identificador do contrato." },
         "commercialNotes": { "type": "string", "description": "Notas ou observações inseridas pelo comercial durante a ativação." },
         "updatedAt": { "type": "string" },
         "createdAt": { "type": "string" }

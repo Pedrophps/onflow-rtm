@@ -19,6 +19,8 @@ export interface UserProfile {
   clientCode?: string;
   activeProduct?: string;
   phoneNumber?: string;
+  consultantName?: string;
+  orderValue?: string;
   commercialNotes?: string;
   createdAt: string;
   approvedAt?: string;
