@@ -30,7 +30,7 @@ export interface DirectIngestionInput {
 
 /**
  * Processa a ingestão direta de dados vindos do ERP ou Power Automate.
- * Cria o usuário (se não existir) e gera a instância de onboarding.
+ * Cria o usuário (se não existir) e gera a instância de onboarding vinculada ao produto.
  */
 export async function processDirectIngestion(
   db: Firestore, 
@@ -54,7 +54,7 @@ export async function processDirectIngestion(
       commercialNotes: data.commercialNotes,
       cnpj: data.cnpj || "00.000.000/0000-00",
       role: "client" as const,
-      status: "approved" as const, // Já vem aprovado pelo ERP/Comercial
+      status: "approved" as const, // Já nasce aprovado para o comercial
       updatedAt: serverTimestamp()
     };
 
@@ -70,14 +70,32 @@ export async function processDirectIngestion(
       await setDoc(doc(db, "users", clientId), userPayload, { merge: true });
     }
 
-    // 2. Cria a instância de ativação técnica para o suporte
+    // 2. Mapeamento Inteligente do Produto
+    // Tenta encontrar o ID real do produto baseado no nome enviado
+    const productsRef = collection(db, "products");
+    const productsSnap = await getDocs(productsRef);
+    let resolvedProductId = data.productName;
+    let resolvedProductName = data.productName;
+
+    productsSnap.docs.forEach(pDoc => {
+      const pData = pDoc.data();
+      if (
+        pData.name.toLowerCase() === data.productName.toLowerCase() || 
+        pDoc.id === data.productName
+      ) {
+        resolvedProductId = pDoc.id;
+        resolvedProductName = pData.name;
+      }
+    });
+
+    // 3. Cria a instância de ativação técnica para o suporte
     const instancesRef = collection(db, "onboardingInstances");
     const newInstance: OnboardingInstance = {
       clientId: clientId,
       institutionName: data.institutionName,
-      productId: data.productName,
-      productName: data.productName,
-      status: 'pending', // Fica na aba "Disponíveis" para o suporte assumir
+      productId: resolvedProductId,
+      productName: resolvedProductName,
+      status: 'pending', // Fica na aba "Disponíveis"
       currentStepOrder: 1,
       startedAt: new Date().toISOString(),
       updatedAt: serverTimestamp(),
@@ -85,9 +103,9 @@ export async function processDirectIngestion(
 
     const docRef = await addDoc(instancesRef, newInstance);
 
-    // 3. Log do sistema para auditoria
+    // 4. Log do sistema para auditoria
     await addDoc(collection(db, "system_logs"), {
-      message: `API Ingestão: Ativação criada para ${data.institutionName} | OV: ${data.orderValue}`,
+      message: `API Ingestão: Ativação criada para ${data.institutionName} | Produto: ${resolvedProductName} | OV: ${data.orderValue}`,
       type: 'success',
       timestamp: new Date().toISOString(),
       userId: 'api-bot',

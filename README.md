@@ -31,26 +31,28 @@ Use o modelo abaixo para enviar os dados:
   "email": "contato@instituicao.com.br",
   "phoneNumber": "(11) 99999-8888",
   "orderValue": "OV-2024-001",
-  "productName": "MENSAGERIA SWIFT",
+  "productName": "slc",
   "commercialNotes": "Observações sobre a venda ou urgência"
 }
 ```
 
-### Resultado
-Ao enviar, o registro criará um usuário `approved` e disparará uma instância na aba **"Disponíveis"** para o Suporte Técnico.
+### Regra de Negócio:
+*   **Mapeamento de Produto**: Se o `productName` for igual ao nome de um produto cadastrado (ex: "SLC", "SWIFT"), o sistema vinculará automaticamente o roteiro técnico correto.
+*   **Aprovação**: Registros via API já nascem com status `approved` no perfil do usuário.
+*   **Handoff**: O registro aparecerá instantaneamente na aba **"Disponíveis"** para o Suporte Técnico.
 
 ---
 
 ## 🗄️ DICIONÁRIO DE DADOS (FIRESTORE)
 
 ### 1. Coleção `users`
-Dados mestres. Cada documento é uma instituição. Registros via API já nascem com `status: "approved"`.
+Dados mestres de perfil. Registros via API criam usuários com `role: "client"` e `status: "approved"`.
 
 ### 2. Coleção `onboardingInstances`
-Projetos de ativação. Se `techId` for nulo, está na fila de espera. Se tiver `flowId`, o roteiro técnico já foi escolhido.
+Projetos de ativação em curso. Se `techId` for nulo, está na fila de espera. O `productId` é preenchido automaticamente pela API se houver match no catálogo.
 
 ### 3. Coleção `products`
-Catálogo mestre. Onde ficam os roteiros técnicos (subcoleção `activationFlows/steps`).
+Catálogo mestre. Contém as definições de nomes e roteiros técnicos (subcoleção `activationFlows`).
 
 ---
 *Identificar para integrar. Entender para atender. Conhecer para evoluir.*
