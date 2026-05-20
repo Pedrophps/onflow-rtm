@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -135,7 +134,7 @@ export default function Home() {
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-left duration-700">
             <h1 className="text-5xl lg:text-7xl font-bold tracking-tighter text-slate-900 dark:text-white font-headline leading-tight">
-              Somos a <span className="text-primary border-b-4 border-primary/20">RTM.</span><br />
+              Somos a <span className="text-primary">RTM.</span><br />
               <span className="text-3xl lg:text-5xl opacity-80 block mt-2 font-medium">O Hub integrador do mercado financeiro.</span>
             </h1>
             <p className="text-xl lg:text-2xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl font-light">
