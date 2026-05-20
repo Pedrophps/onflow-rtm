@@ -51,9 +51,9 @@ import { HeroBackground } from '@/components/hero-background';
 export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Plugin de Autoplay para o Carrossel
+  // Plugin de Autoplay configurado para 2400ms (20% mais rápido que 3000ms)
   const autoplayPlugin = React.useMemo(
-    () => Autoplay({ delay: 3000, stopOnInteraction: true }),
+    () => Autoplay({ delay: 2400, stopOnInteraction: false, stopOnMouseEnter: true }),
     []
   );
 
@@ -245,50 +245,48 @@ export default function Home() {
             opts={{ align: "start", loop: true }} 
             plugins={[autoplayPlugin]}
             className="w-full"
-            onMouseEnter={() => autoplayPlugin.stop()}
-            onMouseLeave={() => autoplayPlugin.reset()}
           >
-            <CarouselContent className="-ml-6">
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-100">
+            <CarouselContent className="-ml-4">
+              <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="1997" title="Fundação" text="Nasce a RTM - Rede de Telecomunicações para o Mercado." icon={History} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-200">
+              <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="2001" title="SPB" text="Implantação da rede do SPB." icon={Network} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-300">
+              <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="2002" title="Contingência" text="Oferta de Site de Contingência." icon={ShieldCheck} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-400">
+              <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="2003" title="SWIFT" text="Estrutura para conexão à SWIFT." icon={Zap} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-500">
+              <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="2011" title="Data Center" text="Data Center para o mercado financeiro." icon={Server} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-600">
+              <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="2014" title="Cloud" text="Solução de Cloud." icon={Cloud} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-700">
+              <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="2016" title="Traders" text="Mesa de operações financeiras." icon={PhoneCall} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 animate-in fade-in slide-in-from-right duration-500 delay-800">
+              <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="2017" title="SaaS" text="1ª solução de SaaS para o mercado de pagamentos." icon={Zap} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="2018" title="Hybrid Cloud" text="Conexão segura com nuvens públicas." icon={Layers} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="2020" title="PIX" text="Soluções de segurança e infraestrutura para o Pix." icon={Zap} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="2022" title="Hub Fundos" text="Lançamento da Plataforma Hub Fundos." icon={LayoutGrid} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="2023" title="Blockchain" text="Infraestrutura de Blockchain para Drex/Tokenização." icon={LinkIcon} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="2024" title="Conciliação" text="Nova funcionalidade do Hub Pagamentos para conciliação de vendas." icon={Activity} />
               </CarouselItem>
-              <CarouselItem className="pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="2025" title="Expansão" text="Aquisição da Galgo S.A. e expansão dos serviços para a indústria de fundos." icon={Rocket} isHighlight />
               </CarouselItem>
             </CarouselContent>
@@ -327,7 +325,7 @@ function ServiceCard({ icon: Icon, title, desc }: { icon: any, title: string, de
   return (
     <Card className="border-none hover:shadow-lg transition-all group bg-white dark:bg-slate-900 p-2 rounded-[2rem] hover:-translate-y-2 duration-300">
       <CardHeader className="pb-4">
-        <div className="size-14 rounded-2xl bg-slate-50 dark:bg-slate-800 text-primary flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-all shadow-inner">
+        <div className="size-14 rounded-2xl bg-slate-50 dark:bg-slate-800 text-primary flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-all">
           <Icon className="size-7" />
         </div>
         <CardTitle className="text-xl font-bold font-headline text-slate-900 dark:text-white group-hover:text-primary transition-colors tracking-tight">{title}</CardTitle>
@@ -341,7 +339,7 @@ function ServiceCard({ icon: Icon, title, desc }: { icon: any, title: string, de
 
 function FuturisticMilestone({ year, title, text, icon: Icon, isHighlight = false }: any) {
   return (
-    <div className={`relative group p-8 rounded-3xl border transition-all duration-500 overflow-hidden h-full min-h-[320px] flex flex-col justify-between hover:scale-[1.02] ${
+    <div className={`relative group p-8 rounded-3xl border transition-all duration-500 overflow-hidden h-full min-h-[350px] flex flex-col justify-between hover:scale-[1.02] ${
       isHighlight ? "bg-primary/10 border-primary/40 shadow-sm" : "bg-slate-900/50 border-slate-800 hover:border-primary/50 hover:bg-slate-900"
     }`}>
       <div className="relative z-10 space-y-6">
