@@ -1,3 +1,4 @@
+
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -37,7 +38,8 @@ import {
   LayoutGrid, 
   ArrowLeft, 
   RotateCcw,
-  Trash2
+  Trash2,
+  MessageSquare
 } from "lucide-react";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, getDocs, orderBy, deleteDoc } from "firebase/firestore";
@@ -621,8 +623,21 @@ export default function OnboardingManagement() {
               <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">Responsável</Label><p className="font-bold text-foreground">{selectedClientForFicha?.displayName}</p></div>
               <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">E-mail</Label><p className="text-muted-foreground">{selectedClientForFicha?.email}</p></div>
             </div>
-            <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-between">
-              <div><Label className="text-[10px] uppercase font-bold text-primary">OV (Venda)</Label><p className="font-mono font-black text-lg text-foreground">{selectedClientForFicha?.orderValue || 'Pendente'}</p></div>
+            
+            <div className="space-y-4">
+               <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-between">
+                <div><Label className="text-[10px] uppercase font-bold text-primary">OV (Venda)</Label><p className="font-mono font-black text-lg text-foreground">{selectedClientForFicha?.orderValue || 'Pendente'}</p></div>
+               </div>
+
+               <div className="p-6 rounded-2xl bg-muted/50 border border-border">
+                  <div className="flex items-center gap-2 mb-2 text-muted-foreground">
+                    <MessageSquare className="size-4" />
+                    <Label className="text-[10px] uppercase font-bold">Observações Importantes (Comercial)</Label>
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-medium">
+                    {selectedClientForFicha?.commercialNotes || "Nenhuma observação inserida pelo comercial ou API."}
+                  </p>
+               </div>
             </div>
           </div>
           <DialogFooter className="p-6 bg-muted/10 border-t"><Button className="w-full font-bold" onClick={() => setIsFichaOpen(false)}>Fechar</Button></DialogFooter>
