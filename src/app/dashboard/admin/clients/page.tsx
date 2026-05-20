@@ -1,4 +1,3 @@
-
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -14,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserProfile, Product, OnboardingInstance } from "@/lib/types";
-import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal, Package, Phone, FileText, CheckCircle2, Lock, UserCircle, Hash, Mail } from "lucide-react";
+import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal, Package, Phone, FileText, CheckCircle2, Lock, UserCircle, Hash, Mail, ShieldCheck, Zap } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
