@@ -97,7 +97,7 @@ export default function Home() {
                 {isDarkMode ? <Sun className="size-5" /> : <Moon className="size-5" />}
               </Button>
 
-              <Button size="sm" className="rounded-full px-6 font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary/20" asChild>
+              <Button size="sm" className="rounded-full px-6 font-bold text-xs uppercase tracking-wider" asChild>
                 <Link href="/login">Acessar Portal</Link>
               </Button>
             </div>
@@ -141,7 +141,7 @@ export default function Home() {
               Integramos o mercado financeiro brasileiro. Nossas soluções e ferramentas potencializam os resultados dos nossos clientes.
             </p>
             <div className="flex gap-4">
-              <Button size="lg" className="rounded-full px-10 h-14 font-bold gap-2 text-lg shadow-xl shadow-primary/30" asChild>
+              <Button size="lg" className="rounded-full px-10 h-14 font-bold gap-2 text-lg" asChild>
                 <Link href="/login">Começar Agora <ArrowRight className="size-6" /></Link>
               </Button>
             </div>
@@ -186,18 +186,18 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="bg-slate-900 p-12 rounded-[4rem] text-white shadow-2xl space-y-12 relative overflow-hidden group">
+            <div className="bg-slate-900 p-12 rounded-[4rem] text-white space-y-12 relative overflow-hidden group">
                <h3 className="text-3xl font-bold font-headline relative z-10">Nossa Presença</h3>
                <div className="space-y-8 relative z-10">
                 <div className="flex items-center gap-6 group-hover:translate-x-2 transition-transform">
-                  <div className="size-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20"><MapPin className="text-white size-8" /></div>
+                  <div className="size-14 rounded-2xl bg-primary flex items-center justify-center"><MapPin className="text-white size-8" /></div>
                   <div>
                     <p className="text-2xl font-black">20 Estados + DF</p>
                     <p className="text-slate-400 font-medium">Cobertura em todas as 5 regiões do país.</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-6 group-hover:translate-x-2 transition-transform duration-500">
-                  <div className="size-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20"><Building2 className="text-white size-8" /></div>
+                  <div className="size-14 rounded-2xl bg-primary flex items-center justify-center"><Building2 className="text-white size-8" /></div>
                   <div>
                     <p className="text-2xl font-black">750+ Instituições</p>
                     <p className="text-slate-400 font-medium">Conectadas com estabilidade, segurança e rapidez.</p>
@@ -325,7 +325,7 @@ export default function Home() {
 
 function ServiceCard({ icon: Icon, title, desc }: { icon: any, title: string, desc: string }) {
   return (
-    <Card className="border-none shadow-sm hover:shadow-2xl transition-all group bg-white dark:bg-slate-900 p-2 rounded-[2rem] hover:-translate-y-2 duration-300">
+    <Card className="border-none hover:shadow-lg transition-all group bg-white dark:bg-slate-900 p-2 rounded-[2rem] hover:-translate-y-2 duration-300">
       <CardHeader className="pb-4">
         <div className="size-14 rounded-2xl bg-slate-50 dark:bg-slate-800 text-primary flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-all shadow-inner">
           <Icon className="size-7" />
@@ -341,13 +341,13 @@ function ServiceCard({ icon: Icon, title, desc }: { icon: any, title: string, de
 
 function FuturisticMilestone({ year, title, text, icon: Icon, isHighlight = false }: any) {
   return (
-    <div className={`relative group p-8 rounded-3xl border transition-all duration-500 overflow-hidden h-full min-h-[320px] flex flex-col justify-between hover:shadow-2xl hover:scale-[1.02] ${
-      isHighlight ? "bg-primary/10 border-primary/40 shadow-lg" : "bg-slate-900/50 border-slate-800 hover:border-primary/50 hover:bg-slate-900"
+    <div className={`relative group p-8 rounded-3xl border transition-all duration-500 overflow-hidden h-full min-h-[320px] flex flex-col justify-between hover:scale-[1.02] ${
+      isHighlight ? "bg-primary/10 border-primary/40 shadow-sm" : "bg-slate-900/50 border-slate-800 hover:border-primary/50 hover:bg-slate-900"
     }`}>
       <div className="relative z-10 space-y-6">
         <div className="flex items-center justify-between">
           <span className={`text-4xl font-black font-headline tracking-tighter ${isHighlight ? "text-primary" : "text-slate-600 group-hover:text-primary"}`}>{year}</span>
-          <div className={`size-12 rounded-xl flex items-center justify-center transition-all ${isHighlight ? "bg-primary text-white" : "bg-slate-800 text-slate-400 group-hover:text-primary group-hover:shadow-[0_0_20px_rgba(211,47,47,0.4)]"}`}>
+          <div className={`size-12 rounded-xl flex items-center justify-center transition-all ${isHighlight ? "bg-primary text-white" : "bg-slate-800 text-slate-400 group-hover:text-primary"}`}>
             <Icon className="size-6" />
           </div>
         </div>

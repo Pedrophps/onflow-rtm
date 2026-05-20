@@ -1,4 +1,3 @@
-
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -254,7 +253,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
 
                    <Dialog open={isNewStepOpen} onOpenChange={setIsNewStepOpen}>
                     <DialogTrigger asChild>
-                      <Button className="gap-2 rounded-full font-bold shadow-md">
+                      <Button className="gap-2 rounded-full font-bold">
                         <Plus className="size-4" /> Adicionar Etapa
                       </Button>
                     </DialogTrigger>
@@ -299,12 +298,12 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                   
                   <div className={cn(
                     "absolute left-0 top-1 size-12 rounded-2xl border-2 bg-white flex items-center justify-center transition-all z-10",
-                    isSupport ? "hover:border-primary hover:shadow-md cursor-grab active:cursor-grabbing" : ""
+                    isSupport ? "hover:border-primary cursor-grab active:cursor-grabbing" : ""
                   )}>
                     <span className="font-bold text-slate-400">{step.order}</span>
                   </div>
 
-                  <Card className="hover:border-primary/40 transition-all">
+                  <Card className="hover:border-primary/40 transition-all shadow-sm">
                     <CardContent className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-3">
@@ -438,7 +437,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
             </Button>
             
             <Button 
-              className="font-bold px-8 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90"
+              className="font-bold px-8 bg-primary hover:bg-primary/90"
               onClick={() => handleUpdateFlowStatus(true)}
               disabled={isSubmitting}
             >

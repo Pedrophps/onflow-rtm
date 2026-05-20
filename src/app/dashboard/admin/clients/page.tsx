@@ -162,7 +162,7 @@ export default function ClientsAdminPage() {
             ) : pendingClients.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {pendingClients.map((client) => (
-                  <Card key={client.id} className="border-primary/20 bg-primary/5 shadow-sm hover:shadow-md transition-all">
+                  <Card key={client.id} className="border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all">
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div className="space-y-1">
@@ -246,7 +246,7 @@ export default function ClientsAdminPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl bg-card border-border shadow-2xl rounded-3xl p-0 overflow-hidden">
+        <DialogContent className="max-w-3xl bg-card border-border rounded-3xl p-0 overflow-hidden">
           <DialogHeader className="p-8 bg-slate-950 text-white">
             <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-3">
               <ShieldCheck className="size-6 text-primary" />
@@ -390,7 +390,7 @@ export default function ClientsAdminPage() {
                 <Button 
                   disabled={!orderValue || selectedProductIds.length === 0 || isSubmitting || !institutionName} 
                   onClick={handleApprove}
-                  className="rounded-xl font-bold px-8 shadow-xl shadow-primary/20"
+                  className="rounded-xl font-bold px-8"
                 >
                   {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
                   Confirmar Ativação
