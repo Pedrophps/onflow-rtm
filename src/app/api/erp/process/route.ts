@@ -4,14 +4,14 @@ import { processDirectIngestion } from '@/lib/automation-service';
 
 /**
  * API OnFlow para Ingestão Estruturada de Ativações.
- * Ideal para Power Automate ou ERPs.
+ * Aberta para Power Automate / ERP (Sem Autenticação).
  */
 export async function POST(req: NextRequest) {
   try {
     const { firestore } = initializeFirebase();
     const data = await req.json();
 
-    // Validação de campos obrigatórios
+    // Validação de campos obrigatórios conforme solicitado
     const requiredFields = [
       'institutionName', 
       'consultantName', 
@@ -30,10 +30,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Processa a ingestão direta
+    // Processa a ingestão direta criando Usuário + Instância
     const result = await processDirectIngestion(firestore, {
       institutionName: data.institutionName,
-      cnpj: data.cnpj,
+      cnpj: data.cnpj || "00.000.000/0001-91", // Opcional, assume um padrão se não enviado
       consultantName: data.consultantName,
       email: data.email,
       phoneNumber: data.phoneNumber,
@@ -60,18 +60,18 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   return NextResponse.json({
-    description: 'API OnFlow - Ingestão Direta',
+    description: 'API OnFlow - Ingestão Direta (Sem Autenticação)',
     endpoint: '/api/erp/process',
     method: 'POST',
     payload_example: {
-      institutionName: "Nome do Banco",
-      cnpj: "00.000.000/0000-00",
+      institutionName: "Nome da Instituição",
       consultantName: "Nome do Consultor RTM",
       email: "contato@cliente.com.br",
       phoneNumber: "(11) 99999-9999",
       orderValue: "OV-2024-X",
+      productName: "MENSAGERIA SWIFT",
       commercialNotes: "Notas adicionais aqui",
-      productName: "MENSAGERIA SWIFT"
+      cnpj: "00.000.000/0000-00"
     }
   });
 }
