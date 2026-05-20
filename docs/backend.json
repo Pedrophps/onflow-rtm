@@ -3,7 +3,7 @@
   "entities": {
     "UserProfile": {
       "title": "Perfil do Usuário",
-      "description": "Dados mestre do usuário, incluindo papéis administrativos (RTM) ou institucionais (Clientes).",
+      "description": "Dados mestres de autenticação e informações institucionais (CNPJ, OV, Consultor).",
       "type": "object",
       "properties": {
         "email": { "type": "string", "format": "email" },
@@ -13,20 +13,20 @@
         "displayName": { "type": "string" },
         "institutionName": { "type": "string" },
         "cnpj": { "type": "string" },
-        "clientCode": { "type": "string" },
         "activeProduct": { "type": "string" },
         "phoneNumber": { "type": "string" },
-        "consultantName": { "type": "string", "description": "Nome do consultor RTM responsável pela conta." },
-        "orderValue": { "type": "string", "description": "Número da Ordem de Venda (OV) ou identificador do contrato." },
-        "commercialNotes": { "type": "string", "description": "Notas ou observações inseridas pelo comercial durante a ativação." },
-        "updatedAt": { "type": "string" },
-        "createdAt": { "type": "string" }
+        "consultantName": { "type": "string" },
+        "orderValue": { "type": "string" },
+        "commercialNotes": { "type": "string" },
+        "approvedAt": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
       },
       "required": ["email", "role", "displayName", "status"]
     },
     "Product": {
       "title": "Produto RTM",
-      "description": "Catálogo de serviços financeiros disponíveis para onboarding.",
+      "description": "Catálogo de serviços financeiros (molde para ativações).",
       "type": "object",
       "properties": {
         "name": { "type": "string" },
@@ -37,24 +37,71 @@
         "createdBy": { "type": "string" }
       }
     },
+    "ActivationFlow": {
+      "title": "Fluxo de Ativação",
+      "description": "Roteiro técnico associado a um produto.",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "published": { "type": "boolean" },
+        "version": { "type": "number" },
+        "status": { "type": "string" }
+      }
+    },
+    "FlowStep": {
+      "title": "Etapa do Fluxo",
+      "description": "Ação individual de configuração ou envio de evidência.",
+      "type": "object",
+      "properties": {
+        "order": { "type": "number" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "responsible": { "type": "string", "enum": ["suporte", "comercial", "cliente", "infraestrutura", "compliance"] },
+        "estimatedTimeInHours": { "type": "number" },
+        "required": { "type": "boolean" },
+        "type": { "type": "string", "enum": ["upload", "form"] }
+      }
+    },
     "OnboardingInstance": {
       "title": "Instância de Onboarding",
-      "description": "Execução real de um fluxo de ativação para um cliente específico.",
+      "description": "O processo de ativação real de um cliente para um produto.",
       "type": "object",
       "properties": {
         "clientId": { "type": "string" },
         "productId": { "type": "string" },
         "flowId": { "type": "string" },
         "techId": { "type": "string" },
+        "techName": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "active", "completed", "blocked"] },
         "currentStepOrder": { "type": "number" },
+        "institutionName": { "type": "string" },
+        "productName": { "type": "string" },
         "startedAt": { "type": "string" },
         "updatedAt": { "type": "string" }
       }
     },
+    "Interaction": {
+      "title": "Interação",
+      "description": "Mensagem de chat ou registro de envio de arquivo/evidência.",
+      "type": "object",
+      "properties": {
+        "instanceId": { "type": "string" },
+        "stepId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userRole": { "type": "string" },
+        "message": { "type": "string" },
+        "fileName": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "createdAt": { "type": "string" }
+      }
+    },
     "SystemLog": {
       "title": "Log do Sistema",
-      "description": "Registros de eventos técnicos, auditoria de QA e diagnósticos de rede.",
+      "description": "Auditoria técnica, erros de API e logs da IA.",
       "type": "object",
       "properties": {
         "timestamp": { "type": "string" },
@@ -63,7 +110,22 @@
         "userId": { "type": "string" },
         "context": { "type": "string" }
       }
+    },
+    "Submission": {
+      "title": "Submissão de Validação",
+      "description": "Coleção para testes de integridade e segurança (QA).",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "stageId": { "type": "string" },
+        "submittedAt": { "type": "string" },
+        "status": { "type": "string" },
+        "testType": { "type": "string" }
+      }
     }
+  },
+  "auth": {
+    "providers": ["password"]
   },
   "firestore": {
     "/users/{userId}": {
@@ -73,13 +135,25 @@
       "schema": { "$ref": "#/backend/entities/Product" }
     },
     "/products/{productId}/activationFlows/{flowId}": {
-      "description": "Subcoleção de fluxos de ativação para um produto específico."
+      "schema": { "$ref": "#/backend/entities/ActivationFlow" }
+    },
+    "/products/{productId}/activationFlows/{flowId}/steps/{stepId}": {
+      "schema": { "$ref": "#/backend/entities/FlowStep" }
     },
     "/onboardingInstances/{instanceId}": {
       "schema": { "$ref": "#/backend/entities/OnboardingInstance" }
     },
+    "/interactions/{interactionId}": {
+      "schema": { "$ref": "#/backend/entities/Interaction" }
+    },
     "/system_logs/{logId}": {
       "schema": { "$ref": "#/backend/entities/SystemLog" }
+    },
+    "/submissions/{submissionId}": {
+      "schema": { "$ref": "#/backend/entities/Submission" }
+    },
+    "/onboardingFlows/{flowId}": {
+      "description": "Coleção de teste legada/global para validação de segurança."
     }
   }
 }
