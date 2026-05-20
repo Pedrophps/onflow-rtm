@@ -5,56 +5,50 @@ Plataforma de alta precisão para orquestração e ativação de serviços finan
 
 ---
 
-## 🗄️ ESTRUTURA E DICIONÁRIO DE DADOS (FIRESTORE)
+## 🗄️ DICIONÁRIO DE DADOS (FIRESTORE)
 
-Abaixo, a descrição exata de cada coleção e o que cada registro dentro delas representa:
+Se você está olhando para o console do Firebase agora, aqui está o que cada coisa significa:
 
-### 1. `users` (Perfis e Instituições)
-**Onde armazena**: Dados de acesso, CNPJ e informações de venda do Comercial.
-*   **Cada documento (`userId`) representa**: Uma conta individual. Pode ser um Analista RTM (Admin) ou uma Instituição Financeira (Cliente).
-*   **Dados chave**: Se o cliente tem uma `orderValue` (OV) preenchida, significa que a venda foi formalizada.
+### 1. Coleção `users` (A Fila de Entrada)
+**O que é**: Onde ficam todos os seres humanos e empresas que acessam o sistema.
+*   **Registros com `status: "pending"`**: São os usuários que você mencionou. Eles estão "na porta", esperando o Comercial aprovar.
+*   **Registros com `status: "approved"`**: Clientes que já possuem contrato e Ordem de Venda (OV) vinculada.
+*   **Registros com `role: "admin"`**: Funcionários da RTM (Suporte ou Comercial).
 
-### 2. `products` (Catálogo RTM)
-**Onde armazena**: Os modelos/templates dos serviços oferecidos.
-*   **Cada documento (`productId`) representa**: Um produto comercial (ex: "Mensageria SWIFT").
-*   **Subcoleção `activationFlows`**: Contém o roteiro técnico (template).
-*   **Subcoleção `steps`**: Contém as etapas manuais (ex: "Configurar VPN") com o SLA de horas.
+### 2. Coleção `products` (Os Modelos)
+**O que é**: O catálogo mestre da RTM.
+*   **Cada registro aqui**: É um "molde" (ex: Mensageria SWIFT). Ele não é um projeto real, apenas as instruções de como o projeto deve ser.
+*   **Subcoleção `activationFlows` -> `steps`**: São as tarefas que o suporte terá que cumprir (ex: "Configurar VPN").
 
-### 3. `onboardingInstances` (Jornadas Ativas)
-**Onde armazena**: O processo real de ativação que está acontecendo agora para um cliente.
-*   **Cada documento (`instanceId`) representa**: O "projeto" de instalação de um produto para um cliente específico.
-*   **Vínculo**: Conecta o `clientId` (quem compra) ao `techId` (qual analista do suporte está trabalhando no caso).
+### 3. Coleção `onboardingInstances` (Os Projetos Reais)
+**O que é**: Onde o trabalho acontece de verdade.
+*   **Cada registro aqui**: É um "Ticket" de instalação ativo. 
+*   **Vínculo**: Ele conecta um ID de usuário da coleção `users` a um ID de produto da coleção `products`.
+*   **Status**: Aqui você vê se o suporte já assumiu o cliente ou se ele ainda está "Disponível".
 
-### 4. `interactions` (Chat e Evidências)
-**Onde armazena**: O histórico de conversas e arquivos enviados.
-*   **Cada documento (`interactionId`) representa**: Uma mensagem única no chat ou o registro de um arquivo anexado em uma etapa específica.
-*   **Uso**: Serve para a auditoria de conformidade (saber quem mandou qual arquivo e quando).
+### 4. Coleção `interactions` (A Prova do Crime)
+**O que é**: O log de auditoria técnica.
+*   **Cada registro aqui**: Uma mensagem de chat ou um arquivo (PDF/Print) enviado como evidência de que uma etapa foi concluída.
 
-### 5. `system_logs` (IA e Auditoria Técnica)
-**Onde armazena**: Eventos automáticos do sistema.
-*   **Cada documento (`logId`) representa**: Um rastro técnico. Ex: "IA extraiu dados do e-mail do Banco Alpha com 95% de confiança".
-*   **Uso**: Monitorar se a integração com o Power Automate está funcionando sem erros.
-
-### 6. `submissions` & `onboardingFlows` (Legacy/QA)
-**Onde armazena**: Dados de validação de segurança.
-*   **Uso**: Registros temporários criados pelo "Integration Test" para garantir que as regras de firewall do banco de dados (Security Rules) estão protegendo os dados corretamente.
+### 5. Coleção `system_logs` (O Rastro da IA)
+**O que é**: Onde o sistema "fala sozinho".
+*   **Cada registro aqui**: Um log técnico. Se a IA extraiu um e-mail do Power Automate, o resultado (sucesso ou erro) aparece aqui primeiro.
 
 ---
 
-## 🚀 GUIA DE INTEGRAÇÃO TÉCNICA (POWER AUTOMATE)
+## 🚀 GUIA DE INTEGRAÇÃO (POWER AUTOMATE)
 
-Para validar a ingestão automática via IA, utilize o endpoint público abaixo.
+### Endpoint de Ingestão
+`POST /api/erp/process`
 
-### 1. Endpoint de Produção
-`https://6000-firebase-studio-1779040400544.cluster-xvr5pmatm5a4gx76fmat6kxt6o.cloudworkstations.dev/api/erp/process`
-
-### 2. Payload de Exemplo (JSON)
+**Payload esperado**:
 ```json
 {
-  "subject": "[ATIVAÇÃO CRÍTICA] SOLICITAÇÃO #2024-999 - BANCO OMEGA",
-  "body": "Prezada equipe RTM, Confirmamos a venda de MENSAGERIA SWIFT para o cliente BANCO OMEGA, CNPJ 99.888.777/0001-11."
+  "subject": "Assunto do e-mail",
+  "body": "Conteúdo extraído do Outlook"
 }
 ```
+*Ao enviar este JSON, um novo registro aparecerá na coleção `users` com status `pending` e uma nova instância de onboarding será criada na fila do suporte.*
 
 ---
 *Identificar para integrar. Entender para atender. Conhecer para evoluir.*
