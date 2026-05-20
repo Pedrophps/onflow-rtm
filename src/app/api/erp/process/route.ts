@@ -1,65 +1,77 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeFirebase } from '@/firebase';
-import { processAutomationFromEmail } from '@/lib/automation-service';
+import { processDirectIngestion } from '@/lib/automation-service';
 
 /**
- * API simplificada para integração com Power Automate / ERP.
- * Recebe dados estruturados ou conteúdo de e-mail para automação.
+ * API OnFlow para Ingestão Estruturada de Ativações.
+ * Ideal para Power Automate ou ERPs.
  */
 export async function POST(req: NextRequest) {
   try {
     const { firestore } = initializeFirebase();
     const data = await req.json();
 
-    // Validação de entrada: Requer ou (subject+body) ou (institutionName+cnpj)
-    const hasEmailData = data.subject && data.body;
-    const hasDirectData = data.institutionName && data.cnpj;
+    // Validação de campos obrigatórios
+    const requiredFields = [
+      'institutionName', 
+      'consultantName', 
+      'email', 
+      'phoneNumber', 
+      'orderValue', 
+      'productName'
+    ];
 
-    if (!hasEmailData && !hasDirectData) {
-      return NextResponse.json(
-        { error: 'Payload incompleto. Envie (subject e body) para processamento IA ou (institutionName e cnpj) para dados diretos.' }, 
-        { status: 400 }
-      );
+    for (const field of requiredFields) {
+      if (!data[field]) {
+        return NextResponse.json(
+          { error: `O campo '${field}' é obrigatório para a ativação.` }, 
+          { status: 400 }
+        );
+      }
     }
 
-    // Chama o serviço passando os dados disponíveis
-    const result = await processAutomationFromEmail(
-      firestore, 
-      data.subject, 
-      data.body,
-      {
-        institutionName: data.institutionName,
-        cnpj: data.cnpj,
-        productName: data.productName,
-        priority: data.priority
-      }
-    );
+    // Processa a ingestão direta
+    const result = await processDirectIngestion(firestore, {
+      institutionName: data.institutionName,
+      cnpj: data.cnpj,
+      consultantName: data.consultantName,
+      email: data.email,
+      phoneNumber: data.phoneNumber,
+      orderValue: data.orderValue,
+      commercialNotes: data.commercialNotes || "",
+      productName: data.productName
+    });
 
     return NextResponse.json({
       status: 'success',
-      message: 'Instância de ativação criada com sucesso na fila do suporte.',
+      message: 'Ativação registrada com sucesso. O cliente já aparece na fila do Suporte.',
       instanceId: result.instanceId,
-      extracted: result.extracted
+      clientId: result.clientId
     });
 
   } catch (error: any) {
     console.error('API_INGESTION_ERROR:', error);
     return NextResponse.json({ 
       status: 'error', 
-      message: error.message || 'Falha no processamento interno da API.' 
+      message: error.message || 'Falha no processamento da API.' 
     }, { status: 500 });
   }
 }
 
 export async function GET() {
   return NextResponse.json({
-    description: 'API OnFlow para Ingestão de Ativações',
+    description: 'API OnFlow - Ingestão Direta',
     endpoint: '/api/erp/process',
-    auth: 'None Required',
-    methods: ['POST'],
-    payload_options: {
-      ia_mode: { subject: "string", body: "string" },
-      direct_mode: { institutionName: "string", cnpj: "string", productName: "string", priority: "low|medium|high" }
+    method: 'POST',
+    payload_example: {
+      institutionName: "Nome do Banco",
+      cnpj: "00.000.000/0000-00",
+      consultantName: "Nome do Consultor RTM",
+      email: "contato@cliente.com.br",
+      phoneNumber: "(11) 99999-9999",
+      orderValue: "OV-2024-X",
+      commercialNotes: "Notas adicionais aqui",
+      productName: "MENSAGERIA SWIFT"
     }
   });
 }

@@ -1,9 +1,8 @@
 /**
  * @fileOverview Serviço de orquestração de automação.
- * Integra a inteligência artificial com a persistência de dados.
+ * Integra sistemas externos com a persistência de dados do OnFlow.
  */
 
-import { parseERPEmail, ParseERPEmailOutput } from '@/ai/flows/parse-erp-email-flow';
 import { 
   collection, 
   query, 
@@ -17,63 +16,65 @@ import {
 } from 'firebase/firestore';
 import { OnboardingInstance, UserProfile } from '@/lib/types';
 
-export async function processAutomationFromEmail(
+export interface DirectIngestionInput {
+  institutionName: string;
+  cnpj?: string;
+  consultantName: string;
+  email: string;
+  phoneNumber: string;
+  orderValue: string;
+  commercialNotes: string;
+  productName: string;
+}
+
+/**
+ * Processa a ingestão direta de dados vindos do ERP ou Power Automate.
+ * Cria o usuário (se não existir) e gera a instância de onboarding.
+ */
+export async function processDirectIngestion(
   db: Firestore, 
-  subject?: string, 
-  body?: string,
-  directData?: Partial<ParseERPEmailOutput>
+  data: DirectIngestionInput
 ) {
-  let extracted: ParseERPEmailOutput;
-
-  // 1. Determina se usa IA ou dados diretos
-  if (subject && body) {
-    // Modo IA: Extração via Nemotron
-    extracted = await parseERPEmail({ emailSubject: subject, emailBody: body });
-  } else if (directData?.institutionName && directData?.cnpj) {
-    // Modo Direto: Usa os dados enviados estruturadamente
-    extracted = {
-      institutionName: directData.institutionName,
-      cnpj: directData.cnpj,
-      productName: directData.productName || "PRODUTO NÃO ESPECIFICADO",
-      priority: directData.priority || 'medium',
-      confidence: 1.0
-    };
-  } else {
-    throw new Error('Dados insuficientes. Envie (subject e body) OU (institutionName e cnpj).');
-  }
-
-  // 2. Busca ou cria o cliente pelo CNPJ
+  // 1. Busca ou cria o cliente pelo E-mail (chave única vinda do ERP)
   const usersRef = collection(db, "users");
-  const q = query(usersRef, where("cnpj", "==", extracted.cnpj));
+  const q = query(usersRef, where("email", "==", data.email));
   const querySnapshot = await getDocs(q);
   
   let clientId = "";
-  let finalInstitutionName = extracted.institutionName;
+
+  const userPayload: Partial<UserProfile> = {
+    institutionName: data.institutionName,
+    displayName: data.institutionName,
+    email: data.email,
+    phoneNumber: data.phoneNumber,
+    consultantName: data.consultantName,
+    orderValue: data.orderValue,
+    commercialNotes: data.commercialNotes,
+    cnpj: data.cnpj || "00.000.000/0000-00",
+    role: "client",
+    status: "approved", // Já vem aprovado pelo ERP/Comercial
+    updatedAt: serverTimestamp()
+  };
 
   if (querySnapshot.empty) {
     const newClientRef = doc(collection(db, "users"));
     clientId = newClientRef.id;
     await setDoc(newClientRef, {
-      institutionName: extracted.institutionName,
-      displayName: "Contato via API/ERP",
-      email: `onboarding@${extracted.cnpj.replace(/\D/g, '')}.auto.br`,
-      cnpj: extracted.cnpj,
-      role: "client",
-      status: "pending", // Criado como pendente para o comercial conferir depois
+      ...userPayload,
       createdAt: new Date().toISOString()
-    } as UserProfile);
+    });
   } else {
     clientId = querySnapshot.docs[0].id;
-    finalInstitutionName = querySnapshot.docs[0].data().institutionName || extracted.institutionName;
+    await setDoc(doc(db, "users", clientId), userPayload, { merge: true });
   }
 
-  // 3. Cria a instância de ativação técnica para o suporte
+  // 2. Cria a instância de ativação técnica para o suporte
   const instancesRef = collection(db, "onboardingInstances");
   const newInstance: OnboardingInstance = {
     clientId: clientId,
-    institutionName: finalInstitutionName,
-    productId: extracted.productName,
-    productName: extracted.productName,
+    institutionName: data.institutionName,
+    productId: data.productName,
+    productName: data.productName,
     status: 'pending', // Fica na aba "Disponíveis" para o suporte assumir
     currentStepOrder: 1,
     startedAt: new Date().toISOString(),
@@ -82,17 +83,17 @@ export async function processAutomationFromEmail(
 
   const docRef = await addDoc(instancesRef, newInstance);
 
-  // 4. Log do sistema para auditoria
+  // 3. Log do sistema para auditoria
   await addDoc(collection(db, "system_logs"), {
-    message: `API Ingestion: Ativação criada para ${finalInstitutionName} | Prioridade: ${extracted.priority} | Origem: ${subject ? 'E-mail IA' : 'Direta'}`,
+    message: `API Ingestão Direta: Ativação criada para ${data.institutionName} | OV: ${data.orderValue} | Produto: ${data.productName}`,
     type: 'success',
     timestamp: new Date().toISOString(),
-    userId: 'api-ingestion-bot',
+    userId: 'erp-integration-bot',
     context: 'api-automation'
   });
 
   return {
     instanceId: docRef.id,
-    extracted
+    clientId
   };
 }

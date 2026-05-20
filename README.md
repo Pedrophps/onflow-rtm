@@ -5,51 +5,44 @@ Plataforma de alta precisão para orquestração e ativação de serviços finan
 
 ---
 
-## 🚀 GUIA DE INTEGRAÇÃO (POWER AUTOMATE / ERP)
+## 🚀 GUIA DE INTEGRAÇÃO (API DIRETA)
 
-O OnFlow possui um endpoint de ingestão automática que pode ser chamado pelo seu ERP ou via Power Automate (leitura de Outlook).
+O OnFlow possui um endpoint de ingestão automática que deve ser chamado pelo seu ERP ou via Power Automate.
 
 ### Endpoint de Ingestão
 `POST /api/erp/process`
 
 ### Estrutura de Envio (JSON)
 
-Você pode enviar os dados de duas formas:
+O envio deve ser estruturado com os seguintes campos obrigatórios:
 
-#### 1. Modo IA (Recomendado para E-mails)
-Envie o assunto e corpo do e-mail. A IA fará a extração do CNPJ, Instituição e Produto.
-```json
-{
-  "subject": "Solicitação de Ativação #2024",
-  "body": "Favor iniciar onboarding do Banco X, CNPJ 00.111.222/0001-33 para o produto RSFN."
-}
-```
-
-#### 2. Modo Direto (Sistemas Estruturados)
-Se o seu ERP já tem os dados, envie diretamente:
 ```json
 {
   "institutionName": "Nome da Instituição",
-  "cnpj": "00.000.000/0000-00",
+  "cnpj": "00.000.000/0001-91",
+  "consultantName": "Nome do Consultor RTM",
+  "email": "contato@instituicao.com.br",
+  "phoneNumber": "(11) 99999-8888",
+  "orderValue": "OV-2024-001",
   "productName": "MENSAGERIA SWIFT",
-  "priority": "high"
+  "commercialNotes": "Observações sobre a venda ou urgência"
 }
 ```
 
-*Nota: Ao enviar via API, uma nova atividade aparecerá instantaneamente na aba **"Disponíveis"** para o Suporte Técnico assumir.*
+*Nota: Ao enviar este JSON, um novo registro aparecerá instantaneamente na aba **"Disponíveis"** para o Suporte Técnico iniciar o onboarding.*
 
 ---
 
 ## 🗄️ DICIONÁRIO DE DADOS (FIRESTORE)
 
 ### 1. Coleção `users`
-Onde ficam os perfis. Registros com `status: "pending"` são leads vindos da API ou novos cadastros aguardando o Comercial.
+Contém os perfis institucionais. Registros criados via API recebem `status: "approved"` automaticamente.
 
 ### 2. Coleção `onboardingInstances`
-São os projetos reais de instalação. Cada registro aqui representa um ticket que o suporte está trabalhando.
+São os projetos reais. Qualquer registro com `techId: null` aparece como disponível para o suporte na aba de gestão.
 
 ### 3. Coleção `products`
-O catálogo mestre. Contém as regras e etapas (steps) que a IA e o Suporte utilizam como modelo.
+O catálogo mestre que serve de modelo para os produtos citados no campo `productName` da API.
 
 ---
 *Identificar para integrar. Entender para atender. Conhecer para evoluir.*
