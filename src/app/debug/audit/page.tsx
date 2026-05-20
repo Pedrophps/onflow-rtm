@@ -1,17 +1,12 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useUser, useCollection } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { 
   collection, 
-  query, 
   getDocs, 
   doc, 
-  setDoc, 
-  addDoc, 
   serverTimestamp, 
-  deleteDoc,
   writeBatch
 } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -20,18 +15,15 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Database, 
   Search, 
-  AlertTriangle, 
-  CheckCircle2, 
   Zap, 
   Loader2, 
   ArrowLeft, 
-  RefreshCw,
   FileWarning,
   LayoutGrid,
   ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
-import { UserProfile, OnboardingInstance, Product } from '@/lib/types';
+import { UserProfile, OnboardingInstance } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 export default function DatabaseAuditPage() {
@@ -108,7 +100,8 @@ export default function DatabaseAuditPage() {
         published: true,
         createdAt: new Date().toISOString(),
         updatedAt: serverTimestamp(),
-        createdBy: user.uid
+        createdBy: user.uid,
+        visibility: { suporte: true, comercial: true }
       });
 
       // B: CRIAR FLUXO TÉCNICO
@@ -119,20 +112,22 @@ export default function DatabaseAuditPage() {
         version: 1,
         status: 'active',
         published: true,
+        productId: productRef.id,
         createdAt: new Date().toISOString(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        createdBy: user.uid
       });
 
       // C: INSERIR ETAPAS (O coração do sistema)
       const steps = [
-        { order: 1, name: "Formalização e OV", description: "Validação da Ordem de Venda e contratos.", responsible: "comercial", estimatedTimeInHours: 24, required: true },
-        { order: 2, name: "Túnel VPN RTM", description: "Configuração de rede e segurança de borda.", responsible: "suporte", estimatedTimeInHours: 48, required: true },
-        { order: 3, name: "Teste de Conectividade", description: "Homologação final no ambiente do cliente.", responsible: "cliente", estimatedTimeInHours: 12, required: true }
+        { order: 1, name: "Formalização e OV", description: "Validação da Ordem de Venda e contratos.", responsible: "comercial", estimatedTimeInHours: 24, required: true, type: 'upload' },
+        { order: 2, name: "Túnel VPN RTM", description: "Configuração de rede e segurança de borda.", responsible: "suporte", estimatedTimeInHours: 48, required: true, type: 'upload' },
+        { order: 3, name: "Teste de Conectividade", description: "Homologação final no ambiente do cliente.", responsible: "cliente", estimatedTimeInHours: 12, required: true, type: 'upload' }
       ];
 
       for (const step of steps) {
         const stepRef = doc(collection(db, "products", productRef.id, "activationFlows", flowRef.id, "steps"));
-        batch.set(stepRef, { ...step, createdAt: new Date().toISOString(), updatedAt: serverTimestamp() });
+        batch.set(stepRef, { ...step, status: 'active', createdAt: new Date().toISOString(), updatedAt: serverTimestamp() });
       }
 
       await batch.commit();
@@ -150,14 +145,14 @@ export default function DatabaseAuditPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8 font-body">
+    <div className="min-h-screen bg-background p-8 font-body">
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <Link href="/dashboard/admin" className="text-xs font-bold text-muted-foreground hover:text-primary flex items-center gap-1">
               <ArrowLeft className="size-3" /> VOLTAR AO PAINEL
             </Link>
-            <h1 className="text-3xl font-bold font-headline text-slate-900 flex items-center gap-3">
+            <h1 className="text-3xl font-bold font-headline text-foreground flex items-center gap-3">
               <Database className="size-8 text-primary" /> Auditor do Ecossistema
             </h1>
             <p className="text-muted-foreground">Análise de conformidade e integridade das coleções do OnFlow.</p>
@@ -181,7 +176,7 @@ export default function DatabaseAuditPage() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
-              <Card className="border-none shadow-sm">
+              <Card className="border-none shadow-sm bg-card">
                 <CardHeader>
                   <CardTitle className="text-sm font-bold flex items-center gap-2">
                     <FileWarning className="size-4 text-amber-500" /> Falhas de Validação (Comercial)
@@ -189,7 +184,7 @@ export default function DatabaseAuditPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {auditResults.clientsMissingOV.length > 0 ? auditResults.clientsMissingOV.map((msg, i) => (
-                    <div key={i} className="text-xs p-3 bg-amber-50 border border-amber-100 rounded-lg text-amber-700 font-medium">
+                    <div key={i} className="text-xs p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-600 dark:text-amber-400 font-medium">
                       Cliente aprovado sem OV: <strong>{msg}</strong>
                     </div>
                   )) : (
@@ -198,7 +193,7 @@ export default function DatabaseAuditPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-none shadow-sm">
+              <Card className="border-none shadow-sm bg-card">
                 <CardHeader>
                   <CardTitle className="text-sm font-bold flex items-center gap-2">
                     <LayoutGrid className="size-4 text-primary" /> Produtos sem Roteiro Técnico
@@ -206,7 +201,7 @@ export default function DatabaseAuditPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {auditResults.emptyProducts.length > 0 ? auditResults.emptyProducts.map((name, i) => (
-                    <div key={i} className="text-xs p-3 bg-red-50 border border-red-100 rounded-lg text-red-700 font-medium">
+                    <div key={i} className="text-xs p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600 dark:text-red-400 font-medium">
                       Produto sem etapas: <strong>{name}</strong>
                     </div>
                   )) : (
@@ -222,7 +217,7 @@ export default function DatabaseAuditPage() {
                   <Badge className="bg-primary/20 text-primary border-primary/30">Ação de Saneamento</Badge>
                   <h3 className="text-2xl font-bold font-headline">Re-orquestrar Estrutura Mestra?</h3>
                   <p className="text-slate-400 text-sm max-w-xl leading-relaxed">
-                    Esta ação não deleta seus dados atuais, mas insere um **Produto Padrão Homologado (SWIFT)** com todas as 3 etapas essenciais e SLAs corretos. É a melhor maneira de garantir que o Suporte tenha um "molde" perfeito para trabalhar.
+                    Esta ação insere um **Produto Padrão Homologado (SWIFT)** com todas as 3 etapas essenciais e SLAs corretos. É a melhor maneira de garantir que o Suporte tenha um "molde" perfeito para trabalhar.
                   </p>
                 </div>
                 <Button 
@@ -238,12 +233,12 @@ export default function DatabaseAuditPage() {
             </div>
           </div>
         ) : (
-          <div className="py-24 text-center border-2 border-dashed rounded-[3rem] bg-white space-y-4">
-            <div className="size-20 rounded-full bg-slate-50 flex items-center justify-center mx-auto">
-              <Database className="size-10 text-slate-200" />
+          <div className="py-24 text-center border-2 border-dashed rounded-[3rem] bg-card space-y-4">
+            <div className="size-20 rounded-full bg-muted flex items-center justify-center mx-auto">
+              <Database className="size-10 text-muted-foreground/20" />
             </div>
             <div className="space-y-1">
-              <p className="text-xl font-bold text-slate-400">Banco de Dados em Standby</p>
+              <p className="text-xl font-bold text-muted-foreground">Banco de Dados em Standby</p>
               <p className="text-sm text-muted-foreground">Inicie a auditoria para escanear a integridade operacional.</p>
             </div>
           </div>
@@ -255,9 +250,9 @@ export default function DatabaseAuditPage() {
 
 function StatCard({ label, value, color }: any) {
   const colors: any = {
-    blue: "bg-blue-50 border-blue-100 text-blue-700",
-    red: "bg-red-50 border-red-100 text-red-700",
-    emerald: "bg-emerald-50 border-emerald-100 text-emerald-700",
+    blue: "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400",
+    red: "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400",
+    emerald: "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400",
   };
   return (
     <div className={`p-6 rounded-3xl border-2 ${colors[color]} space-y-1 shadow-sm`}>
