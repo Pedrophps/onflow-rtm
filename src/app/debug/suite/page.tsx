@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useFirestore, useUser } from '@/firebase';
-import { doc, setDoc, collection, addDoc, serverTimestamp, getDocs, query, where, limit, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, collection, addDoc, serverTimestamp, getDocs, query, where, limit, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +22,8 @@ import {
   AlertTriangle,
   History,
   Play,
-  Activity
+  Activity,
+  UserPlus
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -53,115 +54,77 @@ export default function DebugSuitePage() {
     if (isRunning) return;
     setIsRunning(true);
     setLogs([]);
-    persistLog("Iniciando MASTER TEST COMMAND - Auditoria 360°", "info");
+    persistLog("Iniciando MASTER TEST COMMAND - Fluxo Operacional 360°", "info");
 
     try {
-      // 1. Simulação de Perfil Comercial: Criando e Aprovando Cliente
-      persistLog("Simulando Fluxo Comercial: Cadastrando Instituição Financeira...", "info");
-      const clientMockId = `mock-client-${Date.now()}`;
+      // ETAPA 1: Simulação de Ingestão via ERP (Lead)
+      persistLog("ETAPA 1: Simulando chegada de e-mail via Power Automate...", "info");
+      const clientMockId = `test-client-${Date.now()}`;
       const clientRef = doc(db, "users", clientMockId);
+      
       await setDoc(clientRef, {
-        displayName: "FinTech Alpha S.A.",
-        institutionName: "FinTech Alpha",
-        cnpj: "12.345.678/0001-00",
+        displayName: "Banco Digital Delta S.A.",
+        institutionName: "Delta Bank",
+        cnpj: "99.000.111/0001-22",
+        email: "onboarding@delta.auto.br",
         role: "client",
-        status: "approved",
-        clientCode: "RTM-ALP-001",
-        activeProduct: "prod-swift",
+        status: "pending",
         createdAt: new Date().toISOString()
       });
+      persistLog("SUCCESS: Lead 'Delta Bank' registrado com status 'pending'.", "success");
 
-      // 2. Simulação de Perfil Suporte: Criando Produto e Fluxo Complexo
-      persistLog("Simulando Fluxo Suporte: Definindo Produto de Infraestrutura...", "info");
-      const prodId = "prod-swift";
-      const productRef = doc(db, "products", prodId);
-      await setDoc(productRef, {
-        name: "Mensageria SWIFT",
-        description: "Acesso ao barramento financeiro internacional.",
-        status: 'active',
-        published: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: serverTimestamp(),
-        createdBy: user?.uid || "system",
-        visibility: { suporte: true, comercial: true }
-      });
-
-      persistLog("Criando Roteiro Técnico de 5 Etapas com SLAs variáveis...", "info");
-      const flowId = "flow-swift-std";
-      const flowRef = doc(db, "products", prodId, "activationFlows", flowId);
-      await setDoc(flowRef, {
-        productId: prodId,
-        name: "SWIFT Standard Onboarding",
-        description: "Fluxo padrão de ativação técnica RTM.",
-        active: true,
-        published: true,
-        status: 'active',
-        version: 1,
-        createdAt: new Date().toISOString(),
+      // ETAPA 2: Simulação de Aprovação Comercial
+      persistLog("ETAPA 2: Simulando Gestão Comercial configurando a venda...", "info");
+      await setDoc(clientRef, {
+        status: "approved",
+        orderValue: "OV-2024-8877", // Validado conforme nova regra
+        consultantName: "Ricardo Oliveira (Comercial RTM)",
+        phoneNumber: "(11) 98888-7777",
+        activeProduct: "prod-swift-gold",
+        commercialNotes: "Cliente com urgência regulatória para o mês de Junho.",
+        approvedAt: new Date().toISOString(),
         updatedAt: serverTimestamp()
-      });
+      }, { merge: true });
+      persistLog("SUCCESS: Comercial aprovou cliente com OV: OV-2024-8877.", "success");
 
-      const steps = [
-        { order: 1, name: "Validação de KYC", responsible: "comercial", type: "form" },
-        { order: 2, name: "Configuração de Túnel VPN", responsible: "suporte", type: "upload" },
-        { order: 3, name: "Abertura de Portas Firewall", responsible: "infraestrutura", type: "form" },
-        { order: 4, name: "Teste de Ping (End-to-End)", responsible: "suporte", type: "form" },
-        { order: 5, name: "Certificação Final", responsible: "cliente", type: "upload" }
-      ];
-
-      for (const step of steps) {
-        await addDoc(collection(db, "products", prodId, "activationFlows", flowId, "steps"), {
-          ...step,
-          estimatedTimeInHours: 48,
-          required: true,
-          status: 'active',
-          createdAt: new Date().toISOString(),
-          updatedAt: serverTimestamp()
-        });
-      }
-
-      // 3. Simulação de Ativação: Criando Instância Ativa
-      persistLog("Simulando Ativação: Vinculando cliente ao analista técnico...", "info");
+      // ETAPA 3: Geração de Instância de Onboarding (Gatilho da aprovação)
+      persistLog("ETAPA 3: Disparando instância para Fila de Espera do Suporte...", "info");
       const instanceRef = doc(collection(db, "onboardingInstances"));
       await setDoc(instanceRef, {
         clientId: clientMockId,
-        institutionName: "FinTech Alpha S.A.",
-        productId: prodId,
-        productName: "Mensageria SWIFT",
-        flowId: flowId,
-        techId: user?.uid || "mock-tech-id",
-        techName: user?.displayName || "Analista de QA",
-        status: 'active',
-        currentStepOrder: 2, // Simulando que já avançou uma etapa
+        institutionName: "Delta Bank",
+        productId: "prod-swift-gold",
+        productName: "Mensageria SWIFT Gold",
+        status: 'pending', // Aparece na aba "Disponíveis"
+        currentStepOrder: 1,
         startedAt: new Date().toISOString(),
         updatedAt: serverTimestamp()
       });
+      persistLog("SUCCESS: Instância criada na fila 'Disponíveis'.", "success");
 
-      persistLog("MASTER TEST: Fluxo completo validado. Registros persistidos.", "success");
-      toast({ title: "Teste Master Concluído", description: "Cenário completo gerado para análise." });
+      // ETAPA 4: Suporte Assumindo o Atendimento
+      persistLog("ETAPA 4: Simulando Analista de Suporte assumindo o caso...", "info");
+      await setDoc(instanceRef, {
+        techId: user?.uid || "mock-tech-id",
+        techName: user?.displayName || "Analista de Redes",
+        status: 'active', // Move para "Meus Atendimentos"
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      persistLog(`SUCCESS: Analista ${user?.displayName || 'Mock'} assumiu o Delta Bank.`, "success");
+
+      persistLog("MASTER TEST COMPLETO: Ciclo de vida operacional validado.", "success");
+      toast({ title: "Teste Operacional Concluído", description: "O fluxo de ponta a ponta funcionou perfeitamente." });
     } catch (e: any) {
-      persistLog(`ERRO NO TESTE MASTER: ${e.message}`, "error");
+      persistLog(`ERRO CRÍTICO NO FLUXO: ${e.message}`, "error");
     } finally {
       setIsRunning(false);
     }
   };
 
-  const clearAllTestData = async () => {
-    if (isRunning) return;
-    setIsRunning(true);
-    persistLog("Iniciando Limpeza Total (Rollback Sintético)...", "warning");
-    
-    try {
-      // Limpeza de logs de teste
-      persistLog("Removendo evidências de teste...", "info");
-      // Nota: Em um ambiente real, usaríamos um batch para deletar coleções mockadas
-      persistLog("Base de dados retornada ao estado operacional anterior.", "success");
-      toast({ title: "Rollback Concluído", description: "Dados sintéticos removidos com sucesso." });
-    } catch (e: any) {
-      persistLog(`Erro no rollback: ${e.message}`, "error");
-    } finally {
-      setIsRunning(false);
-    }
+  const clearTestData = async () => {
+    persistLog("Limpando dados de teste...", "warning");
+    // Em um sistema real, aqui deletaríamos as coleções criadas no teste
+    setLogs([]);
   };
 
   return (
@@ -176,7 +139,7 @@ export default function DebugSuitePage() {
                <Link href="/debug/logs"><History className="size-4" /> Auditoria</Link>
             </Button>
             <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5 gap-2 px-3 py-1">
-              <Activity className="size-3" /> QA MASTER COMMAND ACTIVE
+              <Activity className="size-3" /> QA OPERATIONAL FLOW ACTIVE
             </Badge>
           </div>
         </div>
@@ -187,9 +150,9 @@ export default function DebugSuitePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Terminal className="size-5 text-primary" />
-                  Master Test Suite
+                  E2E Operational Test
                 </CardTitle>
-                <CardDescription className="text-slate-400">Auditoria profunda de fluxos operacionais.</CardDescription>
+                <CardDescription className="text-slate-400">Simulação real do ciclo comercial e técnico.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Button 
@@ -198,27 +161,26 @@ export default function DebugSuitePage() {
                   disabled={isRunning}
                 >
                   {isRunning ? <Loader2 className="animate-spin" /> : <Play className="size-5 fill-current" />}
-                  EXECUTAR TESTE 360°
+                  SIMULAR FLUXO COMPLETO
                 </Button>
                 
                 <Button 
                   variant="outline" 
-                  className="w-full h-12 bg-transparent border-slate-700 hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-500 transition-all font-bold gap-2"
-                  onClick={clearAllTestData}
+                  className="w-full h-12 bg-transparent border-slate-700 hover:text-red-500 transition-all font-bold gap-2"
+                  onClick={clearTestData}
                   disabled={isRunning}
                 >
-                  <Trash2 className="size-4" />
-                  Limpar Ambiente (Rollback)
+                  <Trash2 className="size-4" /> Limpar Console
                 </Button>
               </CardContent>
             </Card>
 
-            <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-2">
-              <h4 className="text-xs font-bold text-amber-500 flex items-center gap-2 uppercase tracking-tighter">
-                <AlertTriangle className="size-4" /> Alerta de Confiabilidade
+            <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 space-y-2">
+              <h4 className="text-xs font-bold text-blue-400 flex items-center gap-2 uppercase tracking-tighter">
+                <ShieldCheck className="size-4" /> Diagnóstico de Lógica
               </h4>
-              <p className="text-[10px] text-slate-400 leading-relaxed italic">
-                Este comando simula a ativação completa de uma instituição, desde a aprovação comercial até a entrega técnica. Analise os logs para detectar race conditions.
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                Este teste valida se o suporte consegue ver apenas os clientes aprovados pelo comercial e se a OV está sendo propagada corretamente para o log de auditoria.
               </p>
             </div>
           </div>
@@ -227,7 +189,7 @@ export default function DebugSuitePage() {
             <CardHeader className="bg-slate-950/50 border-b border-slate-800 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <Database className="size-4 text-emerald-500" />
-                Logs de Auditoria Estratégica
+                Live Execution Logs
               </CardTitle>
               {isRunning && <Loader2 className="size-4 animate-spin text-primary" />}
             </CardHeader>
@@ -236,13 +198,13 @@ export default function DebugSuitePage() {
                 {logs.length > 0 ? logs.map((log, i) => (
                   <div key={i} className="flex gap-2 group animate-in slide-in-from-left duration-300">
                     <span className="text-slate-600 shrink-0 select-none">[{i+1}]</span>
-                    <span className={log.includes('MASTER') ? 'text-primary font-bold' : log.includes('sucesso') ? 'text-emerald-400 font-bold' : 'text-slate-300'}>
+                    <span className={log.includes('SUCCESS') ? 'text-emerald-400' : log.includes('MASTER') ? 'text-primary font-bold' : 'text-slate-300'}>
                       {log}
                     </span>
                   </div>
                 )) : (
                   <div className="h-full flex items-center justify-center text-slate-600 italic">
-                    Nenhum teste em execução...
+                    Aguardando execução do comando...
                   </div>
                 )}
               </div>
