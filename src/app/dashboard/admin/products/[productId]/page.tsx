@@ -3,7 +3,7 @@
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
-import { collection, query, addDoc, serverTimestamp, doc, deleteDoc } from "firebase/firestore";
+import { collection, query, addDoc, serverTimestamp, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Product, ActivationFlow, UserProfile } from "@/lib/types";
-import { Plus, GitFork, ArrowRight, Loader2, Package, ArrowLeft, Clock, Trash2 } from "lucide-react";
+import { Plus, GitFork, ArrowRight, Loader2, Package, ArrowLeft, Clock, Trash2, Edit } from "lucide-react";
 import { useState, useMemo, use } from "react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -40,7 +40,9 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ produ
   const { data: flows, loading: flowsLoading } = useCollection<ActivationFlow>(flowsQuery);
 
   const [isNewFlowOpen, setIsNewFlowOpen] = useState(false);
+  const [isEditProductOpen, setIsEditProductOpen] = useState(false);
   const [newFlow, setNewFlow] = useState({ name: '', description: '' });
+  const [editedProduct, setEditedProduct] = useState({ name: '', description: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCreateFlow = async () => {
@@ -70,6 +72,24 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ produ
     }
   };
 
+  const handleUpdateProduct = async () => {
+    if (!productRef || isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      await updateDoc(productRef, {
+        ...editedProduct,
+        updatedAt: serverTimestamp()
+      });
+      toast({ title: "Produto Atualizado" });
+      setIsEditProductOpen(false);
+    } catch (e) {
+      toast({ variant: "destructive", title: "Erro ao atualizar" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleDeleteFlow = async (e: React.MouseEvent, flowId: string) => {
     e.stopPropagation();
     if (!user || !isSupport) return;
@@ -80,6 +100,13 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ produ
       toast({ title: "Fluxo Excluído", description: "O roteiro técnico foi removido com sucesso." });
     } catch (error) {
       toast({ variant: "destructive", title: "Erro ao excluir", description: "Não foi possível remover o fluxo." });
+    }
+  };
+
+  const openEditProduct = () => {
+    if (product) {
+      setEditedProduct({ name: product.name, description: product.description });
+      setIsEditProductOpen(true);
     }
   };
 
@@ -102,6 +129,11 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ produ
               <div>
                 <div className="flex items-center gap-3">
                   <h1 className="text-3xl font-bold font-headline text-slate-900">{product.name}</h1>
+                  {isSupport && (
+                    <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary" onClick={openEditProduct}>
+                      <Edit className="size-4" />
+                    </Button>
+                  )}
                 </div>
                 <p className="text-muted-foreground">{product.description}</p>
               </div>
@@ -247,6 +279,33 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ produ
           </div>
         </div>
       </div>
+
+      {/* Dialog Edição de Produto */}
+      <Dialog open={isEditProductOpen} onOpenChange={setIsEditProductOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Produto RTM</DialogTitle>
+            <DialogDescription>Ajuste os metadados do serviço financeiro.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nome do Produto</Label>
+              <Input value={editedProduct.name} onChange={e => setEditedProduct({...editedProduct, name: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <Label>Descrição</Label>
+              <Textarea value={editedProduct.description} onChange={e => setEditedProduct({...editedProduct, description: e.target.value})} className="min-h-[100px]" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditProductOpen(false)}>Cancelar</Button>
+            <Button disabled={!editedProduct.name || isSubmitting} onClick={handleUpdateProduct}>
+              {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
+              Salvar Alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

@@ -3,7 +3,7 @@
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
-import { collection, query, addDoc, serverTimestamp, doc, deleteDoc } from "firebase/firestore";
+import { collection, query, addDoc, serverTimestamp, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Product, UserProfile } from "@/lib/types";
-import { Plus, Package, ArrowRight, Loader2, Info, Trash2 } from "lucide-react";
+import { Plus, Package, ArrowRight, Loader2, Info, Trash2, Edit } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -34,7 +34,8 @@ export default function ProductsPage() {
   const { data: products, loading: productsLoading } = useCollection<Product>(productsQuery);
 
   const [isNewProductOpen, setIsNewProductOpen] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', description: '' });
+  const [isEditProductOpen, setIsEditProductOpen] = useState(false);
+  const [currentProduct, setCurrentProduct] = useState<Partial<Product>>({ name: '', description: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCreateProduct = async () => {
@@ -43,7 +44,8 @@ export default function ProductsPage() {
     
     try {
       await addDoc(collection(db, "products"), {
-        ...newProduct,
+        name: currentProduct.name,
+        description: currentProduct.description,
         status: 'draft',
         published: false,
         createdAt: new Date().toISOString(),
@@ -54,9 +56,29 @@ export default function ProductsPage() {
       
       toast({ title: "Produto Criado", description: "O novo produto foi registrado como rascunho." });
       setIsNewProductOpen(false);
-      setNewProduct({ name: '', description: '' });
+      setCurrentProduct({ name: '', description: '' });
     } catch (e) {
       toast({ variant: "destructive", title: "Erro ao criar", description: "Verifique suas permissões de suporte." });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateProduct = async () => {
+    if (!user || !currentProduct.id || isSubmitting) return;
+    setIsSubmitting(true);
+
+    const productRef = doc(db, "products", currentProduct.id);
+    try {
+      await updateDoc(productRef, {
+        name: currentProduct.name,
+        description: currentProduct.description,
+        updatedAt: serverTimestamp()
+      });
+      toast({ title: "Produto Atualizado", description: "As alterações foram salvas com sucesso." });
+      setIsEditProductOpen(false);
+    } catch (e) {
+      toast({ variant: "destructive", title: "Erro ao atualizar", description: "Não foi possível salvar as alterações." });
     } finally {
       setIsSubmitting(false);
     }
@@ -74,6 +96,11 @@ export default function ProductsPage() {
     }
   };
 
+  const openEdit = (product: Product) => {
+    setCurrentProduct(product);
+    setIsEditProductOpen(true);
+  };
+
   return (
     <DashboardLayout role="admin">
       <div className="space-y-8">
@@ -86,7 +113,7 @@ export default function ProductsPage() {
           {isSupport && (
             <Dialog open={isNewProductOpen} onOpenChange={setIsNewProductOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2 rounded-full font-bold shadow-md">
+                <Button className="gap-2 rounded-full font-bold shadow-md" onClick={() => setCurrentProduct({ name: '', description: '' })}>
                   <Plus className="size-4" /> Novo Produto
                 </Button>
               </DialogTrigger>
@@ -98,16 +125,16 @@ export default function ProductsPage() {
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label>Nome do Produto</Label>
-                    <Input placeholder="Ex: Mensageria SWIFT" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="bg-background" />
+                    <Input placeholder="Ex: Mensageria SWIFT" value={currentProduct.name} onChange={e => setCurrentProduct({...currentProduct, name: e.target.value})} className="bg-background" />
                   </div>
                   <div className="space-y-2">
                     <Label>Descrição Curta</Label>
-                    <Textarea placeholder="Finalidade do produto no mercado..." value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="bg-background min-h-[100px]" />
+                    <Textarea placeholder="Finalidade do produto no mercado..." value={currentProduct.description} onChange={e => setCurrentProduct({...currentProduct, description: e.target.value})} className="bg-background min-h-[100px]" />
                   </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsNewProductOpen(false)}>Cancelar</Button>
-                  <Button disabled={!newProduct.name || isSubmitting} onClick={handleCreateProduct}>
+                  <Button disabled={!currentProduct.name || isSubmitting} onClick={handleCreateProduct}>
                     {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
                     Criar Produto
                   </Button>
@@ -140,27 +167,32 @@ export default function ProductsPage() {
                         {product.published ? "Publicado" : "Draft"}
                       </Badge>
                       {isSupport && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="bg-card text-card-foreground border-border">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Excluir Produto?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta ação removerá o produto <strong>{product.name}</strong> e todos os fluxos de ativação associados a ele. Esta ação não pode ser desfeita.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteProduct(product.id!)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Excluir Produto
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => openEdit(product)}>
+                            <Edit className="size-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="bg-card text-card-foreground border-border">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir Produto?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta ação removerá o produto <strong>{product.name}</strong> e todos os fluxos de ativação associados a ele. Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteProduct(product.id!)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Excluir Produto
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -189,6 +221,33 @@ export default function ProductsPage() {
           )}
         </div>
       </div>
+
+      {/* Dialog Edição de Produto */}
+      <Dialog open={isEditProductOpen} onOpenChange={setIsEditProductOpen}>
+        <DialogContent className="bg-card text-card-foreground border-border">
+          <DialogHeader>
+            <DialogTitle>Editar Produto RTM</DialogTitle>
+            <DialogDescription>Atualize os metadados do serviço financeiro.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nome do Produto</Label>
+              <Input placeholder="Ex: Mensageria SWIFT" value={currentProduct.name} onChange={e => setCurrentProduct({...currentProduct, name: e.target.value})} className="bg-background" />
+            </div>
+            <div className="space-y-2">
+              <Label>Descrição Curta</Label>
+              <Textarea placeholder="Finalidade do produto no mercado..." value={currentProduct.description} onChange={e => setCurrentProduct({...currentProduct, description: e.target.value})} className="bg-background min-h-[100px]" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditProductOpen(false)}>Cancelar</Button>
+            <Button disabled={!currentProduct.name || isSubmitting} onClick={handleUpdateProduct}>
+              {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
+              Salvar Alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

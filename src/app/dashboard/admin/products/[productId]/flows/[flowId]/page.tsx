@@ -68,7 +68,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
       ...currentStep,
       order: nextOrder,
       status: 'active',
-      type: 'upload', // Padrão agora que o campo foi removido
+      type: 'upload', 
       createdAt: new Date().toISOString(),
       updatedAt: serverTimestamp()
     };
@@ -136,7 +136,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
       updatedAt: serverTimestamp()
     })
     .then(() => {
-      toast({ title: "Informações do Fluxo Atualizadas" });
+      toast({ title: "Fluxo Técnico Atualizado" });
       setIsEditFlowOpen(false);
     })
     .catch((e) => toast({ variant: "destructive", title: "Erro ao atualizar fluxo" }))
