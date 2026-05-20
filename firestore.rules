@@ -20,30 +20,34 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Permite que a API busque usuários por email (list) e crie novos (create)
-      allow list, create: if true; 
-      allow get, update, delete: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      // Permite que a API busque (list/get) e crie/atualize (create/update) usuários
+      // Necessário para o fluxo de ingestão automática via ERP/Workstation
+      allow list, get, create, update: if true; 
+      allow delete: if isAdmin();
     }
 
     match /products/{productId} {
-      allow read: if request.auth != null;
+      // Leitura pública permitida para que a API mapeie nomes de produtos em IDs reais
+      allow read: if true;
       allow write: if isSupportAdmin();
 
       match /activationFlows/{flowId} {
-        allow read: if request.auth != null;
+        allow read: if true;
         allow write: if isSupportAdmin();
 
         match /steps/{stepId} {
-          allow read: if request.auth != null;
+          allow read: if true;
           allow write: if isSupportAdmin();
         }
       }
     }
 
     match /onboardingInstances/{instanceId} {
-      // Permite que a API crie novas instâncias
+      // Permite que a API crie novas instâncias de onboarding
       allow create: if true;
+      // Leitura permitida para o dono do projeto ou admins
       allow read: if request.auth != null && (resource.data.clientId == request.auth.uid || isAdmin());
+      // Atualização de status e vínculo técnico restrito a admins
       allow update, delete: if isAdmin();
     }
 
@@ -53,7 +57,7 @@ service cloud.firestore {
     }
 
     match /system_logs/{logId} {
-      // Permite que a API registre logs de auditoria
+      // Permite que o sistema registre logs técnicos de qualquer origem (API e Auditoria)
       allow read, write: if true;
     }
 

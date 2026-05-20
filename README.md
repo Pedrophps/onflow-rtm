@@ -36,20 +36,20 @@ Use o modelo abaixo para enviar os dados:
 }
 ```
 
-### Regra de Negócio:
+### Regras de Negócio:
 *   **Mapeamento de Produto**: Se o `productName` for igual ao nome de um produto cadastrado (ex: "SLC", "SWIFT"), o sistema vinculará automaticamente o roteiro técnico correto.
-*   **Aprovação**: Registros via API já nascem com status `approved` no perfil do usuário.
-*   **Handoff**: O registro aparecerá instantaneamente na aba **"Disponíveis"** para o Suporte Técnico.
+*   **Aprovação**: Registros via API já nascem com status `approved` no perfil do usuário para agilizar o handoff.
+*   **Visibilidade**: O registro aparecerá instantaneamente na aba **"Disponíveis"** para o Suporte Técnico.
 
 ---
 
 ## 🗄️ DICIONÁRIO DE DADOS (FIRESTORE)
 
 ### 1. Coleção `users`
-Dados mestres de perfil. Registros via API criam usuários com `role: "client"` e `status: "approved"`.
+Dados mestres de perfil. Registros via API criam ou atualizam usuários com `role: "client"` e `status: "approved"`.
 
 ### 2. Coleção `onboardingInstances`
-Projetos de ativação em curso. Se `techId` for nulo, está na fila de espera. O `productId` é preenchido automaticamente pela API se houver match no catálogo.
+Projetos de ativação em curso. Se `techId` for nulo, está na fila de espera. O `productId` é resolvido automaticamente pela API.
 
 ### 3. Coleção `products`
 Catálogo mestre. Contém as definições de nomes e roteiros técnicos (subcoleção `activationFlows`).
