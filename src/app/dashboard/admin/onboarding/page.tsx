@@ -39,7 +39,9 @@ import {
   ArrowLeft, 
   RotateCcw,
   Trash2,
-  MessageSquare
+  MessageSquare,
+  UserCircle,
+  Hash
 } from "lucide-react";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, getDocs, orderBy, deleteDoc } from "firebase/firestore";
@@ -614,33 +616,72 @@ export default function OnboardingManagement() {
       </Dialog>
 
       <Dialog open={isFichaOpen} onOpenChange={setIsFichaOpen}>
-        <DialogContent className="max-w-2xl overflow-hidden rounded-3xl p-0 bg-card border-border shadow-2xl">
-          <DialogHeader className="p-8 bg-slate-900 text-white"><DialogTitle>Ficha Técnica OnFlow</DialogTitle></DialogHeader>
-          <div className="p-8 space-y-8 bg-card">
-            <div className="grid grid-cols-2 gap-8">
-              <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">Instituição</Label><p className="font-bold text-foreground">{selectedClientForFicha?.institutionName}</p></div>
-              <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">CNPJ</Label><p className="font-mono text-foreground">{selectedClientForFicha?.cnpj}</p></div>
-              <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">Responsável</Label><p className="font-bold text-foreground">{selectedClientForFicha?.displayName}</p></div>
-              <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">E-mail</Label><p className="text-muted-foreground">{selectedClientForFicha?.email}</p></div>
+        <DialogContent className="max-w-3xl overflow-hidden rounded-3xl p-0 bg-card border-border shadow-2xl">
+          <DialogHeader className="p-8 bg-slate-900 text-white">
+            <DialogTitle className="text-2xl flex items-center gap-3">
+              <FileText className="size-6 text-primary" /> Ficha Técnica OnFlow
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Dados mestres integrados do ERP e Gestão Comercial.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="p-8 space-y-8 bg-card max-h-[70vh] overflow-y-auto">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5"><Building2 className="size-3" /> Instituição</Label>
+                <p className="font-bold text-foreground text-base">{selectedClientForFicha?.institutionName}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5"><Hash className="size-3" /> CNPJ</Label>
+                <p className="font-mono text-foreground font-medium">{selectedClientForFicha?.cnpj || "N/A"}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5"><UserCircle className="size-3" /> Responsável do Cliente</Label>
+                <p className="font-bold text-foreground">{selectedClientForFicha?.displayName}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5"><Mail className="size-3" /> E-mail de Contato</Label>
+                <p className="text-muted-foreground font-medium">{selectedClientForFicha?.email}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5"><ShieldCheck className="size-3" /> Consultor RTM</Label>
+                <p className="text-foreground font-bold">{selectedClientForFicha?.consultantName || "Não informado"}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5"><Phone className="size-3" /> Telefone</Label>
+                <p className="text-foreground font-bold">{selectedClientForFicha?.phoneNumber || "Não informado"}</p>
+              </div>
             </div>
             
-            <div className="space-y-4">
-               <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-between">
-                <div><Label className="text-[10px] uppercase font-bold text-primary">OV (Venda)</Label><p className="font-mono font-black text-lg text-foreground">{selectedClientForFicha?.orderValue || 'Pendente'}</p></div>
+            <div className="space-y-6 pt-6 border-t border-border">
+               <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-between shadow-sm">
+                <div>
+                  <Label className="text-[10px] uppercase font-bold text-primary flex items-center gap-1.5"><Hash className="size-3" /> OV (Ordem de Venda)</Label>
+                  <p className="font-mono font-black text-2xl text-foreground mt-1">{selectedClientForFicha?.orderValue || 'Pendente'}</p>
+                </div>
+                <div className="text-right">
+                  <Badge className="bg-primary/20 text-primary border-primary/30 uppercase text-[9px] font-black">Dados de Ativação</Badge>
+                </div>
                </div>
 
-               <div className="p-6 rounded-2xl bg-muted/50 border border-border">
-                  <div className="flex items-center gap-2 mb-2 text-muted-foreground">
-                    <MessageSquare className="size-4" />
+               <div className="p-6 rounded-2xl bg-muted/50 border border-border shadow-inner">
+                  <div className="flex items-center gap-2 mb-3 text-muted-foreground">
+                    <MessageSquare className="size-4 text-primary" />
                     <Label className="text-[10px] uppercase font-bold">Observações Importantes (Comercial)</Label>
                   </div>
-                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-medium">
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-medium bg-background/50 p-4 rounded-xl border border-border/50">
                     {selectedClientForFicha?.commercialNotes || "Nenhuma observação inserida pelo comercial ou API."}
                   </p>
                </div>
             </div>
           </div>
-          <DialogFooter className="p-6 bg-muted/10 border-t"><Button className="w-full font-bold" onClick={() => setIsFichaOpen(false)}>Fechar</Button></DialogFooter>
+          
+          <DialogFooter className="p-6 bg-muted/10 border-t">
+            <Button className="w-full font-bold h-12 rounded-xl shadow-lg" onClick={() => setIsFichaOpen(false)}>
+              Fechar Ficha Técnica
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>
