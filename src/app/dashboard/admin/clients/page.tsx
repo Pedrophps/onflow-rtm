@@ -47,8 +47,6 @@ export default function ClientsAdminPage() {
   const { data: dbProducts, loading: productsLoading } = useCollection<Product>(productsQuery);
 
   const [selectedClient, setSelectedClient] = useState<UserProfile | null>(null);
-  const [clientCode, setClientCode] = useState("");
-  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [consultantName, setConsultantName] = useState("");
   const [orderValue, setOrderValue] = useState("");
@@ -58,12 +56,13 @@ export default function ClientsAdminPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const pendingClients = useMemo(() => {
-    return clients.filter(c => c.status === 'pending' || !c.clientCode);
+    return clients.filter(c => c.status === 'pending' || !c.orderValue);
   }, [clients]);
+
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
   const openApprovalDialog = (client: UserProfile) => {
     setSelectedClient(client);
-    setClientCode(client.clientCode || "");
     setSelectedProductIds(client.activeProduct ? [client.activeProduct] : []);
     setPhoneNumber(client.phoneNumber || "");
     setConsultantName(client.consultantName || "");
@@ -89,7 +88,6 @@ export default function ClientsAdminPage() {
     const clientRef = doc(db, "users", selectedClient.id);
     const updateData = {
       status: 'approved',
-      clientCode: clientCode,
       activeProduct: selectedProductIds[0] || "",
       phoneNumber: phoneNumber,
       consultantName: consultantName,
@@ -126,8 +124,8 @@ export default function ClientsAdminPage() {
       await Promise.all(newInstancesPromises);
 
       toast({
-        title: "Acesso Configurado",
-        description: `O cliente ${institutionName} foi ativado com sucesso.`
+        title: "Venda Processada",
+        description: `O cliente ${institutionName} (OV: ${orderValue}) foi enviado para o suporte.`
       });
       setIsDialogOpen(false);
       setSelectedClient(null);
@@ -209,7 +207,7 @@ export default function ClientsAdminPage() {
                     <TableHead>Instituição</TableHead>
                     <TableHead>Responsável</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>ID RTM</TableHead>
+                    <TableHead>OV (Venda)</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -224,11 +222,11 @@ export default function ClientsAdminPage() {
                       </TableCell>
                       <TableCell className="text-xs text-foreground opacity-80">{client.displayName}</TableCell>
                       <TableCell>
-                        <Badge variant={client.status === 'approved' && client.clientCode ? 'default' : 'secondary'} className="text-[10px] uppercase">
-                          {client.status === 'approved' && client.clientCode ? 'Ativo' : 'Pendente'}
+                        <Badge variant={client.status === 'approved' && client.orderValue ? 'default' : 'secondary'} className="text-[10px] uppercase">
+                          {client.status === 'approved' && client.orderValue ? 'Ativo' : 'Pendente'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-foreground">{client.clientCode || "-"}</TableCell>
+                      <TableCell className="font-mono text-xs text-foreground">{client.orderValue || "-"}</TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" onClick={() => openApprovalDialog(client)} className="text-muted-foreground hover:text-primary transition-colors">
                           <MoreHorizontal className="size-4" />
@@ -321,30 +319,15 @@ export default function ClientsAdminPage() {
 
             {/* Campo: OV */}
             <div className="col-span-2 md:col-span-1 space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">OV (Ordem de Venda)</Label>
+              <Label className="text-xs font-bold uppercase tracking-widest text-primary font-black">OV (Ordem de Venda) *</Label>
               <div className="relative">
-                <Hash className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                <Hash className="absolute left-3 top-3 size-4 text-primary" />
                 <Input 
                   placeholder="Ex: OV-2024-001"
                   value={orderValue} 
                   onChange={(e) => setOrderValue(e.target.value)} 
                   disabled={!isComercial}
-                  className="pl-10 h-11 bg-background border-border rounded-xl"
-                />
-              </div>
-            </div>
-
-            {/* Campo: ID RTM */}
-            <div className="col-span-2 md:col-span-1 space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">ID RTM (Client Code)</Label>
-              <div className="relative">
-                <Package className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Ex: RTM-BR-001"
-                  value={clientCode} 
-                  onChange={(e) => setClientCode(e.target.value)} 
-                  disabled={!isComercial}
-                  className="pl-10 h-11 bg-background border-border rounded-xl font-mono text-xs"
+                  className="pl-10 h-11 bg-background border-primary/50 focus:border-primary rounded-xl font-bold"
                 />
               </div>
             </div>
@@ -405,7 +388,7 @@ export default function ClientsAdminPage() {
               </Button>
               {isComercial && (
                 <Button 
-                  disabled={!clientCode || selectedProductIds.length === 0 || isSubmitting || !institutionName} 
+                  disabled={!orderValue || selectedProductIds.length === 0 || isSubmitting || !institutionName} 
                   onClick={handleApprove}
                   className="rounded-xl font-bold px-8 shadow-xl shadow-primary/20"
                 >
