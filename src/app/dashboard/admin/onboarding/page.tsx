@@ -89,16 +89,12 @@ export default function OnboardingManagement() {
     return dbProducts.reduce((acc, p) => ({ ...acc, [p.id!]: p.name }), {} as Record<string, string>);
   }, [dbProducts]);
 
-  // 1. Buscar Clientes Aprovados
+  // 1. Buscar Clientes (para ficha técnica)
   const clientsQuery = useMemo(() => {
     if (!user) return null;
-    return query(
-      collection(db, "users"), 
-      where("role", "==", "client"),
-      where("status", "==", "approved")
-    );
+    return query(collection(db, "users"), where("role", "==", "client"));
   }, [db, user]);
-  const { data: approvedClients, loading: clientsLoading } = useCollection<UserProfile>(clientsQuery);
+  const { data: allClients } = useCollection<UserProfile>(clientsQuery);
 
   // 2. Buscar Instâncias de Onboarding
   const instancesQuery = useMemo(() => {
@@ -111,50 +107,30 @@ export default function OnboardingManagement() {
     instances.find(inst => inst.id === journeyInstanceId), 
   [instances, journeyInstanceId]);
 
-  // 3. Cruzamento para Suporte: Disponíveis (Não assumidos)
+  // 3. Atividades Disponíveis: Instâncias sem responsável técnico
   const availableActivities = useMemo(() => {
-    return approvedClients.filter(client => {
-      const instance = instances.find(inst => inst.clientId === client.id);
-      return !instance || !instance.techId;
-    });
-  }, [approvedClients, instances]);
+    return instances.filter(inst => !inst.techId && inst.status === 'pending');
+  }, [instances]);
 
   // 4. Meus Onboardings (Suporte)
   const myOnboardings = useMemo(() => {
-    return instances.filter(inst => inst.techId === user?.uid && inst.status === 'active');
+    return instances.filter(inst => inst.techId === user?.uid && (inst.status === 'active' || inst.status === 'pending'));
   }, [instances, user]);
 
-  const handleAssumeActivity = async (client: UserProfile) => {
-    if (!user || !isSupport) return;
-
-    const instanceData = {
-      clientId: client.id,
-      institutionName: client.institutionName || client.displayName,
-      productId: client.activeProduct, 
-      techId: user.uid,
-      techName: user.displayName || 'Analista Suporte',
-      status: 'active',
-      currentStepOrder: 1,
-      startedAt: new Date().toISOString(),
-      updatedAt: serverTimestamp()
-    };
+  const handleAssumeActivity = async (instance: OnboardingInstance) => {
+    if (!user || !isSupport || !instance.id) return;
 
     try {
-      const existingInstance = instances.find(inst => inst.clientId === client.id);
-      if (existingInstance?.id) {
-        await updateDoc(doc(db, "onboardingInstances", existingInstance.id), {
-          techId: user.uid,
-          techName: user.displayName || 'Analista Suporte',
-          status: 'active',
-          updatedAt: serverTimestamp()
-        });
-      } else {
-        await addDoc(collection(db, "onboardingInstances"), instanceData);
-      }
+      await updateDoc(doc(db, "onboardingInstances", instance.id), {
+        techId: user.uid,
+        techName: user.displayName || 'Analista Suporte',
+        status: 'active',
+        updatedAt: serverTimestamp()
+      });
 
       toast({
         title: "Atividade Assumida",
-        description: `Você agora é o responsável técnico da ${client.institutionName}.`,
+        description: `Você agora é o responsável técnico da ${instance.institutionName}.`,
       });
       setActiveTab("my");
     } catch (e) {
@@ -292,7 +268,7 @@ export default function OnboardingManagement() {
   };
 
   const handleViewFicha = (clientId: string) => {
-    const client = approvedClients.find(c => c.id === clientId);
+    const client = allClients.find(c => c.id === clientId);
     if (client) {
       setSelectedClientForFicha(client);
       setIsFichaOpen(true);
@@ -317,7 +293,7 @@ export default function OnboardingManagement() {
     return Math.min(100, Math.round(((currentOrder - 1) / journeySteps.length) * 100));
   }, [journeySteps, selectedJourneyInstance]);
 
-  if (clientsLoading || instancesLoading) {
+  if (instancesLoading) {
     return <DashboardLayout role="admin"><div className="flex flex-col items-center justify-center p-20 gap-4"><Loader2 className="animate-spin text-primary size-10" /></div></DashboardLayout>;
   }
 
@@ -334,10 +310,10 @@ export default function OnboardingManagement() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-muted p-1 h-12 rounded-xl">
             <TabsTrigger value="available" className="rounded-lg px-8 gap-2 data-[state=active]:bg-background transition-colors">
-              <Zap className="size-4" /> Disponíveis
+              <Zap className="size-4" /> Disponíveis ({availableActivities.length})
             </TabsTrigger>
             <TabsTrigger value="my" className="rounded-lg px-8 gap-2 data-[state=active]:bg-background transition-colors">
-              <ClipboardList className="size-4" /> Meus Atendimentos
+              <ClipboardList className="size-4" /> Meus Atendimentos ({myOnboardings.length})
             </TabsTrigger>
             <TabsTrigger value="journey" disabled={!journeyInstanceId} className="rounded-lg px-8 gap-2 data-[state=active]:bg-background transition-colors">
               <LayoutGrid className="size-4" /> Jornada Técnica
@@ -347,36 +323,26 @@ export default function OnboardingManagement() {
           <TabsContent value="available" className="space-y-4">
             <div className="grid gap-4">
               {availableActivities.length > 0 ? (
-                availableActivities.map((client) => (
-                  <Card key={client.id} className="border-l-4 border-l-amber-500 overflow-hidden group hover:shadow-md transition-all bg-card">
+                availableActivities.map((inst) => (
+                  <Card key={inst.id} className="border-l-4 border-l-amber-500 overflow-hidden group hover:shadow-md transition-all bg-card">
                     <CardContent className="p-0">
                       <div className="flex flex-col md:flex-row">
                         <div className="p-6 flex-1 space-y-4">
                           <div className="flex justify-between items-start">
                             <div className="space-y-1">
-                              <h3 className="text-xl font-bold text-foreground">{client.institutionName}</h3>
+                              <h3 className="text-xl font-bold text-foreground">{inst.institutionName}</h3>
                               <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1"><Building2 className="size-3" /> {client.cnpj}</span>
-                                <span className="flex items-center gap-1 font-bold text-primary"><Zap className="size-3" /> {productsMap[client.activeProduct!] || client.activeProduct}</span>
+                                <span className="flex items-center gap-1 font-bold text-primary"><Zap className="size-3" /> {productsMap[inst.productId] || inst.productId}</span>
                               </div>
                             </div>
-                            <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">Aguardando Analista</Badge>
+                            <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">Novo Ticket / API</Badge>
                           </div>
-                          <div className="grid grid-cols-2 gap-4 text-xs bg-muted/20 p-3 rounded-lg border">
-                            <div className="space-y-1">
-                              <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest">Contato Cliente</p>
-                              <p className="font-bold text-foreground">{client.displayName}</p>
-                              <p className="text-muted-foreground">{client.email}</p>
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-muted-foreground uppercase font-black text-[9px] tracking-widest">Aprovação</p>
-                              <p className="font-bold text-foreground">{client.approvedAt ? new Date(client.approvedAt).toLocaleDateString() : 'N/A'}</p>
-                              <p className="text-muted-foreground">ID RTM: {client.clientCode || 'Pendente'}</p>
-                            </div>
+                          <div className="text-[10px] text-muted-foreground font-medium flex items-center gap-2">
+                            <Clock className="size-3" /> Recebido em: {new Date(inst.startedAt).toLocaleString()}
                           </div>
                         </div>
                         <div className="bg-muted/10 md:w-48 flex items-center justify-center p-6 border-l border-t md:border-t-0">
-                          <Button className="w-full gap-2 font-bold shadow-lg" onClick={() => handleAssumeActivity(client)}>
+                          <Button className="w-full gap-2 font-bold shadow-lg" onClick={() => handleAssumeActivity(inst)}>
                             <UserPlus className="size-4" /> Assumir
                           </Button>
                         </div>
@@ -387,7 +353,7 @@ export default function OnboardingManagement() {
               ) : (
                 <div className="p-20 text-center border-2 border-dashed rounded-3xl space-y-4 bg-muted/5">
                   <CheckCircle2 className="size-12 mx-auto text-emerald-500/20" />
-                  <p className="text-muted-foreground text-sm font-medium">Nenhum cliente aprovado aguardando suporte no momento.</p>
+                  <p className="text-muted-foreground text-sm font-medium">Nenhuma nova ativação pendente na fila.</p>
                 </div>
               )}
             </div>
@@ -656,7 +622,7 @@ export default function OnboardingManagement() {
               <div><Label className="text-[10px] uppercase font-bold text-muted-foreground">E-mail</Label><p className="text-muted-foreground">{selectedClientForFicha?.email}</p></div>
             </div>
             <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-between">
-              <div><Label className="text-[10px] uppercase font-bold text-primary">ID RTM</Label><p className="font-mono font-black text-lg text-foreground">{selectedClientForFicha?.clientCode || 'Pendente'}</p></div>
+              <div><Label className="text-[10px] uppercase font-bold text-primary">OV (Venda)</Label><p className="font-mono font-black text-lg text-foreground">{selectedClientForFicha?.orderValue || 'Pendente'}</p></div>
             </div>
           </div>
           <DialogFooter className="p-6 bg-muted/10 border-t"><Button className="w-full font-bold" onClick={() => setIsFichaOpen(false)}>Fechar</Button></DialogFooter>

@@ -4,30 +4,42 @@ import { processAutomationFromEmail } from '@/lib/automation-service';
 
 /**
  * API simplificada para integração com Power Automate / ERP.
- * Recebe o conteúdo extraído de e-mails para automação de onboarding.
- * Rota sem autenticação conforme solicitado pelo usuário.
+ * Recebe dados estruturados ou conteúdo de e-mail para automação.
  */
 export async function POST(req: NextRequest) {
   try {
     const { firestore } = initializeFirebase();
     const data = await req.json();
 
-    // Validação básica de entrada
-    if (!data.subject || !data.body) {
+    // Validação de entrada: Requer ou (subject+body) ou (institutionName+cnpj)
+    const hasEmailData = data.subject && data.body;
+    const hasDirectData = data.institutionName && data.cnpj;
+
+    if (!hasEmailData && !hasDirectData) {
       return NextResponse.json(
-        { error: 'Payload incompleto. Requer "subject" e "body".' }, 
+        { error: 'Payload incompleto. Envie (subject e body) para processamento IA ou (institutionName e cnpj) para dados diretos.' }, 
         { status: 400 }
       );
     }
 
-    // Chama o serviço que orquestra IA + Firestore
-    const result = await processAutomationFromEmail(firestore, data.subject, data.body);
+    // Chama o serviço passando os dados disponíveis
+    const result = await processAutomationFromEmail(
+      firestore, 
+      data.subject, 
+      data.body,
+      {
+        institutionName: data.institutionName,
+        cnpj: data.cnpj,
+        productName: data.productName,
+        priority: data.priority
+      }
+    );
 
     return NextResponse.json({
       status: 'success',
-      message: 'Dados extraídos via IA e instância criada com sucesso.',
-      extracted: result.extracted,
-      instanceId: result.instanceId
+      message: 'Instância de ativação criada com sucesso na fila do suporte.',
+      instanceId: result.instanceId,
+      extracted: result.extracted
     });
 
   } catch (error: any) {
@@ -41,8 +53,13 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   return NextResponse.json({
-    description: 'API OnFlow para Ingestão de E-mails via Power Automate',
+    description: 'API OnFlow para Ingestão de Ativações',
+    endpoint: '/api/erp/process',
     auth: 'None Required',
-    methods: ['POST']
+    methods: ['POST'],
+    payload_options: {
+      ia_mode: { subject: "string", body: "string" },
+      direct_mode: { institutionName: "string", cnpj: "string", productName: "string", priority: "low|medium|high" }
+    }
   });
 }
