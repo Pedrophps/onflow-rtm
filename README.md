@@ -9,12 +9,12 @@ Plataforma de alta precisão para orquestração e ativação de serviços finan
 
 O OnFlow possui um endpoint de ingestão automática que deve ser chamado pelo seu ERP ou via Power Automate.
 
-### Endpoint de Ingestão
-`POST /api/erp/process`
+### Endpoint de Ingestão (POST)
+`https://6000-firebase-studio-1779040400544.cluster-xvr5pmatm5a4gx76fmat6kxt6o.cloudworkstations.dev/api/erp/process`
 
 ### Estrutura de Envio (JSON)
 
-O envio deve ser estruturado com os seguintes campos obrigatórios:
+O envio deve ser estruturado com os seguintes campos obrigatórios. Ao enviar este JSON, um novo registro aparecerá instantaneamente na aba **"Disponíveis"** para o Suporte Técnico.
 
 ```json
 {
@@ -28,8 +28,6 @@ O envio deve ser estruturado com os seguintes campos obrigatórios:
   "commercialNotes": "Observações sobre a venda ou urgência"
 }
 ```
-
-*Nota: Ao enviar este JSON, um novo registro aparecerá instantaneamente na aba **"Disponíveis"** para o Suporte Técnico iniciar o onboarding.*
 
 ---
 
