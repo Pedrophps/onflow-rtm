@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserProfile, Product, OnboardingInstance } from "@/lib/types";
-import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal, Package, Phone, FileText, CheckCircle2, Lock, UserCircle, Hash, Mail, ShieldCheck, Zap } from "lucide-react";
+import { Search, ShieldAlert, Building2, Loader2, MoreHorizontal, Package, Phone, FileText, CheckCircle2, Lock, UserCircle, Hash, Mail, ShieldCheck, Zap, PlusCircle } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -54,6 +54,7 @@ export default function ClientsAdminPage() {
   const [commercialNotes, setCommercialNotes] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isNewActivation, setIsNewActivation] = useState(false);
 
   const pendingClients = useMemo(() => {
     return clients.filter(c => c.status === 'pending' || !c.orderValue);
@@ -61,14 +62,15 @@ export default function ClientsAdminPage() {
 
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
-  const openApprovalDialog = (client: UserProfile) => {
+  const openApprovalDialog = (client: UserProfile, manualActivation = false) => {
     setSelectedClient(client);
-    setSelectedProductIds(client.activeProduct ? [client.activeProduct] : []);
+    setIsNewActivation(manualActivation);
+    setSelectedProductIds(manualActivation ? [] : (client.activeProduct ? [client.activeProduct] : []));
     setPhoneNumber(client.phoneNumber || "");
     setConsultantName(client.consultantName || "");
-    setOrderValue(client.orderValue || "");
+    setOrderValue(manualActivation ? "" : (client.orderValue || ""));
     setInstitutionName(client.institutionName || client.displayName || "");
-    setCommercialNotes(client.commercialNotes || "");
+    setCommercialNotes(manualActivation ? "" : (client.commercialNotes || ""));
     setIsDialogOpen(true);
   };
 
@@ -86,15 +88,17 @@ export default function ClientsAdminPage() {
     setIsSubmitting(true);
     
     const clientRef = doc(db, "users", selectedClient.id);
+    
+    // Dados para atualizar o perfil do usuário
     const updateData = {
       status: 'approved',
-      activeProduct: selectedProductIds[0] || "",
+      activeProduct: selectedProductIds[0] || selectedClient.activeProduct || "",
       phoneNumber: phoneNumber,
       consultantName: consultantName,
       orderValue: orderValue,
       institutionName: institutionName,
       commercialNotes: commercialNotes,
-      approvedAt: new Date().toISOString(),
+      approvedAt: selectedClient.approvedAt || new Date().toISOString(),
       updatedAt: serverTimestamp()
     };
 
@@ -102,30 +106,27 @@ export default function ClientsAdminPage() {
       await updateDoc(clientRef, updateData);
 
       const instancesRef = collection(db, "onboardingInstances");
-      const existingInstancesSnap = await getDocs(query(instancesRef, where("clientId", "==", selectedClient.id)));
-      const existingProductIds = existingInstancesSnap.docs.map(d => d.data().productId);
-
-      const newInstancesPromises = selectedProductIds
-        .filter(pid => !existingProductIds.includes(pid))
-        .map(pid => {
-          const product = dbProducts.find(p => p.id === pid);
-          return addDoc(instancesRef, {
-            clientId: selectedClient.id,
-            institutionName: institutionName,
-            productId: pid,
-            productName: product?.name || pid,
-            status: 'pending',
-            currentStepOrder: 1,
-            startedAt: new Date().toISOString(),
-            updatedAt: serverTimestamp()
-          } as OnboardingInstance);
-        });
+      
+      // Se for uma nova ativação manual ou se estiver aprovando pela primeira vez, criamos as instâncias
+      const newInstancesPromises = selectedProductIds.map(pid => {
+        const product = dbProducts.find(p => p.id === pid);
+        return addDoc(instancesRef, {
+          clientId: selectedClient.id,
+          institutionName: institutionName,
+          productId: pid,
+          productName: product?.name || pid,
+          status: 'pending',
+          currentStepOrder: 1,
+          startedAt: new Date().toISOString(),
+          updatedAt: serverTimestamp()
+        } as OnboardingInstance);
+      });
 
       await Promise.all(newInstancesPromises);
 
       toast({
-        title: "Venda Processada",
-        description: `O cliente ${institutionName} (OV: ${orderValue}) foi enviado para o suporte.`
+        title: isNewActivation ? "Nova Ativação Vinculada" : "Venda Processada",
+        description: `O cliente ${institutionName} agora possui ${selectedProductIds.length} novo(s) fluxo(s) na fila do suporte.`
       });
       setIsDialogOpen(false);
       setSelectedClient(null);
@@ -145,7 +146,7 @@ export default function ClientsAdminPage() {
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold font-headline text-foreground">Gestão de Clientes</h1>
-          <p className="text-muted-foreground">Gerencie o acesso institucional e aprovações do time Comercial.</p>
+          <p className="text-muted-foreground">Gerencie o acesso institucional e vincule novas ativações do Comercial.</p>
         </div>
 
         {isComercial && (
@@ -162,7 +163,7 @@ export default function ClientsAdminPage() {
             ) : pendingClients.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {pendingClients.map((client) => (
-                  <Card key={client.id} className="border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all">
+                  <Card key={client.id} className="border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all shadow-sm">
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div className="space-y-1">
@@ -192,10 +193,10 @@ export default function ClientsAdminPage() {
           </section>
         )}
 
-        <Card className="bg-card border-border">
+        <Card className="bg-card border-border shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg">Base de Clientes RTM</CardTitle>
-            <CardDescription>Lista completa de instituições cadastradas no OnFlow.</CardDescription>
+            <CardDescription>Lista completa de instituições. Use "Nova Ativação" para vincular produtos a usuários existentes.</CardDescription>
           </CardHeader>
           <CardContent>
             {clientsLoading ? (
@@ -205,9 +206,8 @@ export default function ClientsAdminPage() {
                 <TableHeader>
                   <TableRow className="border-border">
                     <TableHead>Instituição</TableHead>
-                    <TableHead>Responsável</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>OV (Venda)</TableHead>
+                    <TableHead>Última OV</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -220,7 +220,6 @@ export default function ClientsAdminPage() {
                           <span className="text-[10px] text-muted-foreground">{client.cnpj || "-"}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-xs text-foreground opacity-80">{client.displayName}</TableCell>
                       <TableCell>
                         <Badge variant={client.status === 'approved' && client.orderValue ? 'default' : 'secondary'} className="text-[10px] uppercase">
                           {client.status === 'approved' && client.orderValue ? 'Ativo' : 'Pendente'}
@@ -228,14 +227,26 @@ export default function ClientsAdminPage() {
                       </TableCell>
                       <TableCell className="font-mono text-xs text-foreground">{client.orderValue || "-"}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => openApprovalDialog(client)} className="text-muted-foreground hover:text-primary transition-colors">
-                          <MoreHorizontal className="size-4" />
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                           {isComercial && client.status === 'approved' && (
+                             <Button 
+                               variant="outline" 
+                               size="sm" 
+                               className="h-8 gap-1.5 text-[10px] font-black uppercase tracking-tighter"
+                               onClick={() => openApprovalDialog(client, true)}
+                             >
+                               <PlusCircle className="size-3" /> Nova Ativação
+                             </Button>
+                           )}
+                           <Button variant="ghost" size="icon" onClick={() => openApprovalDialog(client)} className="text-muted-foreground hover:text-primary transition-colors">
+                            <MoreHorizontal className="size-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   )) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhum cliente cadastrado.</TableCell>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Nenhum cliente cadastrado.</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -246,16 +257,16 @@ export default function ClientsAdminPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl bg-card border-border rounded-3xl p-0 overflow-hidden">
+        <DialogContent className="max-w-3xl bg-card border-border rounded-3xl p-0 overflow-hidden shadow-2xl">
           <DialogHeader className="p-8 bg-slate-950 text-white">
             <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-3">
               <ShieldCheck className="size-6 text-primary" />
-              {isComercial ? "Configuração Comercial RTM" : "Visualização de Parâmetros"}
+              {isNewActivation ? "Vincular Nova Ativação" : (isComercial ? "Configuração Comercial RTM" : "Visualização de Parâmetros")}
             </DialogTitle>
             <DialogDescription className="text-slate-400">
-              {isComercial 
-                ? `Capture os dados de venda para a ativação de ${selectedClient?.displayName}` 
-                : `Consulta de dados institucionais para ${selectedClient?.institutionName}`}
+              {isNewActivation 
+                ? `Inicie um novo projeto técnico para ${selectedClient?.institutionName}`
+                : (isComercial ? `Capture os dados de venda para ${selectedClient?.displayName}` : `Consulta de dados institucionais`)}
             </DialogDescription>
           </DialogHeader>
 
@@ -335,7 +346,7 @@ export default function ClientsAdminPage() {
             {/* Seleção de Produtos */}
             <div className="col-span-2 space-y-4 border-t border-border pt-6">
               <Label className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                <Zap className="size-4" /> Produtos para Ativação
+                <Zap className="size-4" /> {isNewActivation ? "Selecione o Produto para Nova Ativação" : "Produtos Vinculados"}
               </Label>
               <div className="grid grid-cols-2 gap-3">
                 {productsLoading ? (
@@ -364,12 +375,12 @@ export default function ClientsAdminPage() {
             <div className="col-span-2 space-y-2 border-t border-border pt-6">
               <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                 <FileText className="size-4 text-primary" />
-                Observações Importantes
+                Observações Importantes (Ficha Técnica)
               </Label>
               <Textarea 
                 value={commercialNotes} 
                 onChange={(e) => setCommercialNotes(e.target.value)} 
-                placeholder={isComercial ? "Insira avisos críticos, prazos regulatórios ou particularidades técnicas..." : "Nenhuma nota inserida."}
+                placeholder={isComercial ? "Insira avisos críticos, prazos regulatórios ou particularidades técnicas que o suporte deve ler..." : "Nenhuma nota inserida."}
                 className="min-h-[120px] bg-background border-border rounded-2xl text-sm leading-relaxed"
                 disabled={!isComercial}
               />
@@ -379,7 +390,7 @@ export default function ClientsAdminPage() {
           <DialogFooter className="p-8 bg-muted/20 border-t border-border flex items-center justify-between">
             {!isComercial && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground italic font-medium">
-                <Lock className="size-3" /> Apenas o comercial pode editar estes parâmetros de venda.
+                <Lock className="size-3" /> Somente o time Comercial pode editar estes parâmetros.
               </div>
             )}
             <div className="flex gap-3 ml-auto">
@@ -390,10 +401,10 @@ export default function ClientsAdminPage() {
                 <Button 
                   disabled={!orderValue || selectedProductIds.length === 0 || isSubmitting || !institutionName} 
                   onClick={handleApprove}
-                  className="rounded-xl font-bold px-8"
+                  className="rounded-xl font-bold px-8 shadow-sm"
                 >
                   {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
-                  Confirmar Ativação
+                  {isNewActivation ? "Vincular Ativação" : "Confirmar e Aprovar"}
                 </Button>
               )}
             </div>
