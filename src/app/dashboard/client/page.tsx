@@ -1,3 +1,4 @@
+
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -200,7 +201,7 @@ export default function ClientDashboardPage() {
                 {instance ? (
                   <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 uppercase text-[10px]">Ativação em Curso</Badge>
                 ) : (
-                  <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800 uppercase text-[10px]">Aguardando Suporte</Badge>
+                  <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-emerald-200 dark:border-emerald-800 uppercase text-[10px]">Aguardando Suporte</Badge>
                 )}
               </div>
             </CardHeader>

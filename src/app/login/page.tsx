@@ -51,10 +51,18 @@ export default function LoginPage() {
     let v = value.replace(/\D/g, "");
     if (v.length > 14) v = v.slice(0, 14);
     
-    v = v.replace(/^(\d{2})(\d)/, "$1.$2");
-    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
-    v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
-    v = v.replace(/(\d{4})(\d)/, "$1-$2");
+    if (v.length <= 11) {
+      // CPF format if needed (added as requested)
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    } else {
+      // CNPJ format
+      v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+      v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+      v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+      v = v.replace(/(\d{4})(\d)/, "$1-$2");
+    }
     return v;
   };
 
@@ -273,7 +281,6 @@ export default function LoginPage() {
             </TabsContent>
           </Tabs>
 
-          {/* Atalhos de Preenchimento (Apenas para Testes) */}
           <div className="p-4 bg-muted/30 border-t space-y-3">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Auto-preenchimento de Teste</p>
             <div className="grid grid-cols-3 gap-2">

@@ -38,8 +38,26 @@ export default function ERPSimulatorPage() {
     return v;
   };
 
+  const formatPhone = (value: string) => {
+    let v = value.replace(/\D/g, "");
+    if (v.length > 11) v = v.slice(0, 11);
+    
+    if (v.length <= 10) {
+      v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+      v = v.replace(/(\d{4})(\d)/, "$1-$2");
+    } else {
+      v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+      v = v.replace(/(\d{5})(\d)/, "$1-$2");
+    }
+    return v;
+  };
+
   const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, cnpj: formatCnpj(e.target.value) });
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, phoneNumber: formatPhone(e.target.value) });
   };
 
   const handleSimulate = async () => {
@@ -131,7 +149,7 @@ export default function ERPSimulatorPage() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase">Telefone</Label>
-                  <Input value={formData.phoneNumber} onChange={e => setFormData({...formData, phoneNumber: e.target.value})} />
+                  <Input value={formData.phoneNumber} onChange={handlePhoneChange} placeholder="(00) 00000-0000" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase">Produto</Label>

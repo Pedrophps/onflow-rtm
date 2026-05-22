@@ -1,3 +1,4 @@
+
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -61,6 +62,20 @@ export default function ClientsAdminPage() {
   }, [clients]);
 
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+
+  const formatPhone = (value: string) => {
+    let v = value.replace(/\D/g, "");
+    if (v.length > 11) v = v.slice(0, 11);
+    
+    if (v.length <= 10) {
+      v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+      v = v.replace(/(\d{4})(\d)/, "$1-$2");
+    } else {
+      v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+      v = v.replace(/(\d{5})(\d)/, "$1-$2");
+    }
+    return v;
+  };
 
   const openApprovalDialog = (client: UserProfile, manualActivation = false) => {
     setSelectedClient(client);
@@ -321,7 +336,7 @@ export default function ClientsAdminPage() {
                 <Input 
                   placeholder="(00) 00000-0000"
                   value={phoneNumber} 
-                  onChange={(e) => setPhoneNumber(e.target.value)} 
+                  onChange={(e) => setPhoneNumber(formatPhone(e.target.value))} 
                   disabled={!isComercial}
                   className="pl-10 h-11 bg-background border-border rounded-xl"
                 />
