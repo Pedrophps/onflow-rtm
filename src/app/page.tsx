@@ -51,7 +51,6 @@ import { HeroBackground } from '@/components/hero-background';
 export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Plugin de Autoplay configurado para 2400ms (20% mais rápido que 3000ms)
   const autoplayPlugin = React.useMemo(
     () => Autoplay({ delay: 2400, stopOnInteraction: false, stopOnMouseEnter: true }),
     []
@@ -70,7 +69,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white dark:bg-slate-950 selection:bg-primary/10 font-body text-foreground transition-colors duration-500">
       {/* Header Section */}
-      <header className="fixed top-0 w-full z-50 bg-white dark:bg-slate-950 border-b border-border/50 shadow-sm">
+      <header className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-border/50 shadow-sm">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2 font-headline font-bold text-2xl text-primary">
@@ -91,20 +90,20 @@ export default function Home() {
                 variant="ghost" 
                 size="icon" 
                 onClick={toggleTheme} 
-                className="rounded-full text-muted-foreground hover:text-primary"
+                className="rounded-full text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all"
                 title={isDarkMode ? "Mudar para Tema Claro" : "Mudar para Tema Escuro"}
               >
                 {isDarkMode ? <Sun className="size-5" /> : <Moon className="size-5" />}
               </Button>
 
-              <Button size="sm" className="rounded-full px-6 font-bold text-xs uppercase tracking-wider" asChild>
+              <Button size="sm" className="rounded-full px-6 font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity" asChild>
                 <Link href="/login">Acessar Portal</Link>
               </Button>
             </div>
 
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden">
+                <Button variant="ghost" size="icon" className="lg:hidden hover:bg-muted">
                   <Menu className="size-6" />
                 </Button>
               </SheetTrigger>
@@ -113,14 +112,14 @@ export default function Home() {
                   <SheetTitle className="font-headline text-primary">Menu RTM</SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col gap-6 mt-10">
-                  <a href="#sobre" className="text-lg font-bold font-headline">Sobre</a>
-                  <a href="#servicos" className="text-lg font-bold font-headline">Serviços Críticos</a>
-                  <a href="#trajetoria" className="text-lg font-bold font-headline">Trajetória</a>
-                  <button onClick={toggleTheme} className="text-left text-lg font-bold font-headline flex items-center gap-2">
+                  <a href="#sobre" className="text-lg font-bold font-headline hover:text-primary transition-colors">Sobre</a>
+                  <a href="#servicos" className="text-lg font-bold font-headline hover:text-primary transition-colors">Serviços Críticos</a>
+                  <a href="#trajetoria" className="text-lg font-bold font-headline hover:text-primary transition-colors">Trajetória</a>
+                  <button onClick={toggleTheme} className="text-left text-lg font-bold font-headline flex items-center gap-2 hover:text-primary transition-colors">
                     {isDarkMode ? <><Sun className="size-5" /> Tema Claro</> : <><Moon className="size-5" /> Tema Escuro</>}
                   </button>
                   <hr />
-                  <Link href="/login" className="text-lg font-bold font-headline text-primary">Login</Link>
+                  <Link href="/login" className="text-lg font-bold font-headline text-primary hover:opacity-80 transition-opacity">Login</Link>
                 </nav>
               </SheetContent>
             </Sheet>
@@ -141,7 +140,7 @@ export default function Home() {
               Integramos o mercado financeiro brasileiro. Nossas soluções e ferramentas potencializam os resultados dos nossos clientes.
             </p>
             <div className="flex gap-4">
-              <Button size="lg" className="rounded-full px-10 h-14 font-bold gap-2 text-lg shadow-sm" asChild>
+              <Button size="lg" className="rounded-full px-10 h-14 font-bold gap-2 text-lg hover:scale-105 transition-transform" asChild>
                 <Link href="/login">Começar Agora <ArrowRight className="size-6" /></Link>
               </Button>
             </div>
@@ -171,15 +170,15 @@ export default function Home() {
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-10">
-                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/30 transition-colors">
+                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/50 hover:bg-primary/5 transition-all duration-300">
                   <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Propósito</h4>
                   <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">Promover a evolução do Mercado Financeiro pela Tecnologia</p>
                 </div>
-                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/30 transition-colors">
+                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/50 hover:bg-primary/5 transition-all duration-300">
                   <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Valores</h4>
                   <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">Foco no cliente, Desenvolvimento de Pessoas e Equipe, Confiança e Inovação</p>
                 </div>
-                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/30 transition-colors">
+                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/50 hover:bg-primary/5 transition-all duration-300">
                   <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Posicionamento</h4>
                   <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">Identificar, Entender, Conhecer</p>
                 </div>
@@ -189,14 +188,14 @@ export default function Home() {
             <div className="bg-slate-900 p-12 rounded-[4rem] text-white space-y-12 relative overflow-hidden group">
                <h3 className="text-3xl font-bold font-headline relative z-10">Nossa Presença</h3>
                <div className="space-y-8 relative z-10">
-                <div className="flex items-center gap-6 group-hover:translate-x-2 transition-transform">
+                <div className="flex items-center gap-6 group-hover:translate-x-2 transition-transform duration-500">
                   <div className="size-14 rounded-2xl bg-primary flex items-center justify-center"><MapPin className="text-white size-8" /></div>
                   <div>
                     <p className="text-2xl font-black">20 Estados + DF</p>
                     <p className="text-slate-400 font-medium">Cobertura em todas as 5 regiões do país.</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-6 group-hover:translate-x-2 transition-transform duration-500">
+                <div className="flex items-center gap-6 group-hover:translate-x-2 transition-transform duration-700">
                   <div className="size-14 rounded-2xl bg-primary flex items-center justify-center"><Building2 className="text-white size-8" /></div>
                   <div>
                     <p className="text-2xl font-black">750+ Instituições</p>
@@ -291,8 +290,8 @@ export default function Home() {
               </CarouselItem>
             </CarouselContent>
             <div className="flex justify-end gap-4 mt-12">
-              <CarouselPrevious className="static translate-y-0 size-14 border-2 border-primary/20 bg-slate-900 text-white hover:bg-primary transition-all rounded-2xl" />
-              <CarouselNext className="static translate-y-0 size-14 border-2 border-primary/20 bg-slate-900 text-white hover:bg-primary transition-all rounded-2xl" />
+              <CarouselPrevious className="static translate-y-0 size-14 border-2 border-primary/20 bg-slate-900 text-white hover:bg-primary hover:border-primary transition-all rounded-2xl" />
+              <CarouselNext className="static translate-y-0 size-14 border-2 border-primary/20 bg-slate-900 text-white hover:bg-primary hover:border-primary transition-all rounded-2xl" />
             </div>
           </Carousel>
         </div>
@@ -323,7 +322,7 @@ export default function Home() {
 
 function ServiceCard({ icon: Icon, title, desc }: { icon: any, title: string, desc: string }) {
   return (
-    <Card className="border-none hover:shadow-lg transition-all group bg-white dark:bg-slate-900 p-2 rounded-[2rem] hover:-translate-y-2 duration-300">
+    <Card className="border-none hover:shadow-lg transition-all group bg-white dark:bg-slate-900 p-2 rounded-[2rem] hover:-translate-y-2 hover:bg-primary/5 duration-300 border-2 border-transparent hover:border-primary/20">
       <CardHeader className="pb-4">
         <div className="size-14 rounded-2xl bg-slate-50 dark:bg-slate-800 text-primary flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-all">
           <Icon className="size-7" />
@@ -345,7 +344,7 @@ function FuturisticMilestone({ year, title, text, icon: Icon, isHighlight = fals
       <div className="relative z-10 space-y-4">
         <div className="flex items-center justify-between">
           <span className={`text-3xl font-black font-headline tracking-tighter ${isHighlight ? "text-primary" : "text-slate-600 group-hover:text-primary"}`}>{year}</span>
-          <div className={`size-10 rounded-xl flex items-center justify-center transition-all ${isHighlight ? "bg-primary text-white" : "bg-slate-800 text-slate-400 group-hover:text-primary"}`}>
+          <div className={`size-10 rounded-xl flex items-center justify-center transition-all ${isHighlight ? "bg-primary text-white" : "bg-slate-800 text-slate-400 group-hover:bg-primary group-hover:text-white"}`}>
             <Icon className="size-5" />
           </div>
         </div>

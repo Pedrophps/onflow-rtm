@@ -55,31 +55,31 @@ export default function ClientSupportPage() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          <Card className="hover:shadow-md transition-all border-2 border-border bg-card">
+          <Card className="hover:shadow-md hover:border-primary/40 hover:bg-primary/5 transition-all border-2 border-border bg-card group">
             <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
-              <div className="size-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary">
+              <div className="size-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
                 <Mail className="size-6" />
               </div>
               <div className="space-y-1">
-                <p className="font-bold text-foreground">E-mail Técnico</p>
+                <p className="font-bold text-foreground group-hover:text-primary transition-colors">E-mail Técnico</p>
                 <p className="text-xs text-muted-foreground">suporte@rtm.net.br</p>
               </div>
-              <Button variant="ghost" className="text-primary font-bold text-xs" asChild>
+              <Button variant="ghost" className="text-primary font-bold text-xs hover:bg-primary/10 transition-colors" asChild>
                 <a href="mailto:suporte@rtm.net.br">Enviar E-mail</a>
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-md transition-all border-2 border-border bg-card">
+          <Card className="hover:shadow-md hover:border-blue-500/40 hover:bg-blue-500/5 transition-all border-2 border-border bg-card group">
             <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
-              <div className="size-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
+              <div className="size-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
                 <Phone className="size-6" />
               </div>
               <div className="space-y-1">
-                <p className="font-bold text-foreground">Telefone 24h</p>
+                <p className="font-bold text-foreground group-hover:text-blue-600 transition-colors">Telefone 24h</p>
                 <p className="text-xs text-muted-foreground">0800 123 4567</p>
               </div>
-              <Button variant="ghost" className="text-blue-600 font-bold text-xs">
+              <Button variant="ghost" className="text-blue-600 font-bold text-xs hover:bg-blue-500/10 transition-colors">
                 Ligar Agora
               </Button>
             </CardContent>
@@ -95,18 +95,18 @@ export default function ClientSupportPage() {
               <div className="p-8 text-center border rounded-2xl"><Loader2 className="size-6 animate-spin mx-auto text-primary/20" /></div>
             ) : instances.length > 0 ? (
               instances.map((inst) => (
-                <Card key={inst.id} className="border-none shadow-sm bg-card overflow-hidden group">
+                <Card key={inst.id} className="border-none shadow-sm bg-card overflow-hidden group hover:bg-muted/10 transition-colors">
                   <div className="flex flex-col md:flex-row">
                     <div className="p-6 flex-1 flex items-center gap-4">
-                      <div className="size-12 rounded-full border-2 border-primary/10 flex items-center justify-center bg-muted text-muted-foreground">
+                      <div className="size-12 rounded-full border-2 border-primary/10 flex items-center justify-center bg-muted text-muted-foreground group-hover:border-primary transition-colors">
                         <User className="size-6" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-foreground">{inst.techName || "Analista a definir"}</p>
+                        <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{inst.techName || "Analista a definir"}</p>
                         <p className="text-xs text-muted-foreground">Analista Responsável pela Ativação</p>
                       </div>
                     </div>
-                    <div className="p-6 bg-muted/30 md:w-64 flex flex-col justify-center gap-1 border-l border-border">
+                    <div className="p-6 bg-muted/30 group-hover:bg-muted/20 md:w-64 flex flex-col justify-center gap-1 border-l border-border transition-colors">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Produto</p>
                       <div className="flex items-center gap-2">
                         <Zap className="size-3 text-primary" />
@@ -159,24 +159,24 @@ export default function ClientSupportPage() {
           </h3>
           <Card className="border-none shadow-xl bg-card p-6 rounded-3xl">
             <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="item-1">
-                <AccordionTrigger className="text-left font-bold text-foreground opacity-80 hover:text-primary transition-colors">
+              <AccordionItem value="item-1" className="border-border">
+                <AccordionTrigger className="text-left font-bold text-foreground opacity-80 hover:text-primary transition-colors hover:no-underline">
                   Qual o SLA médio de ativação técnica?
                 </AccordionTrigger>
                 <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
                   O tempo de ativação varia conforme o produto. Serviços como Mensageria SWIFT possuem SLA médio de 10 dias úteis, enquanto conexões via RSFN podem levar até 15 dias devido a homologações externas.
                 </AccordionContent>
               </AccordionItem>
-              <AccordionItem value="item-2">
-                <AccordionTrigger className="text-left font-bold text-foreground opacity-80 hover:text-primary transition-colors">
+              <AccordionItem value="item-2" className="border-border">
+                <AccordionTrigger className="text-left font-bold text-foreground opacity-80 hover:text-primary transition-colors hover:no-underline">
                   Como enviar evidências de conformidade?
                 </AccordionTrigger>
                 <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
                   Você pode enviar evidências diretamente na aba "Ativações", selecionando a etapa atual da sua jornada e utilizando o ícone de anexo no log de interação.
                 </AccordionContent>
               </AccordionItem>
-              <AccordionItem value="item-3">
-                <AccordionTrigger className="text-left font-bold text-foreground opacity-80 hover:text-primary transition-colors">
+              <AccordionItem value="item-3" className="border-border">
+                <AccordionTrigger className="text-left font-bold text-foreground opacity-80 hover:text-primary transition-colors hover:no-underline">
                   Onde encontro os manuais de conectividade?
                 </AccordionTrigger>
                 <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
@@ -187,15 +187,15 @@ export default function ClientSupportPage() {
           </Card>
         </div>
 
-        <div className="bg-slate-900 rounded-3xl p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
+        <div className="bg-slate-900 rounded-3xl p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative group">
           <div className="space-y-2 relative z-10">
-            <h4 className="text-xl font-bold font-headline">Precisa de consultoria especializada?</h4>
+            <h4 className="text-xl font-bold font-headline group-hover:text-primary transition-colors">Precisa de consultoria especializada?</h4>
             <p className="text-sm text-slate-400 max-w-md">Nossos arquitetos de rede podem ajudar no desenho da sua topologia crítica para máxima resiliência.</p>
           </div>
-          <Button variant="secondary" className="rounded-full px-8 font-bold gap-2 relative z-10">
+          <Button variant="secondary" className="rounded-full px-8 font-bold gap-2 relative z-10 hover:scale-105 transition-transform">
             Agendar Reunião <ExternalLink className="size-4" />
           </Button>
-          <div className="absolute top-0 right-0 size-64 bg-primary/20 blur-3xl rounded-full -mr-32 -mt-32"></div>
+          <div className="absolute top-0 right-0 size-64 bg-primary/20 blur-3xl rounded-full -mr-32 -mt-32 group-hover:bg-primary/30 transition-all duration-700"></div>
         </div>
       </div>
     </DashboardLayout>

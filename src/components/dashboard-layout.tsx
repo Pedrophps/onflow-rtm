@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -96,7 +95,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
       <div className="flex min-h-screen w-full bg-background transition-colors duration-300">
         <Sidebar className="border-r border-border bg-card">
           <SidebarHeader className="p-6">
-            <Link href="/" className="flex items-center gap-2 font-headline font-bold text-2xl text-primary">
+            <Link href="/" className="flex items-center gap-2 font-headline font-bold text-2xl text-primary hover:opacity-80 transition-opacity">
               OnFlow
             </Link>
           </SidebarHeader>
@@ -108,7 +107,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
                     asChild 
                     isActive={pathname === item.href || (item.href !== "/dashboard/admin" && item.href !== "/dashboard/client" && pathname.startsWith(item.href + '/'))}
                     className={cn(
-                      "py-6 px-4 rounded-xl transition-all",
+                      "py-6 px-4 rounded-xl transition-all hover:bg-primary/5 hover:text-primary",
                       (pathname === item.href || (item.href !== "/dashboard/admin" && item.href !== "/dashboard/client" && pathname.startsWith(item.href + '/'))) && "bg-primary/5 text-primary font-semibold"
                     )}
                   >
@@ -123,8 +122,8 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="p-4">
-            <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-xl mb-4">
-              <Avatar className="size-10 border-2 border-primary/20">
+            <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-xl mb-4 group cursor-default transition-colors hover:bg-muted">
+              <Avatar className="size-10 border-2 border-primary/20 transition-transform group-hover:scale-105">
                 <AvatarImage src={`https://picsum.photos/seed/${user?.uid || role}/100/100`} />
                 <AvatarFallback className="bg-primary text-primary-foreground">{user?.email?.charAt(0).toUpperCase() || (role === 'admin' ? 'AD' : 'CL')}</AvatarFallback>
               </Avatar>
@@ -137,7 +136,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   onClick={handleLogout}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer rounded-xl py-5"
                 >
                   <LogOut className="size-5" />
                   <span>Sair</span>
@@ -148,7 +147,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
         </Sidebar>
         <SidebarInset className="bg-background">
           <header className="flex h-16 items-center border-b px-6 bg-card sticky top-0 z-50 shadow-sm transition-colors">
-            <SidebarTrigger className="-ml-1 mr-4 text-foreground" />
+            <SidebarTrigger className="-ml-1 mr-4 text-foreground hover:bg-muted rounded-lg" />
             <div className="flex-1">
               <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-widest">
                 OnFlow RTM / {pathname.split('/').pop()?.replace('-', ' ')}
@@ -159,7 +158,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
                 variant="ghost" 
                 size="icon" 
                 onClick={toggleTheme} 
-                className="rounded-full text-muted-foreground hover:text-primary transition-colors"
+                className="rounded-full text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all"
                 title={isDarkMode ? "Mudar para Tema Claro" : "Mudar para Tema Escuro"}
               >
                 {isDarkMode ? <Sun className="size-5" /> : <Moon className="size-5" />}

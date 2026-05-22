@@ -1,4 +1,3 @@
-
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -104,7 +103,6 @@ export default function ClientsAdminPage() {
     
     const clientRef = doc(db, "users", selectedClient.id);
     
-    // Dados para atualizar o perfil do usuário
     const updateData = {
       status: 'approved',
       activeProduct: selectedProductIds[0] || selectedClient.activeProduct || "",
@@ -122,7 +120,6 @@ export default function ClientsAdminPage() {
 
       const instancesRef = collection(db, "onboardingInstances");
       
-      // Se for uma nova ativação manual ou se estiver aprovando pela primeira vez, criamos as instâncias
       const newInstancesPromises = selectedProductIds.map(pid => {
         const product = dbProducts.find(p => p.id === pid);
         return addDoc(instancesRef, {
@@ -178,22 +175,22 @@ export default function ClientsAdminPage() {
             ) : pendingClients.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {pendingClients.map((client) => (
-                  <Card key={client.id} className="border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all shadow-sm">
+                  <Card key={client.id} className="border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 transition-all shadow-sm group">
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div className="space-y-1">
                           <CardTitle className="text-base truncate max-w-[180px]">{client.institutionName || client.displayName}</CardTitle>
                           <CardDescription className="text-xs font-medium">CNPJ: {client.cnpj || "N/A"}</CardDescription>
                         </div>
-                        <Building2 className="size-5 text-primary/40" />
+                        <Building2 className="size-5 text-primary/40 group-hover:text-primary/60 transition-colors" />
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="text-[11px] space-y-1 bg-background p-3 rounded-lg border border-border">
+                      <div className="text-[11px] space-y-1 bg-background p-3 rounded-lg border border-border group-hover:border-primary/20 transition-colors">
                         <p className="text-muted-foreground">Responsável: <span className="text-foreground font-semibold">{client.displayName}</span></p>
                         <p className="text-amber-600 font-bold uppercase tracking-tighter">Aguardando Configuração</p>
                       </div>
-                      <Button size="sm" className="w-full font-bold" onClick={() => openApprovalDialog(client)}>
+                      <Button size="sm" className="w-full font-bold hover:scale-[1.02] transition-transform" onClick={() => openApprovalDialog(client)}>
                         Aprovar e Configurar
                       </Button>
                     </CardContent>
@@ -208,7 +205,7 @@ export default function ClientsAdminPage() {
           </section>
         )}
 
-        <Card className="bg-card border-border shadow-sm">
+        <Card className="bg-card border-border shadow-sm overflow-hidden">
           <CardHeader>
             <CardTitle className="text-lg">Base de Clientes RTM</CardTitle>
             <CardDescription>Lista completa de instituições. Use "Nova Ativação" para vincular produtos a usuários existentes.</CardDescription>
@@ -219,7 +216,7 @@ export default function ClientsAdminPage() {
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow className="border-border">
+                  <TableRow className="border-border bg-muted/50 hover:bg-muted/50">
                     <TableHead>Instituição</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Última OV</TableHead>
@@ -228,10 +225,10 @@ export default function ClientsAdminPage() {
                 </TableHeader>
                 <TableBody>
                   {clients.length > 0 ? clients.map((client) => (
-                    <TableRow key={client.id} className="border-border">
+                    <TableRow key={client.id} className="border-border hover:bg-primary/5 transition-colors group">
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="font-bold text-foreground">{client.institutionName || "-"}</span>
+                          <span className="font-bold text-foreground group-hover:text-primary transition-colors">{client.institutionName || "-"}</span>
                           <span className="text-[10px] text-muted-foreground">{client.cnpj || "-"}</span>
                         </div>
                       </TableCell>
@@ -247,13 +244,13 @@ export default function ClientsAdminPage() {
                              <Button 
                                variant="outline" 
                                size="sm" 
-                               className="h-8 gap-1.5 text-[10px] font-black uppercase tracking-tighter"
+                               className="h-8 gap-1.5 text-[10px] font-black uppercase tracking-tighter hover:bg-primary hover:text-white hover:border-primary transition-all"
                                onClick={() => openApprovalDialog(client, true)}
                              >
                                <PlusCircle className="size-3" /> Nova Ativação
                              </Button>
                            )}
-                           <Button variant="ghost" size="icon" onClick={() => openApprovalDialog(client)} className="text-muted-foreground hover:text-primary transition-colors">
+                           <Button variant="ghost" size="icon" onClick={() => openApprovalDialog(client)} className="text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
                             <MoreHorizontal className="size-4" />
                           </Button>
                         </div>
@@ -286,7 +283,6 @@ export default function ClientsAdminPage() {
           </DialogHeader>
 
           <div className="p-8 grid grid-cols-2 gap-6 max-h-[70vh] overflow-y-auto">
-            {/* Campo: Instituição */}
             <div className="col-span-2 md:col-span-1 space-y-2">
               <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Instituição</Label>
               <div className="relative">
@@ -295,12 +291,11 @@ export default function ClientsAdminPage() {
                   value={institutionName} 
                   onChange={(e) => setInstitutionName(e.target.value)} 
                   disabled={!isComercial}
-                  className="pl-10 h-11 bg-background border-border rounded-xl"
+                  className="pl-10 h-11 bg-background border-border rounded-xl focus:border-primary/50"
                 />
               </div>
             </div>
 
-            {/* Campo: E-mail (Read Only) */}
             <div className="col-span-2 md:col-span-1 space-y-2 opacity-80">
               <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">E-mail de Contato</Label>
               <div className="relative">
@@ -313,7 +308,6 @@ export default function ClientsAdminPage() {
               </div>
             </div>
 
-            {/* Campo: Consultor RTM */}
             <div className="col-span-2 md:col-span-1 space-y-2">
               <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Consultor RTM</Label>
               <div className="relative">
@@ -323,12 +317,11 @@ export default function ClientsAdminPage() {
                   value={consultantName} 
                   onChange={(e) => setConsultantName(e.target.value)} 
                   disabled={!isComercial}
-                  className="pl-10 h-11 bg-background border-border rounded-xl"
+                  className="pl-10 h-11 bg-background border-border rounded-xl focus:border-primary/50"
                 />
               </div>
             </div>
 
-            {/* Campo: Telefone */}
             <div className="col-span-2 md:col-span-1 space-y-2">
               <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Telefone</Label>
               <div className="relative">
@@ -338,12 +331,11 @@ export default function ClientsAdminPage() {
                   value={phoneNumber} 
                   onChange={(e) => setPhoneNumber(formatPhone(e.target.value))} 
                   disabled={!isComercial}
-                  className="pl-10 h-11 bg-background border-border rounded-xl"
+                  className="pl-10 h-11 bg-background border-border rounded-xl focus:border-primary/50"
                 />
               </div>
             </div>
 
-            {/* Campo: OV */}
             <div className="col-span-2 md:col-span-1 space-y-2">
               <Label className="text-xs font-bold uppercase tracking-widest text-primary font-black">OV (Ordem de Venda) *</Label>
               <div className="relative">
@@ -358,7 +350,6 @@ export default function ClientsAdminPage() {
               </div>
             </div>
 
-            {/* Seleção de Produtos */}
             <div className="col-span-2 space-y-4 border-t border-border pt-6">
               <Label className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
                 <Zap className="size-4" /> {isNewActivation ? "Selecione o Produto para Nova Ativação" : "Produtos Vinculados"}
@@ -369,7 +360,7 @@ export default function ClientsAdminPage() {
                 ) : dbProducts.length > 0 ? dbProducts.map((prod) => (
                   <div 
                     key={prod.id} 
-                    className={`flex items-center space-x-3 p-4 rounded-2xl border-2 transition-all ${isComercial ? 'cursor-pointer' : 'cursor-default'} ${selectedProductIds.includes(prod.id!) ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30 bg-muted/20'}`}
+                    className={`flex items-center space-x-3 p-4 rounded-2xl border-2 transition-all ${isComercial ? 'cursor-pointer hover:border-primary/50 hover:bg-primary/5' : 'cursor-default'} ${selectedProductIds.includes(prod.id!) ? 'border-primary bg-primary/5' : 'border-border bg-muted/20'}`}
                     onClick={() => toggleProduct(prod.id!)}
                   >
                     <Checkbox checked={selectedProductIds.includes(prod.id!)} disabled={!isComercial} className="rounded-full border-primary" />
@@ -386,7 +377,6 @@ export default function ClientsAdminPage() {
               </div>
             </div>
 
-            {/* Observações Importantes */}
             <div className="col-span-2 space-y-2 border-t border-border pt-6">
               <Label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                 <FileText className="size-4 text-primary" />
@@ -396,7 +386,7 @@ export default function ClientsAdminPage() {
                 value={commercialNotes} 
                 onChange={(e) => setCommercialNotes(e.target.value)} 
                 placeholder={isComercial ? "Insira avisos críticos, prazos regulatórios ou particularidades técnicas que o suporte deve ler..." : "Nenhuma nota inserida."}
-                className="min-h-[120px] bg-background border-border rounded-2xl text-sm leading-relaxed"
+                className="min-h-[120px] bg-background border-border rounded-2xl text-sm leading-relaxed focus:border-primary/50"
                 disabled={!isComercial}
               />
             </div>
@@ -409,14 +399,14 @@ export default function ClientsAdminPage() {
               </div>
             )}
             <div className="flex gap-3 ml-auto">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-xl font-bold px-6 border-border hover:bg-background">
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-xl font-bold px-6 border-border hover:bg-background hover:text-primary transition-colors">
                 {isComercial ? "Cancelar" : "Fechar"}
               </Button>
               {isComercial && (
                 <Button 
                   disabled={!orderValue || selectedProductIds.length === 0 || isSubmitting || !institutionName} 
                   onClick={handleApprove}
-                  className="rounded-xl font-bold px-8 shadow-sm"
+                  className="rounded-xl font-bold px-8 shadow-sm hover:scale-[1.02] transition-transform"
                 >
                   {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
                   {isNewActivation ? "Vincular Ativação" : "Confirmar e Aprovar"}

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -106,14 +105,14 @@ export default function ProductsPage() {
       <div className="space-y-8">
         <div className="flex justify-between items-start">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold font-headline text-slate-900">Catálogo de Produtos</h1>
+            <h1 className="text-3xl font-bold font-headline text-slate-900 dark:text-white">Catálogo de Produtos</h1>
             <p className="text-muted-foreground">Gerencie os ativos financeiros e seus fluxos de ativação.</p>
           </div>
           
           {isSupport && (
             <Dialog open={isNewProductOpen} onOpenChange={setIsNewProductOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2 rounded-full font-bold shadow-md" onClick={() => setCurrentProduct({ name: '', description: '' })}>
+                <Button className="gap-2 rounded-full font-bold shadow-md hover:scale-105 transition-transform" onClick={() => setCurrentProduct({ name: '', description: '' })}>
                   <Plus className="size-4" /> Novo Produto
                 </Button>
               </DialogTrigger>
@@ -125,16 +124,16 @@ export default function ProductsPage() {
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label>Nome do Produto</Label>
-                    <Input placeholder="Ex: Mensageria SWIFT" value={currentProduct.name} onChange={e => setCurrentProduct({...currentProduct, name: e.target.value})} className="bg-background" />
+                    <Input placeholder="Ex: Mensageria SWIFT" value={currentProduct.name} onChange={e => setCurrentProduct({...currentProduct, name: e.target.value})} className="bg-background focus:border-primary/50" />
                   </div>
                   <div className="space-y-2">
                     <Label>Descrição Curta</Label>
-                    <Textarea placeholder="Finalidade do produto no mercado..." value={currentProduct.description} onChange={e => setCurrentProduct({...currentProduct, description: e.target.value})} className="bg-background min-h-[100px]" />
+                    <Textarea placeholder="Finalidade do produto no mercado..." value={currentProduct.description} onChange={e => setCurrentProduct({...currentProduct, description: e.target.value})} className="bg-background min-h-[100px] focus:border-primary/50" />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsNewProductOpen(false)}>Cancelar</Button>
-                  <Button disabled={!currentProduct.name || isSubmitting} onClick={handleCreateProduct}>
+                  <Button variant="outline" onClick={() => setIsNewProductOpen(false)} className="hover:text-primary transition-colors">Cancelar</Button>
+                  <Button disabled={!currentProduct.name || isSubmitting} onClick={handleCreateProduct} className="hover:opacity-90 transition-opacity">
                     {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
                     Criar Produto
                   </Button>
@@ -145,8 +144,8 @@ export default function ProductsPage() {
         </div>
 
         {!isSupport && (
-          <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-100 rounded-xl text-blue-800 text-sm">
-            <Info className="size-5 text-blue-600" />
+          <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl text-blue-800 dark:text-blue-300 text-sm animate-in fade-in slide-in-from-top duration-500">
+            <Info className="size-5 text-blue-600 dark:text-blue-400" />
             <p>Seu perfil de <strong>Comercial</strong> permite apenas a visualização dos produtos e fluxos configurados pelo Suporte.</p>
           </div>
         )}
@@ -156,10 +155,10 @@ export default function ProductsPage() {
             <div className="col-span-full flex justify-center py-20"><Loader2 className="size-10 animate-spin text-primary" /></div>
           ) : products.length > 0 ? (
             products.map((product) => (
-              <Card key={product.id} className="group hover:border-primary/50 transition-all bg-card shadow-sm overflow-hidden flex flex-col border-border">
-                <CardHeader className="pb-3 border-b bg-muted/30">
+              <Card key={product.id} className="group hover:border-primary/50 hover:bg-primary/5 transition-all bg-card shadow-sm overflow-hidden flex flex-col border-border duration-300">
+                <CardHeader className="pb-3 border-b bg-muted/30 group-hover:bg-muted/10 transition-colors">
                   <div className="flex justify-between items-start mb-2">
-                    <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                    <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
                       <Package className="size-5" />
                     </div>
                     <div className="flex items-center gap-2">
@@ -168,12 +167,12 @@ export default function ProductsPage() {
                       </Badge>
                       {isSupport && (
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => openEdit(product)}>
+                          <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" onClick={() => openEdit(product)}>
                             <Edit className="size-4" />
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                              <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
                                 <Trash2 className="size-4" />
                               </Button>
                             </AlertDialogTrigger>
@@ -185,8 +184,8 @@ export default function ProductsPage() {
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteProduct(product.id!)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                <AlertDialogCancel className="hover:bg-muted">Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteProduct(product.id!)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors">
                                   Excluir Produto
                                 </AlertDialogAction>
                               </AlertDialogFooter>
@@ -196,15 +195,15 @@ export default function ProductsPage() {
                       )}
                     </div>
                   </div>
-                  <CardTitle className="text-xl text-card-foreground">{product.name}</CardTitle>
+                  <CardTitle className="text-xl text-card-foreground group-hover:text-primary transition-colors">{product.name}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-4 flex-1 flex flex-col justify-between space-y-4">
-                  <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed italic">
+                  <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed italic group-hover:text-foreground/80 transition-colors">
                     {product.description || "Sem descrição disponível."}
                   </p>
-                  <Button asChild variant="outline" className="w-full rounded-full gap-2 border-2 hover:bg-primary hover:text-primary-foreground transition-all group-hover:border-primary">
+                  <Button asChild variant="outline" className="w-full rounded-full gap-2 border-2 hover:bg-primary hover:text-white hover:border-primary transition-all duration-300">
                     <Link href={`/dashboard/admin/products/${product.id}`}>
-                      Configurar Fluxos <ArrowRight className="size-4" />
+                      Configurar Fluxos <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
                     </Link>
                   </Button>
                 </CardContent>
@@ -222,7 +221,6 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Dialog Edição de Produto */}
       <Dialog open={isEditProductOpen} onOpenChange={setIsEditProductOpen}>
         <DialogContent className="bg-card text-card-foreground border-border">
           <DialogHeader>
@@ -232,16 +230,16 @@ export default function ProductsPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Nome do Produto</Label>
-              <Input placeholder="Ex: Mensageria SWIFT" value={currentProduct.name} onChange={e => setCurrentProduct({...currentProduct, name: e.target.value})} className="bg-background" />
+              <Input value={currentProduct.name} onChange={e => setCurrentProduct({...currentProduct, name: e.target.value})} className="bg-background focus:border-primary/50" />
             </div>
             <div className="space-y-2">
-              <Label>Descrição Curta</Label>
-              <Textarea placeholder="Finalidade do produto no mercado..." value={currentProduct.description} onChange={e => setCurrentProduct({...currentProduct, description: e.target.value})} className="bg-background min-h-[100px]" />
+              <Label>Descrição</Label>
+              <Textarea value={currentProduct.description} onChange={e => setCurrentProduct({...currentProduct, description: e.target.value})} className="bg-background min-h-[100px] focus:border-primary/50" />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditProductOpen(false)}>Cancelar</Button>
-            <Button disabled={!currentProduct.name || isSubmitting} onClick={handleUpdateProduct}>
+            <Button variant="outline" onClick={() => setIsEditProductOpen(false)} className="hover:text-primary transition-colors">Cancelar</Button>
+            <Button disabled={!currentProduct.name || isSubmitting} onClick={handleUpdateProduct} className="hover:opacity-90 transition-opacity">
               {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
               Salvar Alterações
             </Button>
