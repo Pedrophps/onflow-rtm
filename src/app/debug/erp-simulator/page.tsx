@@ -28,6 +28,20 @@ export default function ERPSimulatorPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<any>(null);
 
+  const formatCnpj = (value: string) => {
+    let v = value.replace(/\D/g, "");
+    if (v.length > 14) v = v.slice(0, 14);
+    v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+    v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+    v = v.replace(/(\d{4})(\d)/, "$1-$2");
+    return v;
+  };
+
+  const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, cnpj: formatCnpj(e.target.value) });
+  };
+
   const handleSimulate = async () => {
     setIsProcessing(true);
     setResult(null);
@@ -96,7 +110,12 @@ export default function ERPSimulatorPage() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase text-primary">CNPJ (Chave de Identidade) *</Label>
-                  <Input value={formData.cnpj} onChange={e => setFormData({...formData, cnpj: e.target.value})} className="font-bold border-primary/20" />
+                  <Input 
+                    value={formData.cnpj} 
+                    onChange={handleCnpjChange} 
+                    className="font-bold border-primary/20" 
+                    placeholder="00.000.000/0000-00"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase text-primary">E-mail (Chave de Identidade) *</Label>

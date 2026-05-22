@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -45,6 +46,21 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+
+  const formatCnpj = (value: string) => {
+    let v = value.replace(/\D/g, "");
+    if (v.length > 14) v = v.slice(0, 14);
+    
+    v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+    v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+    v = v.replace(/(\d{4})(\d)/, "$1-$2");
+    return v;
+  };
+
+  const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCnpj(formatCnpj(e.target.value));
+  };
 
   const isAdminEmail = useCallback((emailStr: string | null | undefined) => {
     if (!emailStr) return false;
@@ -222,7 +238,12 @@ export default function LoginPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>CNPJ da Instituição</Label>
-                      <Input placeholder="00.000.000/0000-00" value={cnpj} onChange={e => setCnpj(e.target.value)} required />
+                      <Input 
+                        placeholder="00.000.000/0000-00" 
+                        value={cnpj} 
+                        onChange={handleCnpjChange} 
+                        required 
+                      />
                     </div>
                   </div>
 
