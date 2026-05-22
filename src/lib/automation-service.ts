@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview Serviço de orquestração de automação.
  * Integra sistemas externos com a persistência de dados do OnFlow.
@@ -30,26 +31,32 @@ export interface DirectIngestionInput {
 
 /**
  * Tenta resolver um usuário existente baseado em múltiplos identificadores.
- * Estratégia: Email > CNPJ.
+ * Estratégia de busca em cascata: Email (ID Principal) > CNPJ (ID Institucional) > Nome (Normalizado).
  */
-async function resolveExistingUser(db: Firestore, email: string, cnpj?: string) {
+async function resolveExistingUser(db: Firestore, email: string, institutionName: string, cnpj?: string) {
   const usersRef = collection(db, "users");
   
-  // 1. Tentar por E-mail (Identificador de conta)
+  // 1. Tentar por E-mail (Identificador único de conta)
   const qEmail = query(usersRef, where("email", "==", email), limit(1));
   const snapEmail = await getDocs(qEmail);
   if (!snapEmail.empty) {
-    return { id: snapEmail.docs[0].id, data: snapEmail.docs[0].data() as UserProfile };
+    return { id: snapEmail.docs[0].id, data: snapEmail.docs[0].data() as UserProfile, matchBy: 'email' };
   }
 
-  // 2. Tentar por CNPJ (Identificador institucional)
-  // Ignora CNPJs genéricos de teste se necessário
+  // 2. Tentar por CNPJ (Identificador institucional absoluto)
   if (cnpj && cnpj !== "00.000.000/0001-91" && cnpj !== "00.000.000/0000-00") {
     const qCnpj = query(usersRef, where("cnpj", "==", cnpj), limit(1));
     const snapCnpj = await getDocs(qCnpj);
     if (!snapCnpj.empty) {
-      return { id: snapCnpj.docs[0].id, data: snapCnpj.docs[0].data() as UserProfile };
+      return { id: snapCnpj.docs[0].id, data: snapCnpj.docs[0].data() as UserProfile, matchBy: 'cnpj' };
     }
+  }
+
+  // 3. Tentar por Nome da Instituição (Fallback para menções textuais)
+  const qName = query(usersRef, where("institutionName", "==", institutionName), limit(1));
+  const snapName = await getDocs(qName);
+  if (!snapName.empty) {
+    return { id: snapName.docs[0].id, data: snapName.docs[0].data() as UserProfile, matchBy: 'name' };
   }
 
   return null;
@@ -64,15 +71,16 @@ export async function processDirectIngestion(
   data: DirectIngestionInput
 ) {
   try {
-    // 1. Camada de Resolução: Busca usuário existente por Email ou CNPJ
-    const existingUser = await resolveExistingUser(db, data.email, data.cnpj);
+    // 1. Camada de Resolução: Busca usuário existente (Pedro ou Instituição xpto)
+    const existingUser = await resolveExistingUser(db, data.email, data.institutionName, data.cnpj);
     
     let clientId = "";
     const isNewUser = !existingUser;
 
     const userPayload = {
       institutionName: data.institutionName,
-      displayName: data.institutionName,
+      // Se já existe, mantemos o displayName do cadastro manual do usuário, a menos que ele esteja vazio
+      displayName: (existingUser?.data.displayName) || data.institutionName,
       email: data.email,
       phoneNumber: data.phoneNumber,
       consultantName: data.consultantName,
@@ -93,7 +101,7 @@ export async function processDirectIngestion(
         createdAt: new Date().toISOString()
       });
     } else {
-      // Reutilizar cadastro existente e atualizar informações
+      // Reutilizar cadastro existente e atualizar informações de contato e venda
       clientId = existingUser.id;
       await setDoc(doc(db, "users", clientId), userPayload, { merge: true });
     }
@@ -117,7 +125,7 @@ export async function processDirectIngestion(
     });
 
     // 3. Criar Instância de Onboarding (Vínculo Incremental)
-    // Permite que o mesmo clientId possua múltiplas instâncias para produtos diferentes
+    // Permite que o mesmo clientId (Pedro) possua múltiplas instâncias
     const instancesRef = collection(db, "onboardingInstances");
     const newInstance: OnboardingInstance = {
       clientId: clientId,
@@ -134,7 +142,7 @@ export async function processDirectIngestion(
 
     // 4. Auditoria do processo de resolução
     await addDoc(collection(db, "system_logs"), {
-      message: `Ingestão ${isNewUser ? 'NOVO CLIENTE' : 'CLIENTE REUTILIZADO'}: ${data.institutionName} | Vínculo: ${resolvedProductName} | Usuário ID: ${clientId}`,
+      message: `Ingestão ${isNewUser ? 'NOVO CLIENTE' : 'CLIENTE VINCULADO (via ' + existingUser.matchBy + ')'}: ${data.institutionName} | Vínculo: ${resolvedProductName} | Usuário: ${userPayload.displayName}`,
       type: 'success',
       timestamp: new Date().toISOString(),
       userId: 'api-bot',
