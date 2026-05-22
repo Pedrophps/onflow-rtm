@@ -37,6 +37,7 @@ Use o modelo abaixo para enviar os dados:
 ```
 
 ### Regras de Negócio:
+*   **Resolução de Identidade**: O sistema utiliza o `email` e o `cnpj` para verificar se a instituição já possui cadastro. Se identificado, a nova ativação é vinculada ao perfil existente em vez de criar um novo usuário.
 *   **Mapeamento de Produto**: Se o `productName` for igual ao nome de um produto cadastrado (ex: "SLC", "SWIFT"), o sistema vinculará automaticamente o roteiro técnico correto.
 *   **Aprovação**: Registros via API já nascem com status `approved` no perfil do usuário para agilizar o handoff.
 *   **Visibilidade**: O registro aparecerá instantaneamente na aba **"Disponíveis"** para o Suporte Técnico.

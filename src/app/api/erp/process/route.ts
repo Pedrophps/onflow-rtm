@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeFirebase } from '@/firebase';
 import { processDirectIngestion } from '@/lib/automation-service';
@@ -5,16 +6,16 @@ import { processDirectIngestion } from '@/lib/automation-service';
 /**
  * API OnFlow para Ingestão Estruturada de Ativações.
  * Aberta para Power Automate / ERP (Sem Autenticação de Aplicação).
- * Nota: Em ambientes de Workstation, requer autenticação do Proxy do Google.
  */
 export async function POST(req: NextRequest) {
   try {
     const { firestore } = initializeFirebase();
     const data = await req.json();
 
-    // Validação de campos obrigatórios conforme solicitado
+    // Validação de campos obrigatórios
     const requiredFields = [
       'institutionName', 
+      'cnpj',
       'consultantName', 
       'email', 
       'phoneNumber', 
@@ -25,16 +26,16 @@ export async function POST(req: NextRequest) {
     for (const field of requiredFields) {
       if (!data[field]) {
         return NextResponse.json(
-          { error: `O campo '${field}' é obrigatório para a ativação.` }, 
+          { error: `O campo '${field}' é obrigatório para a ativação e resolução de identidade.` }, 
           { status: 400 }
         );
       }
     }
 
-    // Processa a ingestão direta criando Usuário + Instância
+    // Processa a ingestão direta resolvendo identidade por E-mail ou CNPJ
     const result = await processDirectIngestion(firestore, {
       institutionName: data.institutionName,
-      cnpj: data.cnpj || "00.000.000/0001-91",
+      cnpj: data.cnpj,
       consultantName: data.consultantName,
       email: data.email,
       phoneNumber: data.phoneNumber,
@@ -45,9 +46,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       status: 'success',
-      message: 'Ativação registrada com sucesso. O cliente já aparece na fila do Suporte.',
+      message: result.resolvedType === 'reused' 
+        ? 'Ativação vinculada ao cliente existente.' 
+        : 'Novo cliente cadastrado e ativação criada.',
       instanceId: result.instanceId,
-      clientId: result.clientId
+      clientId: result.clientId,
+      resolvedType: result.resolvedType
     });
 
   } catch (error: any) {
@@ -67,14 +71,13 @@ export async function GET() {
     method: 'POST',
     payload_example: {
       institutionName: "Nome da Instituição",
+      cnpj: "00.000.000/0000-00",
       consultantName: "Nome do Consultor RTM",
       email: "contato@cliente.com.br",
       phoneNumber: "(11) 99999-9999",
       orderValue: "OV-2024-X",
       productName: "MENSAGERIA SWIFT",
-      commercialNotes: "Notas adicionais aqui",
-      cnpj: "00.000.000/0000-00"
-    },
-    workstation_note: 'Se receber 401 no Postman, utilize o simulador interno em /debug/erp-simulator devido à proteção do Google Cloud.'
+      commercialNotes: "Notas adicionais aqui"
+    }
   });
 }
