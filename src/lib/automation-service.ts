@@ -12,7 +12,8 @@ import {
   setDoc, 
   doc, 
   serverTimestamp,
-  Firestore 
+  Firestore,
+  limit
 } from 'firebase/firestore';
 import { OnboardingInstance, UserProfile } from '@/lib/types';
 
@@ -28,20 +29,46 @@ export interface DirectIngestionInput {
 }
 
 /**
+ * Tenta resolver um usuário existente baseado em múltiplos identificadores.
+ * Estratégia: Email > CNPJ.
+ */
+async function resolveExistingUser(db: Firestore, email: string, cnpj?: string) {
+  const usersRef = collection(db, "users");
+  
+  // 1. Tentar por E-mail (Identificador de conta)
+  const qEmail = query(usersRef, where("email", "==", email), limit(1));
+  const snapEmail = await getDocs(qEmail);
+  if (!snapEmail.empty) {
+    return { id: snapEmail.docs[0].id, data: snapEmail.docs[0].data() as UserProfile };
+  }
+
+  // 2. Tentar por CNPJ (Identificador institucional)
+  // Ignora CNPJs genéricos de teste se necessário
+  if (cnpj && cnpj !== "00.000.000/0001-91" && cnpj !== "00.000.000/0000-00") {
+    const qCnpj = query(usersRef, where("cnpj", "==", cnpj), limit(1));
+    const snapCnpj = await getDocs(qCnpj);
+    if (!snapCnpj.empty) {
+      return { id: snapCnpj.docs[0].id, data: snapCnpj.docs[0].data() as UserProfile };
+    }
+  }
+
+  return null;
+}
+
+/**
  * Processa a ingestão direta de dados vindos do ERP ou Power Automate.
- * Cria o usuário (se não existir) ou atualiza e gera a instância de onboarding vinculada.
+ * Resolve a identidade do cliente antes de decidir entre criação ou atualização.
  */
 export async function processDirectIngestion(
   db: Firestore, 
   data: DirectIngestionInput
 ) {
   try {
-    // 1. Busca ou cria o cliente pelo E-mail (chave única vinda do ERP)
-    const usersRef = collection(db, "users");
-    const q = query(usersRef, where("email", "==", data.email));
-    const querySnapshot = await getDocs(q);
+    // 1. Camada de Resolução: Busca usuário existente por Email ou CNPJ
+    const existingUser = await resolveExistingUser(db, data.email, data.cnpj);
     
     let clientId = "";
+    const isNewUser = !existingUser;
 
     const userPayload = {
       institutionName: data.institutionName,
@@ -53,11 +80,12 @@ export async function processDirectIngestion(
       commercialNotes: data.commercialNotes,
       cnpj: data.cnpj || "00.000.000/0000-00",
       role: "client" as const,
-      status: "approved" as const, // Já nasce aprovado para o comercial
+      status: "approved" as const, 
       updatedAt: serverTimestamp()
     };
 
-    if (querySnapshot.empty) {
+    if (isNewUser) {
+      // Criar novo registro de cliente central
       const newClientRef = doc(collection(db, "users"));
       clientId = newClientRef.id;
       await setDoc(newClientRef, {
@@ -65,13 +93,12 @@ export async function processDirectIngestion(
         createdAt: new Date().toISOString()
       });
     } else {
-      clientId = querySnapshot.docs[0].id;
-      // Vincula os novos dados ao usuário existente
+      // Reutilizar cadastro existente e atualizar informações
+      clientId = existingUser.id;
       await setDoc(doc(db, "users", clientId), userPayload, { merge: true });
     }
 
-    // 2. Mapeamento Inteligente do Produto
-    // Tenta encontrar o ID real do produto baseado no nome enviado via API
+    // 2. Mapeamento do Produto (Resolução do catálogo)
     const productsRef = collection(db, "products");
     const productsSnap = await getDocs(productsRef);
     let resolvedProductId = data.productName;
@@ -89,14 +116,15 @@ export async function processDirectIngestion(
       }
     });
 
-    // 3. Cria a instância de ativação técnica vinculada ao usuário
+    // 3. Criar Instância de Onboarding (Vínculo Incremental)
+    // Permite que o mesmo clientId possua múltiplas instâncias para produtos diferentes
     const instancesRef = collection(db, "onboardingInstances");
     const newInstance: OnboardingInstance = {
       clientId: clientId,
       institutionName: data.institutionName,
       productId: resolvedProductId,
       productName: resolvedProductName,
-      status: 'pending', // Fica na aba "Disponíveis" para o suporte
+      status: 'pending',
       currentStepOrder: 1,
       startedAt: new Date().toISOString(),
       updatedAt: serverTimestamp(),
@@ -104,18 +132,19 @@ export async function processDirectIngestion(
 
     const docRef = await addDoc(instancesRef, newInstance);
 
-    // 4. Log do sistema para auditoria técnica
+    // 4. Auditoria do processo de resolução
     await addDoc(collection(db, "system_logs"), {
-      message: `API Ingestão: Ativação vinculada ao usuário ${data.email} | Produto: ${resolvedProductName} | OV: ${data.orderValue}`,
+      message: `Ingestão ${isNewUser ? 'NOVO CLIENTE' : 'CLIENTE REUTILIZADO'}: ${data.institutionName} | Vínculo: ${resolvedProductName} | Usuário ID: ${clientId}`,
       type: 'success',
       timestamp: new Date().toISOString(),
       userId: 'api-bot',
-      context: 'direct-ingestion'
+      context: 'identity-resolution'
     });
 
     return {
       instanceId: docRef.id,
-      clientId
+      clientId,
+      resolvedType: isNewUser ? 'created' : 'reused'
     };
   } catch (error: any) {
     console.error("INGESTION_LOGIC_ERROR:", error);
