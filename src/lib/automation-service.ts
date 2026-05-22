@@ -79,7 +79,7 @@ export async function processDirectIngestion(
 
     const userPayload = {
       institutionName: data.institutionName,
-      // Se já existe, mantemos o displayName do cadastro manual do usuário, a menos que ele esteja vazio
+      // Se já existe, mantemos o displayName do cadastro manual do usuário (ex: "Pedro"), a menos que ele esteja vazio
       displayName: (existingUser?.data.displayName) || data.institutionName,
       email: data.email,
       phoneNumber: data.phoneNumber,
@@ -142,7 +142,7 @@ export async function processDirectIngestion(
 
     // 4. Auditoria do processo de resolução
     await addDoc(collection(db, "system_logs"), {
-      message: `Ingestão ${isNewUser ? 'NOVO CLIENTE' : 'CLIENTE VINCULADO (via ' + existingUser.matchBy + ')'}: ${data.institutionName} | Vínculo: ${resolvedProductName} | Usuário: ${userPayload.displayName}`,
+      message: `Ingestão ${isNewUser ? 'NOVO CLIENTE' : 'CLIENTE VINCULADO (via ' + existingUser.matchBy + ')'}: ${data.institutionName} | Vínculo: ${resolvedProductName} | Usuário Destino: ${userPayload.displayName}`,
       type: 'success',
       timestamp: new Date().toISOString(),
       userId: 'api-bot',
