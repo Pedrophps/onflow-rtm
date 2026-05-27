@@ -160,7 +160,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-20 items-start">
+          <div className="grid lg:grid-cols-2 gap-20 items-start mb-20">
             <div className="space-y-8 text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
               <p>
                 Fundada em 1997, como rede de comunicação crítica para o segmento financeiro, a RTM evoluiu de provedora de infraestrutura de telecomunicações para o principal hub integrador do setor no país e hoje conecta mais de 850 instituições, com presença em 21 estados brasileiros.
@@ -168,21 +168,6 @@ export default function Home() {
               <p>
                 Com a evolução tecnológica e a transformação digital, a oferta de soluções especializadas foi se ampliando e hoje inclui serviços de Data Center, nuvem, cibersegurança, plataforma para indústria de fundos de investimentos, conexão ao Pix, Drex e Open Finance, além de Blockchain as a Service para operações com ativos tokenizados.
               </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-10">
-                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 group">
-                  <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Propósito</h4>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">Promover a evolução do Mercado Financeiro pela Tecnologia</p>
-                </div>
-                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 group">
-                  <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Valores</h4>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">Foco no cliente, Desenvolvimento de Pessoas e Equipe, Confiança e Inovação</p>
-                </div>
-                <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 group">
-                  <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Posicionamento</h4>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">Identificar, Entender, Conhecer</p>
-                </div>
-              </div>
             </div>
 
             <div className="bg-slate-900 p-12 rounded-[4rem] text-white space-y-12 relative overflow-hidden group">
@@ -204,6 +189,22 @@ export default function Home() {
                 </div>
               </div>
               <div className="absolute -bottom-20 -right-20 size-64 bg-primary/10 blur-3xl rounded-full"></div>
+            </div>
+          </div>
+
+          {/* Pilares Institucionais - Centralizados na Visualização PC */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom duration-1000 max-w-6xl mx-auto">
+            <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 group flex flex-col items-center justify-center">
+              <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Propósito</h4>
+              <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">Promover a evolução do Mercado Financeiro pela Tecnologia</p>
+            </div>
+            <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 group flex flex-col items-center justify-center">
+              <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Valores</h4>
+              <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">Foco no cliente, Desenvolvimento de Pessoas e Equipe, Confiança e Inovação</p>
+            </div>
+            <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 group flex flex-col items-center justify-center">
+              <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Posicionamento</h4>
+              <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">Identificar, Entender, Conhecer</p>
             </div>
           </div>
         </div>
