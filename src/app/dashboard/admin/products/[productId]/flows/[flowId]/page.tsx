@@ -308,7 +308,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-3">
                           <h5 className="font-bold text-slate-900">{step.name}</h5>
-                          {step.required && <Badge className="bg-red-50 text-red-600 border-red-100 text-[8px] uppercase font-black">Obrigatório</Badge>}
+                          {step.required && <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-[8px] uppercase font-black">Obrigatório</Badge>}
                         </div>
                         <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">{step.description}</p>
                       </div>
@@ -437,7 +437,7 @@ export default function FlowDetailsPage({ params }: { params: Promise<{ productI
             </Button>
             
             <Button 
-              className="font-bold px-8 bg-primary hover:bg-primary/90"
+              className="font-bold px-8 bg-primary hover:bg-accent"
               onClick={() => handleUpdateFlowStatus(true)}
               disabled={isSubmitting}
             >

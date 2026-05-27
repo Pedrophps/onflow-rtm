@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -65,7 +64,7 @@ export default function ChatPage() {
         <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-black tracking-tight">
-              RTM <span className="text-red-500">OnFlow AI</span>
+              RTM <span className="text-primary">OnFlow AI</span>
             </h1>
             <p className="text-sm text-slate-400">
               Integração OpenRouter + Next.js
@@ -91,7 +90,7 @@ export default function ChatPage() {
               <div
                 className={`max-w-[80%] rounded-3xl p-5 shadow-2xl border transition-all duration-300 ${
                   msg.role === "user"
-                    ? "bg-red-600 border-red-500 text-white"
+                    ? "bg-primary border-accent text-white"
                     : "bg-slate-900/80 border-white/10 text-slate-100 backdrop-blur-xl"
                 }`}
               >
@@ -117,7 +116,7 @@ export default function ChatPage() {
           {loading && (
             <div className="flex justify-start">
               <div className="bg-slate-900/80 border border-white/10 rounded-3xl px-6 py-5 flex items-center gap-3 backdrop-blur-xl">
-                <Loader2 className="animate-spin size-5 text-red-500" />
+                <Loader2 className="animate-spin size-5 text-primary" />
                 <span className="text-slate-300">
                   IA digitando...
                 </span>
@@ -134,7 +133,7 @@ export default function ChatPage() {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Digite sua mensagem..."
-              className="w-full resize-none rounded-3xl bg-slate-900/90 border border-white/10 px-6 py-5 pr-20 text-white outline-none focus:border-red-500 transition-all min-h-[80px]"
+              className="w-full resize-none rounded-3xl bg-slate-900/90 border border-white/10 px-6 py-5 pr-20 text-white outline-none focus:border-primary transition-all min-h-[80px]"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -146,7 +145,7 @@ export default function ChatPage() {
             <button
               onClick={sendMessage}
               disabled={loading}
-              className="absolute bottom-4 right-4 size-12 rounded-2xl bg-red-600 hover:bg-red-500 transition-all flex items-center justify-center shadow-lg shadow-red-900/50 disabled:opacity-50"
+              className="absolute bottom-4 right-4 size-12 rounded-2xl bg-primary hover:bg-accent transition-all flex items-center justify-center shadow-lg disabled:opacity-50"
             >
               <Send className="size-5" />
             </button>
