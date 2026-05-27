@@ -96,7 +96,7 @@ export default function Home() {
                 {isDarkMode ? <Sun className="size-5" /> : <Moon className="size-5" />}
               </Button>
 
-              <Button size="sm" className="rounded-full px-6 font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity" asChild>
+              <Button size="sm" className="rounded-full px-6 font-bold text-xs uppercase tracking-wider hover:text-white transition-opacity" asChild>
                 <Link href="/login">Acessar Portal</Link>
               </Button>
             </div>
@@ -140,7 +140,7 @@ export default function Home() {
               Integramos o mercado financeiro brasileiro. Nossas soluções e ferramentas potencializam os resultados dos nossos clientes.
             </p>
             <div className="flex gap-4">
-              <Button size="lg" className="rounded-full px-10 h-14 font-bold gap-2 text-lg hover:scale-105 transition-transform" asChild>
+              <Button size="lg" className="rounded-full px-10 h-14 font-bold gap-2 text-lg hover:scale-105 hover:text-white transition-transform" asChild>
                 <Link href="/login">Começar Agora <ArrowRight className="size-6" /></Link>
               </Button>
             </div>
@@ -243,7 +243,7 @@ export default function Home() {
           <Carousel 
             opts={{ align: "start", loop: true }} 
             plugins={[autoplayPlugin]}
-            className="w-full"
+            className="w-full py-10"
           >
             <CarouselContent className="-ml-4">
               <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
@@ -338,7 +338,7 @@ function ServiceCard({ icon: Icon, title, desc }: { icon: any, title: string, de
 
 function FuturisticMilestone({ year, title, text, icon: Icon, isHighlight = false }: any) {
   return (
-    <div className={`relative group p-6 rounded-3xl border transition-all duration-500 overflow-hidden h-full min-h-[220px] flex flex-col justify-between hover:scale-[1.02] ${
+    <div className={`relative group p-6 rounded-3xl border transition-all duration-500 overflow-visible h-full min-h-[220px] flex flex-col justify-between hover:scale-[1.05] ${
       isHighlight 
         ? "bg-primary/5 dark:bg-primary/10 border-primary/20 dark:border-primary/40 shadow-sm hover:bg-primary/10 dark:hover:bg-primary/20" 
         : "bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 hover:border-primary/30 dark:hover:border-primary/50 hover:bg-white dark:hover:bg-slate-900"
@@ -355,7 +355,7 @@ function FuturisticMilestone({ year, title, text, icon: Icon, isHighlight = fals
           <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed font-medium group-hover:text-slate-900 dark:group-hover:text-slate-200 line-clamp-2 transition-colors">{text}</p>
         </div>
       </div>
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl pointer-events-none"></div>
     </div>
   );
 }
