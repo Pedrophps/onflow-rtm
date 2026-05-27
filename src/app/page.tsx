@@ -67,7 +67,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-white dark:bg-slate-950 selection:bg-primary/10 font-body text-foreground transition-colors duration-500">
+    <main className="min-h-screen bg-white dark:bg-slate-950 font-body text-foreground transition-colors duration-500">
       {/* Header Section */}
       <header className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-border/50">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
@@ -245,7 +245,6 @@ export default function Home() {
             plugins={[autoplayPlugin]}
             className="w-full"
           >
-            {/* Adicionado preenchimento vertical (py-12) para evitar corte no zoom */}
             <CarouselContent className="-ml-4 py-12">
               <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="1997" title="Fundação" text="Nasce a RTM - Rede de Telecomunicações para o Mercado." icon={History} />
