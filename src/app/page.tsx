@@ -232,7 +232,7 @@ export default function Home() {
       {/* Trajetória em Carrossel */}
       <section id="trajetoria" className="py-32 bg-white dark:bg-slate-950 text-foreground dark:text-white overflow-hidden relative transition-colors duration-500">
         <div className="container mx-auto px-6 relative z-10">
-          <div className="max-w-3xl mb-24 space-y-4 animate-in fade-in slide-in-from-left duration-700">
+          <div className="max-w-3xl mb-12 space-y-4 animate-in fade-in slide-in-from-left duration-700">
             <Badge className="bg-primary/20 text-primary border-primary/30 px-4 py-1 uppercase font-black tracking-widest text-[10px]">Nossa Evolução</Badge>
             <h2 className="text-5xl lg:text-6xl font-bold font-headline tracking-tighter text-slate-900 dark:text-white">Confira os destaques da nossa trajetória</h2>
             <p className="text-slate-600 dark:text-slate-400 text-xl font-light leading-relaxed">
@@ -243,9 +243,10 @@ export default function Home() {
           <Carousel 
             opts={{ align: "start", loop: true }} 
             plugins={[autoplayPlugin]}
-            className="w-full py-10"
+            className="w-full"
           >
-            <CarouselContent className="-ml-4">
+            {/* Adicionado preenchimento vertical (py-12) para evitar corte no zoom */}
+            <CarouselContent className="-ml-4 py-12">
               <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 h-full">
                 <FuturisticMilestone year="1997" title="Fundação" text="Nasce a RTM - Rede de Telecomunicações para o Mercado." icon={History} />
               </CarouselItem>
@@ -289,7 +290,7 @@ export default function Home() {
                 <FuturisticMilestone year="2025" title="Expansão" text="Aquisição da Galgo S.A. e expansão dos serviços para a indústria de fundos." icon={Rocket} isHighlight />
               </CarouselItem>
             </CarouselContent>
-            <div className="flex justify-end gap-4 mt-12">
+            <div className="flex justify-end gap-4 mt-6">
               <CarouselPrevious className="static translate-y-0 size-14 border-2 border-primary/20 bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white hover:bg-primary hover:text-white hover:border-primary transition-all rounded-2xl" />
               <CarouselNext className="static translate-y-0 size-14 border-2 border-primary/20 bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white hover:bg-primary hover:text-white hover:border-primary transition-all rounded-2xl" />
             </div>
