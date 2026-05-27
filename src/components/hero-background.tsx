@@ -7,15 +7,15 @@ const MAX_RADIUS = 15;
 const DEPTH = 2;
 const NUM_POINTS = 2500;
 
-// Configuração de Cores por Tema
+// Configuração de Cores por Tema - Ajustado para RTM (Vermelho e Tons de Cinza/Prata)
 const THEME_COLORS = {
     dark: {
-        left: "6366f1", // Indigo 500
-        right: "8b5cf6" // Violet 500
+        left: "e60000", // RTM Red
+        right: "475569" // Slate 600
     },
     light: {
-        left: "1e40af", // Blue 800 (Alto Contraste)
-        right: "5b21b6" // Violet 800 (Alto Contraste)
+        left: "e60000", // RTM Red
+        right: "94a3b8" // Slate 400 (Mais suave)
     }
 };
 

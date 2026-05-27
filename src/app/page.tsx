@@ -229,13 +229,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trajetória em Carrossel */}
-      <section id="trajetoria" className="py-32 bg-slate-950 text-white overflow-hidden relative">
+      {/* Trajetória em Carrossel - Ajustado para ser responsivo ao tema */}
+      <section id="trajetoria" className="py-32 bg-white dark:bg-slate-950 text-foreground dark:text-white overflow-hidden relative transition-colors duration-500">
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-3xl mb-24 space-y-4 animate-in fade-in slide-in-from-left duration-700">
             <Badge className="bg-primary/20 text-primary border-primary/30 px-4 py-1 uppercase font-black tracking-widest text-[10px]">Nossa Evolução</Badge>
-            <h2 className="text-5xl lg:text-6xl font-bold font-headline tracking-tighter">Confira os destaques da nossa trajetória</h2>
-            <p className="text-slate-400 text-xl font-light leading-relaxed">
+            <h2 className="text-5xl lg:text-6xl font-bold font-headline tracking-tighter text-slate-900 dark:text-white">Confira os destaques da nossa trajetória</h2>
+            <p className="text-slate-600 dark:text-slate-400 text-xl font-light leading-relaxed">
               Temos uma história que reflete a construção de nosso profundo conhecimento técnico e entregas de excelência através das décadas.
             </p>
           </div>
@@ -290,8 +290,8 @@ export default function Home() {
               </CarouselItem>
             </CarouselContent>
             <div className="flex justify-end gap-4 mt-12">
-              <CarouselPrevious className="static translate-y-0 size-14 border-2 border-primary/20 bg-slate-900 text-white hover:bg-primary hover:text-white hover:border-primary transition-all rounded-2xl" />
-              <CarouselNext className="static translate-y-0 size-14 border-2 border-primary/20 bg-slate-900 text-white hover:bg-primary hover:text-white hover:border-primary transition-all rounded-2xl" />
+              <CarouselPrevious className="static translate-y-0 size-14 border-2 border-primary/20 bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white hover:bg-primary hover:text-white hover:border-primary transition-all rounded-2xl" />
+              <CarouselNext className="static translate-y-0 size-14 border-2 border-primary/20 bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white hover:bg-primary hover:text-white hover:border-primary transition-all rounded-2xl" />
             </div>
           </Carousel>
         </div>
@@ -339,18 +339,20 @@ function ServiceCard({ icon: Icon, title, desc }: { icon: any, title: string, de
 function FuturisticMilestone({ year, title, text, icon: Icon, isHighlight = false }: any) {
   return (
     <div className={`relative group p-6 rounded-3xl border transition-all duration-500 overflow-hidden h-full min-h-[280px] flex flex-col justify-between hover:scale-[1.02] ${
-      isHighlight ? "bg-primary/10 border-primary/40 shadow-sm hover:bg-primary/20" : "bg-slate-900/50 border-slate-800 hover:border-primary/50 hover:bg-slate-900"
+      isHighlight 
+        ? "bg-primary/5 dark:bg-primary/10 border-primary/20 dark:border-primary/40 shadow-sm hover:bg-primary/10 dark:hover:bg-primary/20" 
+        : "bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 hover:border-primary/30 dark:hover:border-primary/50 hover:bg-white dark:hover:bg-slate-900"
     }`}>
       <div className="relative z-10 space-y-4">
         <div className="flex items-center justify-between">
-          <span className={`text-3xl font-black font-headline tracking-tighter transition-colors ${isHighlight ? "text-primary" : "text-slate-600 group-hover:text-primary"}`}>{year}</span>
-          <div className={`size-10 rounded-xl flex items-center justify-center transition-all ${isHighlight ? "bg-primary text-white" : "bg-slate-800 text-slate-400 group-hover:bg-primary group-hover:text-white"}`}>
+          <span className={`text-3xl font-black font-headline tracking-tighter transition-colors ${isHighlight ? "text-primary" : "text-slate-300 dark:text-slate-600 group-hover:text-primary"}`}>{year}</span>
+          <div className={`size-10 rounded-xl flex items-center justify-center transition-all ${isHighlight ? "bg-primary text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-400 group-hover:bg-primary group-hover:text-white"}`}>
             <Icon className="size-5" />
           </div>
         </div>
         <div className="space-y-1">
-          <h3 className="text-lg font-bold font-headline text-white group-hover:text-primary transition-colors">{title}</h3>
-          <p className="text-slate-400 text-xs leading-relaxed font-medium group-hover:text-slate-200 line-clamp-3 transition-colors">{text}</p>
+          <h3 className="text-lg font-bold font-headline text-slate-900 dark:text-white group-hover:text-primary transition-colors">{title}</h3>
+          <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed font-medium group-hover:text-slate-900 dark:group-hover:text-slate-200 line-clamp-3 transition-colors">{text}</p>
         </div>
       </div>
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
