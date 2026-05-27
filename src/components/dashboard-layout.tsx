@@ -136,7 +136,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   onClick={handleLogout}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer rounded-xl py-5"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer rounded-xl py-5 transition-colors"
                 >
                   <LogOut className="size-5" />
                   <span>Sair</span>
@@ -147,7 +147,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
         </Sidebar>
         <SidebarInset className="bg-background">
           <header className="flex h-16 items-center border-b px-6 bg-card sticky top-0 z-50 shadow-sm transition-colors">
-            <SidebarTrigger className="-ml-1 mr-4 text-foreground hover:bg-muted rounded-lg" />
+            <SidebarTrigger className="-ml-1 mr-4 text-foreground hover:bg-muted hover:text-primary rounded-lg transition-colors" />
             <div className="flex-1">
               <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-widest">
                 OnFlow RTM / {pathname.split('/').pop()?.replace('-', ' ')}
