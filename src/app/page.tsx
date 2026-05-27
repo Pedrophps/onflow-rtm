@@ -229,7 +229,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trajetória em Carrossel - Ajustado para ser responsivo ao tema */}
+      {/* Trajetória em Carrossel */}
       <section id="trajetoria" className="py-32 bg-white dark:bg-slate-950 text-foreground dark:text-white overflow-hidden relative transition-colors duration-500">
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-3xl mb-24 space-y-4 animate-in fade-in slide-in-from-left duration-700">
@@ -338,7 +338,7 @@ function ServiceCard({ icon: Icon, title, desc }: { icon: any, title: string, de
 
 function FuturisticMilestone({ year, title, text, icon: Icon, isHighlight = false }: any) {
   return (
-    <div className={`relative group p-6 rounded-3xl border transition-all duration-500 overflow-hidden h-full min-h-[280px] flex flex-col justify-between hover:scale-[1.02] ${
+    <div className={`relative group p-6 rounded-3xl border transition-all duration-500 overflow-hidden h-full min-h-[220px] flex flex-col justify-between hover:scale-[1.02] ${
       isHighlight 
         ? "bg-primary/5 dark:bg-primary/10 border-primary/20 dark:border-primary/40 shadow-sm hover:bg-primary/10 dark:hover:bg-primary/20" 
         : "bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 hover:border-primary/30 dark:hover:border-primary/50 hover:bg-white dark:hover:bg-slate-900"
@@ -352,7 +352,7 @@ function FuturisticMilestone({ year, title, text, icon: Icon, isHighlight = fals
         </div>
         <div className="space-y-1">
           <h3 className="text-lg font-bold font-headline text-slate-900 dark:text-white group-hover:text-primary transition-colors">{title}</h3>
-          <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed font-medium group-hover:text-slate-900 dark:group-hover:text-slate-200 line-clamp-3 transition-colors">{text}</p>
+          <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed font-medium group-hover:text-slate-900 dark:group-hover:text-slate-200 line-clamp-2 transition-colors">{text}</p>
         </div>
       </div>
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
