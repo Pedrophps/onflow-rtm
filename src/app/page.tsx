@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -192,7 +192,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Pilares Institucionais - Centralizados na Visualização PC */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom duration-1000 max-w-6xl mx-auto">
             <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 text-center hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 group flex flex-col items-center justify-center">
               <h4 className="font-black text-primary mb-3 uppercase tracking-tighter text-sm">Propósito</h4>
@@ -305,14 +304,6 @@ export default function Home() {
             <div className="space-y-4 text-center md:text-left">
               <p className="font-headline font-black text-primary text-3xl tracking-tighter">OnFlow <span className="text-slate-300 dark:text-slate-800">by RTM</span></p>
               <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest italic">© {new Date().getFullYear()} RTM - Hub Integrador do Mercado Financeiro.</p>
-            </div>
-            <div className="flex flex-wrap justify-center gap-8">
-              <Link href="/debug/erp-simulator" className="group flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all">
-                <LayoutGrid className="size-4 opacity-40 group-hover:opacity-100" /> Simulador ERP
-              </Link>
-              <Link href="/debug/suite" className="group flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all">
-                <ShieldCheck className="size-4 opacity-40 group-hover:opacity-100" /> Test Suite
-              </Link>
             </div>
           </div>
         </div>
