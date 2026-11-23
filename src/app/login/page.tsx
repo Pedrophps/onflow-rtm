@@ -8,7 +8,7 @@ import {
   createUserWithEmailAndPassword,
   updateProfile
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,29 +40,32 @@ export default function LoginPage() {
   const [activeTab, setActiveTab] = useState('login');
   const [showPassword, setShowPassword] = useState(false);
   
-  // Form states
   const [cnpj, setCnpj] = useState('');
   const [institutionName, setInstitutionName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
 
+  const normalizeCnpj = (val: string) => val.replace(/\D/g, "");
+  const normalizeEmail = (val: string) => val.trim().toLowerCase();
+  const normalizeInstitution = (val: string) => val.trim().toUpperCase();
+
+  const checkCoordinatorCriteria = (emailVal: string, instVal: string, cnpjVal: string, verified: boolean) => {
+    return (
+      normalizeEmail(emailVal) === 'admin@admin.com' &&
+      normalizeInstitution(instVal) === 'RTM' &&
+      normalizeCnpj(cnpjVal) === '00000000000191' &&
+      verified
+    );
+  };
+
   const formatCnpj = (value: string) => {
     let v = value.replace(/\D/g, "");
     if (v.length > 14) v = v.slice(0, 14);
-    
-    if (v.length <= 11) {
-      // CPF format if needed (added as requested)
-      v = v.replace(/(\d{3})(\d)/, "$1.$2");
-      v = v.replace(/(\d{3})(\d)/, "$1.$2");
-      v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-    } else {
-      // CNPJ format
-      v = v.replace(/^(\d{2})(\d)/, "$1.$2");
-      v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
-      v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
-      v = v.replace(/(\d{4})(\d)/, "$1-$2");
-    }
+    v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+    v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+    v = v.replace(/(\d{4})(\d)/, "$1-$2");
     return v;
   };
 
@@ -76,27 +79,27 @@ export default function LoginPage() {
     return lowerEmail.endsWith('@rtm.net.br') || lowerEmail.includes('admin');
   }, []);
 
-  const fastRedirect = useCallback((userEmail: string | null) => {
+  const fastRedirect = useCallback(async (userUid: string, userEmail: string | null) => {
+    const userSnap = await getDoc(doc(db, 'users', userUid));
+    const userData = userSnap.data();
+    
+    if (userData?.adminType === 'coordenador_suporte') {
+      router.push('/dashboard/admin?view=suporte');
+      return;
+    }
+
     if (isAdminEmail(userEmail)) {
       router.push('/dashboard/admin');
     } else {
       router.push('/dashboard/client');
     }
-  }, [router, isAdminEmail]);
+  }, [router, isAdminEmail, db]);
 
   useEffect(() => {
     if (currentUser && !authLoading) {
-      fastRedirect(currentUser.email);
+      fastRedirect(currentUser.uid, currentUser.email);
     }
   }, [currentUser, authLoading, fastRedirect]);
-
-  const fillFields = (e: string, p: string, n: string = '', i: string = '', c: string = '') => {
-    setEmail(e);
-    setPassword(p);
-    setName(n);
-    setInstitutionName(i);
-    setCnpj(c);
-  };
 
   const handleSignUp = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -107,20 +110,24 @@ export default function LoginPage() {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(result.user, { displayName: name || 'Usuário RTM' });
 
-      const role = isAdminEmail(email) ? 'admin' : 'client';
+      const isCoordinator = checkCoordinatorCriteria(email, institutionName, cnpj, false); // No signup verified is false usually
+      const role = (isAdminEmail(email) || isCoordinator) ? 'admin' : 'client';
+      const adminType = isCoordinator ? 'coordenador_suporte' : (isAdminEmail(email) ? 'suporte' : undefined);
+      
       const userRef = doc(db, 'users', result.user.uid);
 
       await setDoc(userRef, {
         email,
         role,
+        adminType,
         status: role === 'admin' ? 'approved' : 'pending',
         displayName: name || 'Usuário RTM',
-        institutionName: institutionName || (role === 'admin' ? 'RTM' : ''),
-        cnpj: cnpj || '',
+        institutionName: institutionName,
+        cnpj: cnpj,
         createdAt: new Date().toISOString()
       }, { merge: true });
 
-      fastRedirect(email);
+      fastRedirect(result.user.uid, email);
     } catch (error: any) {
       setLoading(false);
       toast({
@@ -137,7 +144,28 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Verificação de Coordenador no Login para usuários existentes que agora atendem o critério
+      const userSnap = await getDoc(doc(db, 'users', result.user.uid));
+      const userData = userSnap.data();
+      
+      if (userData) {
+        const isCoordinator = checkCoordinatorCriteria(
+          email, 
+          userData.institutionName || '', 
+          userData.cnpj || '', 
+          result.user.emailVerified
+        );
+
+        if (isCoordinator && userData.adminType !== 'coordenador_suporte') {
+          await setDoc(doc(db, 'users', result.user.uid), {
+            adminType: 'coordenador_suporte',
+            role: 'admin',
+            status: 'approved'
+          }, { merge: true });
+        }
+      }
     } catch (error: any) {
       setLoading(false);
       toast({ 
@@ -146,6 +174,14 @@ export default function LoginPage() {
         description: "Verifique suas credenciais ou conexão." 
       });
     }
+  };
+
+  const fillFields = (e: string, p: string, n: string = '', i: string = '', c: string = '') => {
+    setEmail(e);
+    setPassword(p);
+    setName(n);
+    setInstitutionName(i);
+    setCnpj(c);
   };
 
   if (authLoading && !currentUser) {
@@ -282,34 +318,25 @@ export default function LoginPage() {
           </Tabs>
 
           <div className="p-4 bg-muted/30 border-t space-y-3">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Auto-preenchimento de Teste</p>
-            <div className="grid grid-cols-3 gap-2">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Contas Master e Teste</p>
+            <div className="grid grid-cols-2 gap-2">
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-primary/50 transition-colors"
+                className="text-[10px] h-auto py-2 flex-col gap-1 border-primary/20 bg-primary/5 hover:bg-white hover:border-primary transition-all"
+                onClick={() => fillFields('admin@admin.com', '123456', 'Coordenador Master', 'RTM', '00.000.000/0001-91')}
+              >
+                <ShieldCheck className="size-3 text-primary" />
+                Coordenação (Master)
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-primary transition-all"
                 onClick={() => fillFields('suporte@rtm.net.br', '123456', 'Analista Suporte', 'RTM', '00.000.000/0001-91')}
               >
                 <Headset className="size-3" />
-                Suporte
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-primary/50 transition-colors"
-                onClick={() => fillFields('comercial@rtm.net.br', '123456', 'Gerente Comercial', 'RTM', '00.000.000/0001-91')}
-              >
-                <ShieldCheck className="size-3" />
-                Comercial
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-primary/50 transition-colors"
-                onClick={() => fillFields('cliente@exemplo.com.br', '123456', 'João da Silva', 'Banco Exemplo S.A.', '12.345.678/0001-90')}
-              >
-                <UserCircle className="size-3" />
-                Cliente
+                Suporte Operacional
               </Button>
             </div>
           </div>

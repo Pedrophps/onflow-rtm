@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -26,14 +27,17 @@ import {
   Package,
   Zap,
   Sun,
-  Moon
+  Moon,
+  CalendarClock
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useUser, useAuth } from "@/firebase";
+import { useUser, useAuth, useDoc, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { doc } from "firebase/firestore";
+import { UserProfile } from "@/lib/types";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -43,9 +47,13 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, role }: DashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading } = useUser();
+  const { user, loading: authLoading } = useUser();
+  const db = useFirestore();
   const auth = useAuth();
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
+  const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
   useEffect(() => {
     const isDark = document.documentElement.classList.contains('dark');
@@ -67,22 +75,34 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
     router.push('/');
   };
 
-  const menuItems = role === "admin" 
-    ? [
-        { title: "Visão Geral", icon: LayoutDashboard, href: "/dashboard/admin" },
-        { title: "Produtos & Fluxos", icon: Package, href: "/dashboard/admin/products" },
-        { title: "Gestão Onboarding", icon: ClipboardList, href: "/dashboard/admin/onboarding" },
-        { title: "Clientes", icon: Users, href: "/dashboard/admin/clients" },
-        { title: "Relatórios", icon: BarChart3, href: "/dashboard/admin/reports" },
-      ]
-    : [
+  const menuItems = useMemo(() => {
+    if (role === "client") {
+      return [
         { title: "Visão Geral", icon: LayoutDashboard, href: "/dashboard/client" },
         { title: "Ativações", icon: Zap, href: "/dashboard/client/activations" },
         { title: "Documentos", icon: ClipboardList, href: "/dashboard/client/docs" },
         { title: "Suporte RTM", icon: Settings, href: "/dashboard/client/support" },
       ];
+    }
 
-  if (loading) {
+    const items = [
+      { title: "Visão Geral", icon: LayoutDashboard, href: "/dashboard/admin" },
+      { title: "Produtos & Fluxos", icon: Package, href: "/dashboard/admin/products" },
+      { title: "Gestão Onboarding", icon: ClipboardList, href: "/dashboard/admin/onboarding" },
+      { title: "Clientes", icon: Users, href: "/dashboard/admin/clients" },
+    ];
+
+    // Módulo exclusivo do Coordenador de Suporte
+    if (profile?.adminType === 'coordenador_suporte') {
+      items.push({ title: "Sobreaviso & Escalas", icon: CalendarClock, href: "/dashboard/admin/oncall" });
+    }
+
+    items.push({ title: "Relatórios", icon: BarChart3, href: "/dashboard/admin/reports" });
+    
+    return items;
+  }, [role, profile?.adminType]);
+
+  if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <Loader2 className="size-8 animate-spin text-primary" />
@@ -128,7 +148,10 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
                 <AvatarFallback className="bg-primary text-primary-foreground">{user?.email?.charAt(0).toUpperCase() || (role === 'admin' ? 'AD' : 'CL')}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col overflow-hidden">
-                <span className="text-sm font-semibold truncate text-foreground">{user?.displayName || (role === 'admin' ? 'Admin' : 'Cliente')}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-semibold truncate text-foreground">{user?.displayName || (role === 'admin' ? 'Admin' : 'Cliente')}</span>
+                  {profile?.adminType === 'coordenador_suporte' && <ShieldCheck className="size-3 text-primary" title="Coordenador Master" />}
+                </div>
                 <span className="text-[10px] text-muted-foreground truncate">{user?.email}</span>
               </div>
             </div>

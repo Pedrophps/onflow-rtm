@@ -13,35 +13,43 @@ service cloud.firestore {
       return request.auth != null && getUserData().role == 'admin';
     }
 
-    // Verifica se o usuário é do suporte
-    function isSupportAdmin() {
+    // Verifica se o usuário é do suporte (incluindo coordenador)
+    function isSupportUser() {
       let data = getUserData();
-      return request.auth != null && data.role == 'admin' && data.adminType == 'suporte';
+      return request.auth != null && data.role == 'admin' && (data.adminType == 'suporte' || data.adminType == 'coordenador_suporte');
+    }
+
+    // Verifica se o usuário é o Coordenador de Suporte
+    function isSupportCoordinator() {
+      let data = getUserData();
+      return request.auth != null && data.role == 'admin' && data.adminType == 'coordenador_suporte';
     }
 
     match /users/{userId} {
-      // Permite leitura e escrita para a API de ingestão e fluxo de login
-      allow read, write: if true;
+      // Regra de segurança: impede que usuários alterem seu próprio role ou adminType
+      // Só permite alteração se os campos protegidos não estiverem sendo modificados por não-admins
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && request.auth.uid == userId 
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'adminType', 'status']) || isAdmin());
     }
 
     match /products/{productId} {
-      // Leitura pública permitida para mapeamento da API
       allow read: if true;
-      allow write: if isSupportAdmin();
+      allow write: if isSupportUser();
 
       match /activationFlows/{flowId} {
         allow read: if true;
-        allow write: if isSupportAdmin();
+        allow write: if isSupportUser();
 
         match /steps/{stepId} {
           allow read: if true;
-          allow write: if isSupportAdmin();
+          allow write: if isSupportUser();
         }
       }
     }
 
     match /onboardingInstances/{instanceId} {
-      // Permite que a API crie e o sistema gerencie instâncias
       allow read, write: if true;
     }
 
@@ -50,16 +58,13 @@ service cloud.firestore {
     }
 
     match /system_logs/{logId} {
-      // Permite que o sistema registre logs técnicos de qualquer origem (API e Auditoria)
       allow read, write: if true;
     }
 
-    match /submissions/{submissionId} {
-      allow read, write: if true;
-    }
-
-    match /onboardingFlows/{flowId} {
-      allow read, write: if true;
+    // Proteção futura para o módulo de escalas (Sobreaviso)
+    match /oncall_scales/{scaleId} {
+      allow read: if isSupportUser();
+      allow write: if isSupportCoordinator();
     }
   }
 }

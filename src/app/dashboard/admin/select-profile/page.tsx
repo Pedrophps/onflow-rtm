@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Headset, Briefcase, ArrowRight, Loader2 } from 'lucide-react';
+import { Headset, Briefcase, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
 import { useUser, useFirestore, useDoc } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
@@ -22,9 +23,13 @@ export default function SelectProfilePage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
+  const normalizeCnpj = (val: string) => (val || "").replace(/\D/g, "");
+  const normalizeEmail = (val: string) => (val || "").trim().toLowerCase();
+  const normalizeInstitution = (val: string) => (val || "").trim().toUpperCase();
+
   useEffect(() => {
     if (!profileLoading && profile?.adminType && !isUpdating) {
-      router.replace(`/dashboard/admin?view=${profile.adminType}`);
+      router.replace(`/dashboard/admin?view=${profile.adminType === 'coordenador_suporte' ? 'suporte' : profile.adminType}`);
     }
   }, [profile, profileLoading, router, isUpdating]);
 
@@ -33,8 +38,18 @@ export default function SelectProfilePage() {
     setIsUpdating(true);
 
     const userDocRef = doc(db, 'users', user.uid);
+    
+    // Verificação de Coordenador Master na seleção de perfil
+    const isMaster = 
+      normalizeEmail(user.email || "") === 'admin@admin.com' &&
+      normalizeInstitution(profile?.institutionName || "") === 'RTM' &&
+      normalizeCnpj(profile?.cnpj || "") === '00000000000191' &&
+      user.emailVerified;
+
+    const finalAdminType = isMaster ? 'coordenador_suporte' : adminType;
+
     const updateData = { 
-      adminType,
+      adminType: finalAdminType,
       role: 'admin',
       status: 'approved',
       email: user.email,
@@ -46,9 +61,9 @@ export default function SelectProfilePage() {
       await setDoc(userDocRef, updateData, { merge: true });
       toast({
         title: "Ambiente Ativado",
-        description: `Perfil de ${adminType} configurado com sucesso.`,
+        description: `Perfil de ${finalAdminType.replace('_', ' ')} configurado com sucesso.`,
       });
-      router.replace(`/dashboard/admin?view=${adminType}`);
+      router.replace(`/dashboard/admin?view=${finalAdminType === 'coordenador_suporte' ? 'suporte' : finalAdminType}`);
     } catch (error: any) {
       setIsUpdating(false);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
