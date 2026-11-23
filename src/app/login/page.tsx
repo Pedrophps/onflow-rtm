@@ -91,10 +91,8 @@ export default function LoginPage() {
       return;
     }
 
-    // Se for RTM ou tiver role admin
     if (isRtm || userData?.role === 'admin') {
       if (!userData?.adminType) {
-        // Força seleção de Suporte ou Comercial
         router.push('/dashboard/admin/select-profile');
       } else {
         router.push('/dashboard/admin');
@@ -122,22 +120,25 @@ export default function LoginPage() {
       const isCoordinator = checkCoordinatorCriteria(email, institutionName, cnpj);
       const isRtm = isAdminEmail(email);
       const role = (isRtm || isCoordinator) ? 'admin' : 'client';
-      const adminType = isCoordinator ? 'coordenador_suporte' : undefined;
       
       const userRef = doc(db, 'users', result.user.uid);
 
-      await setDoc(userRef, {
+      const payload: any = {
         email,
         role,
-        adminType,
-        status: 'approved', // RTM já nasce aprovado
+        status: 'approved',
         displayName: name || 'Usuário RTM',
         institutionName: institutionName || 'RTM',
         cnpj: cnpj || '00.000.000/0001-91',
         createdAt: new Date().toISOString(),
         updatedAt: serverTimestamp()
-      }, { merge: true });
+      };
 
+      if (isCoordinator) {
+        payload.adminType = 'coordenador_suporte';
+      }
+
+      await setDoc(userRef, payload, { merge: true });
       fastRedirect(result.user.uid, email);
     } catch (error: any) {
       setLoading(false);
@@ -160,32 +161,35 @@ export default function LoginPage() {
       const userData = userSnap.data();
       const isRtm = isAdminEmail(email);
 
-      // Promoção Crítica: Se é RTM e não é admin no banco, corrige agora
-      if (isRtm && userData?.role !== 'admin') {
+      if (isRtm) {
         const isCoordinator = checkCoordinatorCriteria(email, userData?.institutionName || '', userData?.cnpj || '');
-        await setDoc(doc(db, 'users', result.user.uid), {
+        const updatePayload: any = {
           role: 'admin',
-          adminType: isCoordinator ? 'coordenador_suporte' : userData?.adminType,
           status: 'approved',
           updatedAt: serverTimestamp(),
           displayName: userData?.displayName || auth.currentUser?.displayName || 'Analista RTM',
           email: email
-        }, { merge: true });
-      } else if (!userData && isRtm) {
-        // Caso o usuário exista no Auth mas não no Firestore
+        };
+
+        if (isCoordinator) {
+          updatePayload.adminType = 'coordenador_suporte';
+        } else if (userData?.adminType) {
+          updatePayload.adminType = userData.adminType;
+        }
+
+        await setDoc(doc(db, 'users', result.user.uid), updatePayload, { merge: true });
+      } else if (!userData && !isRtm) {
+        // Fluxo para cliente que existe no auth mas não no firestore (raro)
         await setDoc(doc(db, 'users', result.user.uid), {
           email: email,
-          role: 'admin',
-          status: 'approved',
-          displayName: auth.currentUser?.displayName || 'Analista RTM',
-          institutionName: 'RTM',
-          cnpj: '00.000.000/0001-91',
+          role: 'client',
+          status: 'pending',
+          displayName: auth.currentUser?.displayName || 'Cliente RTM',
+          institutionName: 'Pendente',
           createdAt: new Date().toISOString(),
           updatedAt: serverTimestamp()
         });
       }
-      
-      // O redirect será disparado pelo useEffect
     } catch (error: any) {
       setLoading(false);
       toast({ 
