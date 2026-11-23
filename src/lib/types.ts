@@ -27,6 +27,43 @@ export interface UserProfile {
   updatedAt?: any;
 }
 
+export interface OnCallSchedule {
+  id?: string;
+  userId: string;
+  userName: string;
+  startAt: string;
+  endAt: string;
+  status: 'scheduled' | 'active' | 'cancelled';
+  observations?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt?: any;
+}
+
+export interface OnCallCheckin {
+  id?: string;
+  scheduleId: string;
+  userId: string;
+  confirmedAt: string;
+  status: 'confirmed' | 'pending';
+}
+
+export interface OnCallNotification {
+  id?: string;
+  scheduleId: string;
+  userId: string;
+  requestedBy: string;
+  reason: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
+  status: 'sent' | 'received' | 'started' | 'finished';
+  sentAt: string;
+  receivedAt?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  finishNotes?: string;
+}
+
 export interface Product {
   id?: string;
   name: string;
@@ -97,29 +134,4 @@ export interface StepInteraction {
   fileUrl?: string;
   fileName?: string;
   createdAt: any;
-}
-
-export interface OnboardingStage {
-  id: string;
-  title: string;
-  description: string;
-  order: number;
-  status: OnboardingStatus;
-  requirements?: {
-    type: 'file' | 'text';
-    label: string;
-    description?: string;
-  }[];
-  submittedEvidence?: {
-    type: 'file' | 'text';
-    value: string;
-    submittedAt: string;
-  }[];
-}
-
-export interface ClientProgress {
-  clientId: string;
-  clientName: string;
-  stages: OnboardingStage[];
-  completionPercentage: number;
 }

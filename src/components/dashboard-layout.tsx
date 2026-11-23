@@ -28,7 +28,8 @@ import {
   Zap,
   Sun,
   Moon,
-  CalendarClock
+  CalendarClock,
+  ShieldCheck
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -92,9 +93,8 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
       { title: "Clientes", icon: Users, href: "/dashboard/admin/clients" },
     ];
 
-    // Módulo exclusivo do Coordenador de Suporte
-    if (profile?.adminType === 'coordenador_suporte') {
-      items.push({ title: "Sobreaviso & Escalas", icon: CalendarClock, href: "/dashboard/admin/oncall" });
+    if (profile?.adminType === 'suporte' || profile?.adminType === 'coordenador_suporte') {
+      items.push({ title: "Sobreaviso", icon: CalendarClock, href: "/dashboard/admin/oncall" });
     }
 
     items.push({ title: "Relatórios", icon: BarChart3, href: "/dashboard/admin/reports" });

@@ -8,7 +8,7 @@
       "properties": {
         "email": { "type": "string", "format": "email" },
         "role": { "type": "string", "enum": ["admin", "client"] },
-        "adminType": { "type": "string", "enum": ["suporte", "comercial"] },
+        "adminType": { "type": "string", "enum": ["suporte", "comercial", "coordenador_suporte"] },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
         "displayName": { "type": "string" },
         "institutionName": { "type": "string" },
@@ -24,103 +24,48 @@
       },
       "required": ["email", "role", "displayName", "status"]
     },
-    "Product": {
-      "title": "Produto RTM",
-      "description": "Catálogo de serviços financeiros (molde para ativações).",
+    "OnCallSchedule": {
+      "title": "Escala de Sobreaviso",
+      "description": "Período programado de disponibilidade de um técnico.",
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "status": { "type": "string", "enum": ["active", "draft", "archived"] },
-        "published": { "type": "boolean" },
-        "createdAt": { "type": "string" },
-        "createdBy": { "type": "string" }
-      }
-    },
-    "ActivationFlow": {
-      "title": "Fluxo de Ativação",
-      "description": "Roteiro técnico associado a um produto.",
-      "type": "object",
-      "properties": {
-        "productId": { "type": "string" },
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "published": { "type": "boolean" },
-        "version": { "type": "number" },
-        "status": { "type": "string" }
-      }
-    },
-    "FlowStep": {
-      "title": "Etapa do Fluxo",
-      "description": "Ação individual de configuração ou envio de evidência.",
-      "type": "object",
-      "properties": {
-        "order": { "type": "number" },
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "responsible": { "type": "string", "enum": ["suporte", "comercial", "cliente", "infraestrutura", "compliance"] },
-        "estimatedTimeInHours": { "type": "number" },
-        "required": { "type": "boolean" },
-        "type": { "type": "string", "enum": ["upload", "form"] }
-      }
-    },
-    "OnboardingInstance": {
-      "title": "Instância de Onboarding",
-      "description": "O processo de ativação real de um cliente para um produto.",
-      "type": "object",
-      "properties": {
-        "clientId": { "type": "string" },
-        "productId": { "type": "string" },
-        "flowId": { "type": "string" },
-        "techId": { "type": "string" },
-        "techName": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "active", "completed", "blocked"] },
-        "currentStepOrder": { "type": "number" },
-        "institutionName": { "type": "string" },
-        "productName": { "type": "string" },
-        "startedAt": { "type": "string" },
-        "updatedAt": { "type": "string" }
-      }
-    },
-    "Interaction": {
-      "title": "Interação",
-      "description": "Mensagem de chat ou registro de envio de arquivo/evidência.",
-      "type": "object",
-      "properties": {
-        "instanceId": { "type": "string" },
-        "stepId": { "type": "string" },
-        "clientId": { "type": "string" },
         "userId": { "type": "string" },
         "userName": { "type": "string" },
-        "userRole": { "type": "string" },
-        "message": { "type": "string" },
-        "fileName": { "type": "string" },
-        "fileUrl": { "type": "string" },
+        "startAt": { "type": "string" },
+        "endAt": { "type": "string" },
+        "status": { "type": "string", "enum": ["scheduled", "active", "cancelled"] },
+        "observations": { "type": "string" },
+        "createdBy": { "type": "string" },
         "createdAt": { "type": "string" }
       }
     },
-    "SystemLog": {
-      "title": "Log do Sistema",
-      "description": "Auditoria técnica, erros de API e logs da IA.",
+    "OnCallCheckin": {
+      "title": "Check-in de Sobreaviso",
+      "description": "Confirmação de disponibilidade do colaborador.",
       "type": "object",
       "properties": {
-        "timestamp": { "type": "string" },
-        "message": { "type": "string" },
-        "type": { "type": "string", "enum": ["info", "success", "error", "warning"] },
+        "scheduleId": { "type": "string" },
         "userId": { "type": "string" },
-        "context": { "type": "string" }
+        "confirmedAt": { "type": "string" },
+        "status": { "type": "string", "enum": ["confirmed", "pending"] }
       }
     },
-    "Submission": {
-      "title": "Submissão de Validação",
-      "description": "Coleção para testes de integridade e segurança (QA).",
+    "OnCallNotification": {
+      "title": "Acionamento Operacional",
+      "description": "Registro de chamado crítico para técnico em sobreaviso.",
       "type": "object",
       "properties": {
+        "scheduleId": { "type": "string" },
         "userId": { "type": "string" },
-        "stageId": { "type": "string" },
-        "submittedAt": { "type": "string" },
-        "status": { "type": "string" },
-        "testType": { "type": "string" }
+        "requestedBy": { "type": "string" },
+        "reason": { "type": "string" },
+        "priority": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["sent", "received", "started", "finished"] },
+        "sentAt": { "type": "string" },
+        "receivedAt": { "type": "string" },
+        "startedAt": { "type": "string" },
+        "finishedAt": { "type": "string" }
       }
     }
   },
@@ -131,29 +76,17 @@
     "/users/{userId}": {
       "schema": { "$ref": "#/backend/entities/UserProfile" }
     },
-    "/products/{productId}": {
-      "schema": { "$ref": "#/backend/entities/Product" }
+    "/onCallSchedules/{scheduleId}": {
+      "schema": { "$ref": "#/backend/entities/OnCallSchedule" }
     },
-    "/products/{productId}/activationFlows/{flowId}": {
-      "schema": { "$ref": "#/backend/entities/ActivationFlow" }
+    "/onCallCheckins/{checkinId}": {
+      "schema": { "$ref": "#/backend/entities/OnCallCheckin" }
     },
-    "/products/{productId}/activationFlows/{flowId}/steps/{stepId}": {
-      "schema": { "$ref": "#/backend/entities/FlowStep" }
-    },
-    "/onboardingInstances/{instanceId}": {
-      "schema": { "$ref": "#/backend/entities/OnboardingInstance" }
-    },
-    "/interactions/{interactionId}": {
-      "schema": { "$ref": "#/backend/entities/Interaction" }
+    "/onCallNotifications/{notificationId}": {
+      "schema": { "$ref": "#/backend/entities/OnCallNotification" }
     },
     "/system_logs/{logId}": {
       "schema": { "$ref": "#/backend/entities/SystemLog" }
-    },
-    "/submissions/{submissionId}": {
-      "schema": { "$ref": "#/backend/entities/Submission" }
-    },
-    "/onboardingFlows/{flowId}": {
-      "description": "Coleção de teste legada/global para validação de segurança."
     }
   }
 }
