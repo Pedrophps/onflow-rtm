@@ -11,8 +11,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Poppins', 'sans-serif'],
+        // Seguindo Brandbook Pág. 27
+        body: ['var(--font-ibm-sans)', 'IBM Plex Sans', 'Verdana', 'sans-serif'],
+        headline: ['var(--font-ibm-serif)', 'IBM Plex Serif', 'Georgia', 'serif'],
         code: ['monospace'],
       },
       colors: {

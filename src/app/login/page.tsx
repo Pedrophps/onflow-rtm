@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -185,15 +186,19 @@ export default function LoginPage() {
   if (authLoading && !currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="animate-spin text-primary size-8" />
+        <Loader2 className="animate-spin text-primary size-6" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6 relative">
+    <div className="min-h-screen flex items-center justify-center bg-background p-6 relative overflow-hidden">
+      {/* Elementos visuais inspirados no Brandbook Pág. 33 */}
+      <div className="absolute -top-24 -right-24 size-96 bg-primary/5 rounded-full blur-3xl"></div>
+      <div className="absolute -bottom-24 -left-24 size-96 bg-primary/5 rounded-full blur-3xl"></div>
+
       <div className="absolute top-8 left-8">
-        <Button variant="ghost" asChild className="gap-2 font-bold text-muted-foreground hover:text-primary transition-colors">
+        <Button variant="ghost" asChild className="gap-2 font-bold text-xs uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
           <Link href="/">
             <ArrowLeft className="size-4" />
             Voltar
@@ -201,38 +206,38 @@ export default function LoginPage() {
         </Button>
       </div>
 
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold font-headline text-primary">OnFlow</h1>
-          <p className="text-muted-foreground font-medium uppercase tracking-widest text-xs">Hub Integrador RTM</p>
+      <div className="w-full max-w-md space-y-8 relative z-10">
+        <div className="text-center space-y-3">
+          <h1 className="text-5xl font-light font-headline text-primary tracking-tighter">OnFlow</h1>
+          <p className="text-muted-foreground font-bold uppercase tracking-[0.3em] text-[10px] opacity-60">Identificar • Entender • Conhecer</p>
         </div>
 
-        <Card className="border-2 shadow-xl bg-card text-card-foreground overflow-hidden">
+        <Card className="border border-border/50 shadow-2xl bg-card text-card-foreground overflow-hidden rounded-2xl">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <CardHeader className="pb-0">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Entrar</TabsTrigger>
-                <TabsTrigger value="signup">Cadastrar</TabsTrigger>
+            <CardHeader className="pb-0 pt-6 px-6">
+              <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-xl">
+                <TabsTrigger value="login" className="rounded-lg text-xs font-bold uppercase tracking-widest py-2">Entrar</TabsTrigger>
+                <TabsTrigger value="signup" className="rounded-lg text-xs font-bold uppercase tracking-widest py-2">Cadastrar</TabsTrigger>
               </TabsList>
             </CardHeader>
             <TabsContent value="login">
               <form onSubmit={handleEmailLogin}>
-                <CardContent className="space-y-4 pt-4">
+                <CardContent className="space-y-6 pt-8 pb-8 px-8">
                   <div className="space-y-2">
-                    <Label>E-mail Corporativo</Label>
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">E-mail Corporativo</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                      <Input type="email" placeholder="seu@rtm.net.br" className="pl-10" required value={email} onChange={e => setEmail(e.target.value)} />
+                      <Mail className="absolute left-3 top-3 size-4 text-muted-foreground opacity-50" />
+                      <Input type="email" placeholder="seu@rtm.net.br" className="pl-10 h-12 bg-muted/20 border-border/50 focus:border-primary/50 focus:ring-primary/20" required value={email} onChange={e => setEmail(e.target.value)} />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Senha</Label>
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Senha de Acesso</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                      <Lock className="absolute left-3 top-3 size-4 text-muted-foreground opacity-50" />
                       <Input 
                         type={showPassword ? "text" : "password"} 
                         placeholder="••••••••" 
-                        className="pl-10 pr-10" 
+                        className="pl-10 pr-10 h-12 bg-muted/20 border-border/50 focus:border-primary/50 focus:ring-primary/20" 
                         required 
                         value={password} 
                         onChange={e => setPassword(e.target.value)} 
@@ -246,42 +251,43 @@ export default function LoginPage() {
                       </button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full font-bold h-12" disabled={loading}>
-                    {loading ? <Loader2 className="animate-spin mr-2 size-4" /> : "Acessar Portal"}
+                  <Button type="submit" className="w-full font-bold h-14 text-xs uppercase tracking-widest shadow-xl shadow-primary/20" disabled={loading}>
+                    {loading ? <Loader2 className="animate-spin mr-2 size-4" /> : "Acessar Portal OnFlow"}
                   </Button>
                 </CardContent>
               </form>
             </TabsContent>
             <TabsContent value="signup">
               <form onSubmit={handleSignUp}>
-                <CardContent className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Label>Nome Completo (Colaborador)</Label>
-                    <Input placeholder="Seu nome completo" required value={name} onChange={e => setName(e.target.value)} />
+                <CardContent className="space-y-4 pt-6 pb-8 px-8">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Nome do Colaborador</Label>
+                    <Input placeholder="Nome Completo" className="h-11 bg-muted/20" required value={name} onChange={e => setName(e.target.value)} />
                   </div>
-                  <div className="space-y-2">
-                    <Label>E-mail Corporativo</Label>
-                    <Input type="email" placeholder="seu@rtm.net.br" required value={email} onChange={e => setEmail(e.target.value)} />
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">E-mail Corporativo</Label>
+                    <Input type="email" placeholder="seu@rtm.net.br" className="h-11 bg-muted/20" required value={email} onChange={e => setEmail(e.target.value)} />
                   </div>
                   
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Nome da Instituição / Razão Social</Label>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Razão Social / Instituição</Label>
                       <div className="relative">
-                        <Building2 className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                        <Building2 className="absolute left-3 top-3 size-4 text-muted-foreground opacity-50" />
                         <Input 
-                          placeholder="Ex: Banco Investimento S.A." 
-                          className="pl-10"
+                          placeholder="Ex: Banco Delta S.A." 
+                          className="pl-10 h-11 bg-muted/20"
                           value={institutionName} 
                           onChange={e => setInstitutionName(e.target.value)} 
                           required 
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>CNPJ da Instituição</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">CNPJ</Label>
                       <Input 
                         placeholder="00.000.000/0000-00" 
+                        className="h-11 bg-muted/20 font-mono text-xs"
                         value={cnpj} 
                         onChange={handleCnpjChange} 
                         required 
@@ -289,75 +295,67 @@ export default function LoginPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Senha de Acesso</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Definir Senha</Label>
                     <div className="relative">
                       <Input 
                         type={showPassword ? "text" : "password"} 
                         placeholder="Mínimo 6 caracteres" 
-                        className="pr-10"
+                        className="h-11 bg-muted/20"
                         required 
                         value={password} 
                         onChange={e => setPassword(e.target.value)} 
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3 text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                      </button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full font-bold h-12" disabled={loading}>Criar Minha Conta</Button>
+                  <Button type="submit" className="w-full font-bold h-14 mt-4 text-xs uppercase tracking-widest" disabled={loading}>Criar Minha Conta</Button>
                 </CardContent>
               </form>
             </TabsContent>
           </Tabs>
 
-          <div className="p-4 bg-muted/20 border-t space-y-3">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Contas Master e Teste</p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-[10px] h-auto py-2 flex-col gap-1 border-primary/20 bg-primary/5 hover:bg-background hover:border-primary transition-all dark:hover:bg-slate-800"
+          <div className="p-6 bg-muted/30 border-t border-border/40 space-y-4">
+            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em] text-center opacity-70">Acessos Rápidos (Ambiente de Validação)</p>
+            <div className="grid grid-cols-2 gap-3">
+              <QuickAccessButton 
+                label="Coordenação" 
+                icon={ShieldCheck} 
+                color="primary"
                 onClick={() => fillFields('admin@admin.com', '123456', 'Coordenador Master', 'RTM', '00.000.000/0001-91')}
-              >
-                <ShieldCheck className="size-3 text-primary" />
-                Coordenação (Master)
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-background hover:border-primary transition-all dark:hover:bg-slate-800"
+              />
+              <QuickAccessButton 
+                label="Suporte" 
+                icon={Headset} 
                 onClick={() => fillFields('suporte@rtm.net.br', '123456', 'Analista Suporte', 'RTM', '00.000.000/0001-91')}
-              >
-                <Headset className="size-3" />
-                Suporte Operacional
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-background hover:border-secondary transition-all dark:hover:bg-slate-800"
+              />
+              <QuickAccessButton 
+                label="Comercial" 
+                icon={Briefcase} 
                 onClick={() => fillFields('comercial@rtm.net.br', '123456', 'Gestor Comercial', 'RTM', '00.000.000/0001-91')}
-              >
-                <Briefcase className="size-3 text-secondary" />
-                Gestão Comercial
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-background hover:border-slate-400 transition-all dark:hover:bg-slate-800"
+              />
+              <QuickAccessButton 
+                label="Cliente" 
+                icon={User} 
                 onClick={() => fillFields('cliente@cliente.com.br', '123456', 'Pedro Oliveira', 'BANCO DELTA S.A.', '11.222.333/0001-44')}
-              >
-                <User className="size-3 text-slate-500" />
-                Cliente Teste
-              </Button>
+              />
             </div>
           </div>
         </Card>
       </div>
     </div>
+  );
+}
+
+function QuickAccessButton({ label, icon: Icon, onClick, color }: any) {
+  return (
+    <Button 
+      variant="outline" 
+      size="sm" 
+      className={`text-[9px] font-bold uppercase tracking-widest h-auto py-3 flex-col gap-2 border-border/50 bg-background/50 hover:border-primary/50 transition-all ${color === 'primary' ? 'border-primary/20' : ''}`}
+      onClick={onClick}
+    >
+      <Icon className={`size-3.5 ${color === 'primary' ? 'text-primary' : 'text-muted-foreground opacity-60'}`} />
+      {label}
+    </Button>
   );
 }
