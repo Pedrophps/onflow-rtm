@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -192,11 +191,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6 relative overflow-hidden">
-      {/* Elementos visuais inspirados no Brandbook Pág. 33 */}
-      <div className="absolute -top-24 -right-24 size-96 bg-primary/5 rounded-full blur-3xl"></div>
-      <div className="absolute -bottom-24 -left-24 size-96 bg-primary/5 rounded-full blur-3xl"></div>
-
+    <div className="min-h-screen flex items-center justify-center bg-background p-6 relative">
       <div className="absolute top-8 left-8">
         <Button variant="ghost" asChild className="gap-2 font-bold text-xs uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
           <Link href="/">
@@ -212,12 +207,12 @@ export default function LoginPage() {
           <p className="text-muted-foreground font-bold uppercase tracking-[0.3em] text-[10px] opacity-60">Identificar • Entender • Conhecer</p>
         </div>
 
-        <Card className="border border-border/50 shadow-2xl bg-card text-card-foreground overflow-hidden rounded-2xl">
+        <Card className="border border-border shadow-sm bg-card text-card-foreground overflow-hidden rounded-lg">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <CardHeader className="pb-0 pt-6 px-6">
-              <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-xl">
-                <TabsTrigger value="login" className="rounded-lg text-xs font-bold uppercase tracking-widest py-2">Entrar</TabsTrigger>
-                <TabsTrigger value="signup" className="rounded-lg text-xs font-bold uppercase tracking-widest py-2">Cadastrar</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 bg-muted p-1 rounded-md">
+                <TabsTrigger value="login" className="rounded-sm text-xs font-bold uppercase tracking-widest py-2">Entrar</TabsTrigger>
+                <TabsTrigger value="signup" className="rounded-sm text-xs font-bold uppercase tracking-widest py-2">Cadastrar</TabsTrigger>
               </TabsList>
             </CardHeader>
             <TabsContent value="login">
@@ -227,7 +222,7 @@ export default function LoginPage() {
                     <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">E-mail Corporativo</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 size-4 text-muted-foreground opacity-50" />
-                      <Input type="email" placeholder="seu@rtm.net.br" className="pl-10 h-12 bg-muted/20 border-border/50 focus:border-primary/50 focus:ring-primary/20" required value={email} onChange={e => setEmail(e.target.value)} />
+                      <Input type="email" placeholder="seu@rtm.net.br" className="pl-10 h-12 bg-background border-border focus:border-primary/50 focus:ring-0" required value={email} onChange={e => setEmail(e.target.value)} />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -237,7 +232,7 @@ export default function LoginPage() {
                       <Input 
                         type={showPassword ? "text" : "password"} 
                         placeholder="••••••••" 
-                        className="pl-10 pr-10 h-12 bg-muted/20 border-border/50 focus:border-primary/50 focus:ring-primary/20" 
+                        className="pl-10 pr-10 h-12 bg-background border-border focus:border-primary/50 focus:ring-0" 
                         required 
                         value={password} 
                         onChange={e => setPassword(e.target.value)} 
@@ -251,7 +246,7 @@ export default function LoginPage() {
                       </button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full font-bold h-14 text-xs uppercase tracking-widest shadow-xl shadow-primary/20" disabled={loading}>
+                  <Button type="submit" className="w-full font-bold h-14 text-xs uppercase tracking-widest" disabled={loading}>
                     {loading ? <Loader2 className="animate-spin mr-2 size-4" /> : "Acessar Portal OnFlow"}
                   </Button>
                 </CardContent>
@@ -262,11 +257,11 @@ export default function LoginPage() {
                 <CardContent className="space-y-4 pt-6 pb-8 px-8">
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Nome do Colaborador</Label>
-                    <Input placeholder="Nome Completo" className="h-11 bg-muted/20" required value={name} onChange={e => setName(e.target.value)} />
+                    <Input placeholder="Nome Completo" className="h-11 bg-background" required value={name} onChange={e => setName(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">E-mail Corporativo</Label>
-                    <Input type="email" placeholder="seu@rtm.net.br" className="h-11 bg-muted/20" required value={email} onChange={e => setEmail(e.target.value)} />
+                    <Input type="email" placeholder="seu@rtm.net.br" className="h-11 bg-background" required value={email} onChange={e => setEmail(e.target.value)} />
                   </div>
                   
                   <div className="grid grid-cols-1 gap-4">
@@ -276,7 +271,7 @@ export default function LoginPage() {
                         <Building2 className="absolute left-3 top-3 size-4 text-muted-foreground opacity-50" />
                         <Input 
                           placeholder="Ex: Banco Delta S.A." 
-                          className="pl-10 h-11 bg-muted/20"
+                          className="pl-10 h-11 bg-background"
                           value={institutionName} 
                           onChange={e => setInstitutionName(e.target.value)} 
                           required 
@@ -287,7 +282,7 @@ export default function LoginPage() {
                       <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">CNPJ</Label>
                       <Input 
                         placeholder="00.000.000/0000-00" 
-                        className="h-11 bg-muted/20 font-mono text-xs"
+                        className="h-11 bg-background font-mono text-xs"
                         value={cnpj} 
                         onChange={handleCnpjChange} 
                         required 
@@ -301,7 +296,7 @@ export default function LoginPage() {
                       <Input 
                         type={showPassword ? "text" : "password"} 
                         placeholder="Mínimo 6 caracteres" 
-                        className="h-11 bg-muted/20"
+                        className="h-11 bg-background"
                         required 
                         value={password} 
                         onChange={e => setPassword(e.target.value)} 
@@ -314,13 +309,12 @@ export default function LoginPage() {
             </TabsContent>
           </Tabs>
 
-          <div className="p-6 bg-muted/30 border-t border-border/40 space-y-4">
-            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em] text-center opacity-70">Acessos Rápidos (Ambiente de Validação)</p>
+          <div className="p-6 bg-muted border-t border-border space-y-4">
+            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em] text-center opacity-70">Contas Master e Teste</p>
             <div className="grid grid-cols-2 gap-3">
               <QuickAccessButton 
                 label="Coordenação" 
                 icon={ShieldCheck} 
-                color="primary"
                 onClick={() => fillFields('admin@admin.com', '123456', 'Coordenador Master', 'RTM', '00.000.000/0001-91')}
               />
               <QuickAccessButton 
@@ -346,15 +340,15 @@ export default function LoginPage() {
   );
 }
 
-function QuickAccessButton({ label, icon: Icon, onClick, color }: any) {
+function QuickAccessButton({ label, icon: Icon, onClick }: any) {
   return (
     <Button 
       variant="outline" 
       size="sm" 
-      className={`text-[9px] font-bold uppercase tracking-widest h-auto py-3 flex-col gap-2 border-border/50 bg-background/50 hover:border-primary/50 transition-all ${color === 'primary' ? 'border-primary/20' : ''}`}
+      className="text-[9px] font-bold uppercase tracking-widest h-auto py-3 flex-col gap-2 border-border bg-background hover:bg-muted transition-colors"
       onClick={onClick}
     >
-      <Icon className={`size-3.5 ${color === 'primary' ? 'text-primary' : 'text-muted-foreground opacity-60'}`} />
+      <Icon className="size-3.5 text-muted-foreground opacity-60" />
       {label}
     </Button>
   );

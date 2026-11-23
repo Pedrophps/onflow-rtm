@@ -5,17 +5,16 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 const MIN_RADIUS = 7.5;
 const MAX_RADIUS = 15;
 const DEPTH = 2;
-const NUM_POINTS = 2500;
+const NUM_POINTS = 1500;
 
-// Configuração de Cores por Tema - Ajustado para RTM (Vermelho e Tons de Cinza/Prata)
 const THEME_COLORS = {
     dark: {
-        left: "e60000", // RTM Red
-        right: "475569" // Slate 600
+        left: "e60000",
+        right: "475569"
     },
     light: {
-        left: "e60000", // RTM Red
-        right: "94a3b8" // Slate 400 (Mais suave)
+        left: "e60000",
+        right: "94a3b8"
     }
 };
 
@@ -52,7 +51,6 @@ export const HeroBackground = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDark, setIsDark] = useState(false);
 
-    // Detecção de Tema
     useEffect(() => {
         const checkTheme = () => {
             const isDarkMode = document.documentElement.classList.contains('dark') || 
@@ -61,8 +59,6 @@ export const HeroBackground = () => {
         };
 
         checkTheme();
-        
-        // Observer para mudanças de classe (caso haja toggle de tema)
         const observer = new MutationObserver(checkTheme);
         observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
@@ -71,7 +67,6 @@ export const HeroBackground = () => {
 
     const colors = isDark ? THEME_COLORS.dark : THEME_COLORS.light;
 
-    // Memoização das partículas para evitar re-geração desnecessária, exceto na mudança de cores
     const points = useMemo(() => {
         const inner = Array.from({ length: NUM_POINTS }, (_, k) => k + 1).map((num) => {
             const randomRadius = randomFromInterval(MIN_RADIUS, MAX_RADIUS);
@@ -88,7 +83,7 @@ export const HeroBackground = () => {
             const angle = Math.random() * Math.PI * 2;
             const x = Math.cos(angle) * randomRadius;
             const y = Math.sin(angle) * randomRadius;
-            const z = randomFromInterval(-DEPTH * 10, DEPTH * 10);
+            const z = randomFromInterval(-DEPTH * 5, DEPTH * 5);
             const color = calculateColor(x, colors.left, colors.right);
             return { idx: num, position: [x, y, z], color };
         });
@@ -115,7 +110,7 @@ export const HeroBackground = () => {
         handleResize();
 
         const render = () => {
-            rotation += 0.002;
+            rotation += 0.001;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             const centerX = canvas.width / 2;
@@ -139,8 +134,8 @@ export const HeroBackground = () => {
                 const screenX = centerX + x * scale * perspective;
                 const screenY = centerY + y * scale * perspective;
                 
-                const size = Math.max(1, (z + 20) / 10 * perspective);
-                const opacity = Math.min(1, Math.max(0.1, (z + 20) / 40));
+                const size = Math.max(0.5, (z + 20) / 15 * perspective);
+                const opacity = Math.min(0.6, Math.max(0.05, (z + 20) / 60));
 
                 ctx.beginPath();
                 ctx.arc(screenX, screenY, size, 0, Math.PI * 2);
@@ -163,8 +158,7 @@ export const HeroBackground = () => {
     return (
         <canvas 
             ref={canvasRef} 
-            className="absolute inset-0 w-full h-full pointer-events-none opacity-40 dark:opacity-40"
-            style={{ filter: 'blur(1px)' }}
+            className="absolute inset-0 w-full h-full pointer-events-none opacity-20"
         />
     );
 };

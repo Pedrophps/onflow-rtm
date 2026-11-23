@@ -69,7 +69,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background font-body text-foreground transition-colors duration-500">
       {/* Header Section */}
-      <header className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-border/40">
+      <header className="fixed top-0 w-full z-50 bg-background/90 backdrop-blur-sm border-b border-border">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2 font-headline font-light text-2xl text-primary">
@@ -90,12 +90,12 @@ export default function Home() {
                 variant="ghost" 
                 size="icon" 
                 onClick={toggleTheme} 
-                className="rounded-full text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all"
+                className="rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-all"
               >
                 {isDarkMode ? <Sun className="size-4" /> : <Moon className="size-4" />}
               </Button>
 
-              <Button size="sm" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-primary/20" asChild>
+              <Button size="sm" className="rounded-full px-8 font-bold text-[10px] uppercase tracking-[0.2em]" asChild>
                 <Link href="/login">Acessar Portal</Link>
               </Button>
             </div>
@@ -114,7 +114,7 @@ export default function Home() {
                   <a href="#sobre" className="text-sm font-bold uppercase tracking-widest hover:text-primary transition-colors">Sobre</a>
                   <a href="#servicos" className="text-sm font-bold uppercase tracking-widest hover:text-primary transition-colors">Serviços Críticos</a>
                   <a href="#trajetoria" className="text-sm font-bold uppercase tracking-widest hover:text-primary transition-colors">Trajetória</a>
-                  <hr className="border-border/50" />
+                  <hr className="border-border" />
                   <Link href="/login" className="text-sm font-bold uppercase tracking-[0.2em] text-primary">Login</Link>
                 </nav>
               </SheetContent>
@@ -136,7 +136,7 @@ export default function Home() {
               "Estimular a evolução através do conhecimento." — Nosso propósito em cada conexão.
             </p>
             <div className="flex gap-6">
-              <Button size="lg" className="rounded-full px-12 h-16 font-bold gap-3 text-sm uppercase tracking-widest hover:scale-105 transition-all duration-500 shadow-xl shadow-primary/30" asChild>
+              <Button size="lg" className="rounded-full px-12 h-16 font-bold gap-3 text-sm uppercase tracking-widest hover:scale-105 transition-all duration-300" asChild>
                 <Link href="/login">Começar Agora <ArrowRight className="size-5" /></Link>
               </Button>
             </div>
@@ -145,7 +145,7 @@ export default function Home() {
       </section>
 
       {/* Sobre Section */}
-      <section id="sobre" className="py-32 bg-white dark:bg-slate-950 border-y border-border/30">
+      <section id="sobre" className="py-32 bg-white dark:bg-slate-950 border-y border-border">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto text-center space-y-10 mb-32">
             <h2 className="text-4xl lg:text-6xl font-light font-headline text-primary tracking-tighter leading-none">
@@ -238,15 +238,15 @@ export default function Home() {
               </CarouselItem>
             </CarouselContent>
             <div className="flex justify-end gap-3 mt-12">
-              <CarouselPrevious className="static translate-y-0 size-12 border border-border bg-white text-foreground hover:bg-primary hover:text-white transition-all rounded-full" />
-              <CarouselNext className="static translate-y-0 size-12 border border-border bg-white text-foreground hover:bg-primary hover:text-white transition-all rounded-full" />
+              <CarouselPrevious className="static translate-y-0 size-12 border border-border bg-white text-foreground hover:bg-muted transition-all rounded-full" />
+              <CarouselNext className="static translate-y-0 size-12 border border-border bg-white text-foreground hover:bg-muted transition-all rounded-full" />
             </div>
           </Carousel>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-20 border-t border-border/30 bg-muted/10">
+      <footer className="py-20 border-t border-border bg-muted/10">
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-10">
           <div className="space-y-2 text-center md:text-left">
             <p className="font-headline font-light text-primary text-3xl tracking-tighter">OnFlow <span className="text-muted-foreground opacity-30">by RTM</span></p>
@@ -265,7 +265,7 @@ export default function Home() {
 
 function ValueCard({ label, title, desc }: any) {
   return (
-    <div className="p-10 bg-white dark:bg-slate-900 rounded-2xl border border-border/50 flex flex-col justify-between hover:border-primary/30 transition-all group min-h-[300px]">
+    <div className="p-10 bg-white dark:bg-slate-900 rounded-lg border border-border flex flex-col justify-between hover:border-primary transition-all group min-h-[300px]">
       <div className="space-y-4">
         <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">{label}</span>
         <h4 className="text-2xl font-light font-headline text-foreground leading-tight">{title}</h4>
@@ -277,9 +277,9 @@ function ValueCard({ label, title, desc }: any) {
 
 function ServiceCard({ icon: Icon, title, desc }: any) {
   return (
-    <Card className="border border-border/40 hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 group bg-card p-2 rounded-2xl">
+    <Card className="border border-border hover:border-primary transition-all duration-300 group bg-card p-2 rounded-lg shadow-sm">
       <CardHeader className="pb-4">
-        <div className="size-12 rounded-xl bg-muted dark:bg-slate-800 text-primary flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-white transition-all duration-500">
+        <div className="size-12 rounded-md bg-muted dark:bg-slate-800 text-primary flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-white transition-all duration-300">
           <Icon className="size-6 stroke-[1.5]" />
         </div>
         <CardTitle className="text-xl font-light font-headline tracking-tight group-hover:text-primary transition-colors">{title}</CardTitle>
@@ -293,10 +293,10 @@ function ServiceCard({ icon: Icon, title, desc }: any) {
 
 function Milestone({ year, title, text, icon: Icon, isHighlight = false }: any) {
   return (
-    <div className={`relative p-8 rounded-2xl border transition-all duration-700 h-full min-h-[260px] flex flex-col justify-between ${
+    <div className={`relative p-8 rounded-lg border transition-all duration-500 h-full min-h-[260px] flex flex-col justify-between ${
       isHighlight 
-        ? "bg-primary text-white border-primary shadow-2xl shadow-primary/20" 
-        : "bg-white dark:bg-slate-900 border-border/50 hover:border-primary/30"
+        ? "bg-primary text-white border-primary shadow-sm" 
+        : "bg-white dark:bg-slate-900 border-border hover:border-primary"
     }`}>
       <div className="space-y-4">
         <div className="flex items-center justify-between">

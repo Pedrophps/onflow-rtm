@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -71,11 +70,10 @@
   }
 }
 
-/* Utilitários de Vidro e Profundidade Suave */
 .glass-panel {
-  @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-white/5;
+  @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm border border-border;
 }
 
 .rtm-gradient-red {
-  @apply bg-gradient-to-br from-[#e60000] to-[#c40000];
+  @apply bg-primary;
 }
