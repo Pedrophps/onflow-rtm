@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -25,7 +24,9 @@ import {
   Headset, 
   Eye, 
   EyeOff, 
-  ArrowLeft 
+  ArrowLeft,
+  Briefcase,
+  User
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -46,16 +47,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
 
-  const normalizeCnpj = (val: string) => val.replace(/\D/g, "");
-  const normalizeEmail = (val: string) => val.trim().toLowerCase();
-  const normalizeInstitution = (val: string) => val.trim().toUpperCase();
+  const normalizeCnpj = (val: string) => (val || "").replace(/\D/g, "");
+  const normalizeEmail = (val: string) => (val || "").trim().toLowerCase();
+  const normalizeInstitution = (val: string) => (val || "").trim().toUpperCase();
 
-  const checkCoordinatorCriteria = (emailVal: string, instVal: string, cnpjVal: string, verified: boolean) => {
+  const checkCoordinatorCriteria = (emailVal: string, instVal: string, cnpjVal: string) => {
     return (
       normalizeEmail(emailVal) === 'admin@admin.com' &&
       normalizeInstitution(instVal) === 'RTM' &&
-      normalizeCnpj(cnpjVal) === '00000000000191' &&
-      verified
+      normalizeCnpj(cnpjVal) === '00000000000191'
     );
   };
 
@@ -88,12 +88,12 @@ export default function LoginPage() {
       return;
     }
 
-    if (isAdminEmail(userEmail)) {
+    if (userData?.role === 'admin') {
       router.push('/dashboard/admin');
     } else {
       router.push('/dashboard/client');
     }
-  }, [router, isAdminEmail, db]);
+  }, [router, db]);
 
   useEffect(() => {
     if (currentUser && !authLoading) {
@@ -110,7 +110,7 @@ export default function LoginPage() {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(result.user, { displayName: name || 'Usuário RTM' });
 
-      const isCoordinator = checkCoordinatorCriteria(email, institutionName, cnpj, false); // No signup verified is false usually
+      const isCoordinator = checkCoordinatorCriteria(email, institutionName, cnpj);
       const role = (isAdminEmail(email) || isCoordinator) ? 'admin' : 'client';
       const adminType = isCoordinator ? 'coordenador_suporte' : (isAdminEmail(email) ? 'suporte' : undefined);
       
@@ -146,7 +146,6 @@ export default function LoginPage() {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       
-      // Verificação de Coordenador no Login para usuários existentes que agora atendem o critério
       const userSnap = await getDoc(doc(db, 'users', result.user.uid));
       const userData = userSnap.data();
       
@@ -154,8 +153,7 @@ export default function LoginPage() {
         const isCoordinator = checkCoordinatorCriteria(
           email, 
           userData.institutionName || '', 
-          userData.cnpj || '', 
-          result.user.emailVerified
+          userData.cnpj || ''
         );
 
         if (isCoordinator && userData.adminType !== 'coordenador_suporte') {
@@ -337,6 +335,24 @@ export default function LoginPage() {
               >
                 <Headset className="size-3" />
                 Suporte Operacional
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-secondary transition-all"
+                onClick={() => fillFields('comercial@rtm.net.br', '123456', 'Gestor Comercial', 'RTM', '00.000.000/0001-91')}
+              >
+                <Briefcase className="size-3 text-secondary" />
+                Gestão Comercial
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-slate-400 transition-all"
+                onClick={() => fillFields('cliente@cliente.com.br', '123456', 'Pedro Oliveira', 'BANCO DELTA S.A.', '11.222.333/0001-44')}
+              >
+                <User className="size-3 text-slate-500" />
+                Cliente Teste
               </Button>
             </div>
           </div>
