@@ -193,7 +193,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6 relative">
       <div className="absolute top-8 left-8">
-        <Button variant="ghost" asChild className="gap-2 font-bold text-muted-foreground hover:text-primary">
+        <Button variant="ghost" asChild className="gap-2 font-bold text-muted-foreground hover:text-primary transition-colors">
           <Link href="/">
             <ArrowLeft className="size-4" />
             Voltar
@@ -207,7 +207,7 @@ export default function LoginPage() {
           <p className="text-muted-foreground font-medium uppercase tracking-widest text-xs">Hub Integrador RTM</p>
         </div>
 
-        <Card className="border-2 shadow-xl bg-white overflow-hidden">
+        <Card className="border-2 shadow-xl bg-card text-card-foreground overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <CardHeader className="pb-0">
               <TabsList className="grid w-full grid-cols-2">
@@ -315,13 +315,13 @@ export default function LoginPage() {
             </TabsContent>
           </Tabs>
 
-          <div className="p-4 bg-muted/30 border-t space-y-3">
+          <div className="p-4 bg-muted/20 border-t space-y-3">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Contas Master e Teste</p>
             <div className="grid grid-cols-2 gap-2">
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="text-[10px] h-auto py-2 flex-col gap-1 border-primary/20 bg-primary/5 hover:bg-white hover:border-primary transition-all"
+                className="text-[10px] h-auto py-2 flex-col gap-1 border-primary/20 bg-primary/5 hover:bg-background hover:border-primary transition-all dark:hover:bg-slate-800"
                 onClick={() => fillFields('admin@admin.com', '123456', 'Coordenador Master', 'RTM', '00.000.000/0001-91')}
               >
                 <ShieldCheck className="size-3 text-primary" />
@@ -330,7 +330,7 @@ export default function LoginPage() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-primary transition-all"
+                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-background hover:border-primary transition-all dark:hover:bg-slate-800"
                 onClick={() => fillFields('suporte@rtm.net.br', '123456', 'Analista Suporte', 'RTM', '00.000.000/0001-91')}
               >
                 <Headset className="size-3" />
@@ -339,7 +339,7 @@ export default function LoginPage() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-secondary transition-all"
+                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-background hover:border-secondary transition-all dark:hover:bg-slate-800"
                 onClick={() => fillFields('comercial@rtm.net.br', '123456', 'Gestor Comercial', 'RTM', '00.000.000/0001-91')}
               >
                 <Briefcase className="size-3 text-secondary" />
@@ -348,7 +348,7 @@ export default function LoginPage() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-white hover:border-slate-400 transition-all"
+                className="text-[10px] h-auto py-2 flex-col gap-1 hover:bg-background hover:border-slate-400 transition-all dark:hover:bg-slate-800"
                 onClick={() => fillFields('cliente@cliente.com.br', '123456', 'Pedro Oliveira', 'BANCO DELTA S.A.', '11.222.333/0001-44')}
               >
                 <User className="size-3 text-slate-500" />
