@@ -83,13 +83,19 @@ export default function LoginPage() {
     const userSnap = await getDoc(doc(db, 'users', userUid));
     const userData = userSnap.data();
     
+    // Coordenador pula seleção
     if (userData?.adminType === 'coordenador_suporte') {
       router.push('/dashboard/admin?view=suporte');
       return;
     }
 
+    // Admins (Suporte/Comercial) devem indicar o que são se adminType estiver vazio
     if (userData?.role === 'admin') {
-      router.push('/dashboard/admin');
+      if (!userData.adminType) {
+        router.push('/dashboard/admin/select-profile');
+      } else {
+        router.push('/dashboard/admin');
+      }
     } else {
       router.push('/dashboard/client');
     }
@@ -111,8 +117,12 @@ export default function LoginPage() {
       await updateProfile(result.user, { displayName: name || 'Usuário RTM' });
 
       const isCoordinator = checkCoordinatorCriteria(email, institutionName, cnpj);
-      const role = (isAdminEmail(email) || isCoordinator) ? 'admin' : 'client';
-      const adminType = isCoordinator ? 'coordenador_suporte' : (isAdminEmail(email) ? 'suporte' : undefined);
+      const isRtm = isAdminEmail(email);
+      
+      const role = (isRtm || isCoordinator) ? 'admin' : 'client';
+      
+      // COM EXCEÇÃO DO COORDENADOR, usuários RTM devem indicar via tela de seleção
+      const adminType = isCoordinator ? 'coordenador_suporte' : undefined;
       
       const userRef = doc(db, 'users', result.user.uid);
 
@@ -127,6 +137,7 @@ export default function LoginPage() {
         createdAt: new Date().toISOString()
       }, { merge: true });
 
+      // Se for RTM comum, fastRedirect enviará para select-profile
       fastRedirect(result.user.uid, email);
     } catch (error: any) {
       setLoading(false);

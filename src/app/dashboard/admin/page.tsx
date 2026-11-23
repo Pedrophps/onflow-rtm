@@ -53,6 +53,7 @@ export default function AdminPage() {
         return;
       }
       
+      // Se for admin mas não tiver tipo definido (exceto se vier com view forçado por param)
       if (!profile?.adminType && !searchParams.get('view')) {
         router.push('/dashboard/admin/select-profile');
       }
@@ -77,6 +78,8 @@ export default function AdminPage() {
             <div className="flex items-center gap-2 text-primary font-bold">
               {currentView === 'suporte' ? (
                 <><Headset className="size-4" /><span>Visualização: SUPORTE TÉCNICO</span></>
+              ) : currentView === 'coordenador_suporte' ? (
+                <><ShieldCheck className="size-4" /><span>Visualização: COORDENAÇÃO DE SUPORTE</span></>
               ) : (
                 <><Briefcase className="size-4" /><span>Visualização: GESTÃO COMERCIAL</span></>
               )}
@@ -146,3 +149,5 @@ export default function AdminPage() {
     </DashboardLayout>
   );
 }
+
+import { ShieldCheck } from "lucide-react";
