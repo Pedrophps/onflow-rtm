@@ -7,7 +7,7 @@ import {
   createUserWithEmailAndPassword,
   updateProfile
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,6 @@ import {
   Lock, 
   Loader2, 
   Building2, 
-  UserCircle, 
   ShieldCheck, 
   Headset, 
   Eye, 
@@ -59,6 +58,12 @@ export default function LoginPage() {
     );
   };
 
+  const isAdminEmail = useCallback((emailStr: string | null | undefined) => {
+    if (!emailStr) return false;
+    const lowerEmail = emailStr.toLowerCase();
+    return lowerEmail.endsWith('@rtm.net.br') || lowerEmail.includes('admin');
+  }, []);
+
   const formatCnpj = (value: string) => {
     let v = value.replace(/\D/g, "");
     if (v.length > 14) v = v.slice(0, 14);
@@ -73,23 +78,15 @@ export default function LoginPage() {
     setCnpj(formatCnpj(e.target.value));
   };
 
-  const isAdminEmail = useCallback((emailStr: string | null | undefined) => {
-    if (!emailStr) return false;
-    const lowerEmail = emailStr.toLowerCase();
-    return lowerEmail.endsWith('@rtm.net.br') || lowerEmail.includes('admin');
-  }, []);
-
   const fastRedirect = useCallback(async (userUid: string, userEmail: string | null) => {
     const userSnap = await getDoc(doc(db, 'users', userUid));
     const userData = userSnap.data();
     
-    // Coordenador pula seleção
     if (userData?.adminType === 'coordenador_suporte') {
       router.push('/dashboard/admin?view=suporte');
       return;
     }
 
-    // Admins (Suporte/Comercial) devem indicar o que são se adminType estiver vazio
     if (userData?.role === 'admin') {
       if (!userData.adminType) {
         router.push('/dashboard/admin/select-profile');
@@ -118,10 +115,7 @@ export default function LoginPage() {
 
       const isCoordinator = checkCoordinatorCriteria(email, institutionName, cnpj);
       const isRtm = isAdminEmail(email);
-      
       const role = (isRtm || isCoordinator) ? 'admin' : 'client';
-      
-      // COM EXCEÇÃO DO COORDENADOR, usuários RTM devem indicar via tela de seleção
       const adminType = isCoordinator ? 'coordenador_suporte' : undefined;
       
       const userRef = doc(db, 'users', result.user.uid);
@@ -134,10 +128,10 @@ export default function LoginPage() {
         displayName: name || 'Usuário RTM',
         institutionName: institutionName,
         cnpj: cnpj,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: serverTimestamp()
       }, { merge: true });
 
-      // Se for RTM comum, fastRedirect enviará para select-profile
       fastRedirect(result.user.uid, email);
     } catch (error: any) {
       setLoading(false);
@@ -156,22 +150,25 @@ export default function LoginPage() {
 
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
-      
       const userSnap = await getDoc(doc(db, 'users', result.user.uid));
       const userData = userSnap.data();
       
       if (userData) {
-        const isCoordinator = checkCoordinatorCriteria(
-          email, 
-          userData.institutionName || '', 
-          userData.cnpj || ''
-        );
+        const isCoordinator = checkCoordinatorCriteria(email, userData.institutionName || '', userData.cnpj || '');
+        const isRtm = isAdminEmail(email);
 
         if (isCoordinator && userData.adminType !== 'coordenador_suporte') {
           await setDoc(doc(db, 'users', result.user.uid), {
             adminType: 'coordenador_suporte',
             role: 'admin',
-            status: 'approved'
+            status: 'approved',
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        } else if (isRtm && userData.role !== 'admin') {
+          await setDoc(doc(db, 'users', result.user.uid), {
+            role: 'admin',
+            status: 'approved',
+            updatedAt: serverTimestamp()
           }, { merge: true });
         }
       }
