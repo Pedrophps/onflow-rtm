@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -60,8 +61,8 @@ export default function LoginPage() {
 
   const isAdminEmail = useCallback((emailStr: string | null | undefined) => {
     if (!emailStr) return false;
-    const lowerEmail = emailStr.toLowerCase();
-    return lowerEmail.endsWith('@rtm.net.br') || lowerEmail.includes('admin');
+    const lowerEmail = emailStr.toLowerCase().trim();
+    return lowerEmail.endsWith('@rtm.net.br') || lowerEmail === 'admin@admin.com';
   }, []);
 
   const formatCnpj = (value: string) => {
@@ -82,13 +83,18 @@ export default function LoginPage() {
     const userSnap = await getDoc(doc(db, 'users', userUid));
     const userData = userSnap.data();
     
-    if (userData?.adminType === 'coordenador_suporte') {
+    const isRtm = isAdminEmail(userEmail);
+    const isCoordinator = userData?.adminType === 'coordenador_suporte';
+
+    if (isCoordinator) {
       router.push('/dashboard/admin?view=suporte');
       return;
     }
 
-    if (userData?.role === 'admin') {
-      if (!userData.adminType) {
+    // Se for RTM ou tiver role admin
+    if (isRtm || userData?.role === 'admin') {
+      if (!userData?.adminType) {
+        // Força seleção de Suporte ou Comercial
         router.push('/dashboard/admin/select-profile');
       } else {
         router.push('/dashboard/admin');
@@ -96,7 +102,7 @@ export default function LoginPage() {
     } else {
       router.push('/dashboard/client');
     }
-  }, [router, db]);
+  }, [router, db, isAdminEmail]);
 
   useEffect(() => {
     if (currentUser && !authLoading) {
@@ -124,10 +130,10 @@ export default function LoginPage() {
         email,
         role,
         adminType,
-        status: role === 'admin' ? 'approved' : 'pending',
+        status: 'approved', // RTM já nasce aprovado
         displayName: name || 'Usuário RTM',
-        institutionName: institutionName,
-        cnpj: cnpj,
+        institutionName: institutionName || 'RTM',
+        cnpj: cnpj || '00.000.000/0001-91',
         createdAt: new Date().toISOString(),
         updatedAt: serverTimestamp()
       }, { merge: true });
@@ -152,26 +158,34 @@ export default function LoginPage() {
       const result = await signInWithEmailAndPassword(auth, email, password);
       const userSnap = await getDoc(doc(db, 'users', result.user.uid));
       const userData = userSnap.data();
-      
-      if (userData) {
-        const isCoordinator = checkCoordinatorCriteria(email, userData.institutionName || '', userData.cnpj || '');
-        const isRtm = isAdminEmail(email);
+      const isRtm = isAdminEmail(email);
 
-        if (isCoordinator && userData.adminType !== 'coordenador_suporte') {
-          await setDoc(doc(db, 'users', result.user.uid), {
-            adminType: 'coordenador_suporte',
-            role: 'admin',
-            status: 'approved',
-            updatedAt: serverTimestamp()
-          }, { merge: true });
-        } else if (isRtm && userData.role !== 'admin') {
-          await setDoc(doc(db, 'users', result.user.uid), {
-            role: 'admin',
-            status: 'approved',
-            updatedAt: serverTimestamp()
-          }, { merge: true });
-        }
+      // Promoção Crítica: Se é RTM e não é admin no banco, corrige agora
+      if (isRtm && userData?.role !== 'admin') {
+        const isCoordinator = checkCoordinatorCriteria(email, userData?.institutionName || '', userData?.cnpj || '');
+        await setDoc(doc(db, 'users', result.user.uid), {
+          role: 'admin',
+          adminType: isCoordinator ? 'coordenador_suporte' : userData?.adminType,
+          status: 'approved',
+          updatedAt: serverTimestamp(),
+          displayName: userData?.displayName || auth.currentUser?.displayName || 'Analista RTM',
+          email: email
+        }, { merge: true });
+      } else if (!userData && isRtm) {
+        // Caso o usuário exista no Auth mas não no Firestore
+        await setDoc(doc(db, 'users', result.user.uid), {
+          email: email,
+          role: 'admin',
+          status: 'approved',
+          displayName: auth.currentUser?.displayName || 'Analista RTM',
+          institutionName: 'RTM',
+          cnpj: '00.000.000/0001-91',
+          createdAt: new Date().toISOString(),
+          updatedAt: serverTimestamp()
+        });
       }
+      
+      // O redirect será disparado pelo useEffect
     } catch (error: any) {
       setLoading(false);
       toast({ 
