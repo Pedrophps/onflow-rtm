@@ -5,16 +5,16 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 const MIN_RADIUS = 7.5;
 const MAX_RADIUS = 15;
 const DEPTH = 3;
-const NUM_POINTS = 2000;
+const NUM_POINTS = 3500; // Aumentado para mais densidade
 
 const THEME_COLORS = {
     dark: {
         left: "e60000",
-        right: "475569" // Slate-600 (Cinza neutro)
+        right: "475569" 
     },
     light: {
         left: "e60000",
-        right: "cbd5e1" // Slate-300 (Cinza neutro claro)
+        right: "cbd5e1" 
     }
 };
 
@@ -89,12 +89,12 @@ export const HeroBackground = () => {
             return { idx: num, position: [x, y, z], color };
         });
 
-        const outer = Array.from({ length: NUM_POINTS / 3 }, (_, k) => k + 1).map((num) => {
-            const randomRadius = randomFromInterval(MIN_RADIUS / 2, MAX_RADIUS * 2.5);
+        const outer = Array.from({ length: NUM_POINTS / 2 }, (_, k) => k + 1).map((num) => {
+            const randomRadius = randomFromInterval(MIN_RADIUS / 2, MAX_RADIUS * 3);
             const angle = Math.random() * Math.PI * 2;
             const x = Math.cos(angle) * randomRadius;
             const y = Math.sin(angle) * randomRadius;
-            const z = randomFromInterval(-DEPTH * 4, DEPTH * 4);
+            const z = randomFromInterval(-DEPTH * 5, DEPTH * 5);
             const color = calculateColor(x, colors.left, colors.right);
             return { idx: num, position: [x, y, z], color };
         });
@@ -121,28 +121,25 @@ export const HeroBackground = () => {
         handleResize();
 
         const render = () => {
-            rotation += 0.0015;
+            rotation += 0.004; // Velocidade aumentada
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
-            const scale = Math.min(canvas.width, canvas.height) / 35;
+            const scale = Math.min(canvas.width, canvas.height) / 30;
 
-            // Interação suave com o mouse (inclinação)
-            const targetRotationX = mousePos.current.y * 0.2;
-            const targetRotationY = mousePos.current.x * 0.2;
+            const targetRotationX = mousePos.current.y * 0.3;
+            const targetRotationY = mousePos.current.x * 0.3;
 
             const sortedPoints = points.map(p => {
                 const x = p.position[0];
                 const y = p.position[1];
                 const z = p.position[2];
 
-                // Rotação Automática + Interação Mouse
                 const currentRot = rotation + targetRotationY;
                 const rotX = x * Math.cos(currentRot) - z * Math.sin(currentRot);
                 const rotZ = x * Math.sin(currentRot) + z * Math.cos(currentRot);
                 
-                // Inclinação vertical baseada no mouse
                 const finalY = y * Math.cos(targetRotationX) - rotZ * Math.sin(targetRotationX);
                 const finalZ = y * Math.sin(targetRotationX) + rotZ * Math.cos(targetRotationX);
 
@@ -151,13 +148,12 @@ export const HeroBackground = () => {
 
             sortedPoints.forEach(p => {
                 const [x, y, z] = p.rotatedPos;
-                const perspective = 1200 / (1200 + z * scale);
+                const perspective = 1000 / (1000 + z * scale);
                 const screenX = centerX + x * scale * perspective;
                 const screenY = centerY + y * scale * perspective;
                 
-                const size = Math.max(0.7, (z + 25) / 12 * perspective);
-                // Opacidade aumentada para cor mais forte
-                const opacity = Math.min(0.8, Math.max(0.1, (z + 25) / 50));
+                const size = Math.max(1.1, (z + 30) / 10 * perspective); // Pontos maiores
+                const opacity = Math.min(0.9, Math.max(0.2, (z + 30) / 60)); // Mais opaco
 
                 ctx.beginPath();
                 ctx.arc(screenX, screenY, size, 0, Math.PI * 2);
@@ -180,7 +176,7 @@ export const HeroBackground = () => {
     return (
         <canvas 
             ref={canvasRef} 
-            className="absolute inset-0 w-full h-full pointer-events-none opacity-40 transition-opacity duration-1000"
+            className="absolute inset-0 w-full h-full pointer-events-none opacity-70 transition-opacity duration-1000"
         />
     );
 };
