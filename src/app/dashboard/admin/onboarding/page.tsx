@@ -41,7 +41,8 @@ import {
   Trash2,
   MessageSquare,
   UserCircle,
-  Hash
+  Hash,
+  Search
 } from "lucide-react";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, getDocs, orderBy, deleteDoc } from "firebase/firestore";
@@ -327,33 +328,56 @@ export default function OnboardingManagement() {
           <TabsContent value="available" className="space-y-4">
             <div className="grid gap-4">
               {availableActivities.length > 0 ? (
-                availableActivities.map((inst) => (
-                  <Card key={inst.id} className="border-l-4 border-l-amber-500 overflow-hidden group hover:shadow-md transition-all bg-card">
-                    <CardContent className="p-0">
-                      <div className="flex flex-col md:flex-row">
-                        <div className="p-6 flex-1 space-y-4">
-                          <div className="flex justify-between items-start">
-                            <div className="space-y-1">
-                              <h3 className="text-xl font-bold text-foreground">{inst.institutionName}</h3>
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1 font-bold text-primary"><Zap className="size-3" /> {productsMap[inst.productId] || inst.productId}</span>
+                availableActivities.map((inst) => {
+                  const client = allClients.find(c => c.id === inst.clientId);
+                  return (
+                    <Card key={inst.id} className="border-l-4 border-l-amber-500 overflow-hidden group hover:shadow-md transition-all bg-card">
+                      <CardContent className="p-0">
+                        <div className="flex flex-col md:flex-row">
+                          <div className="p-6 flex-1 space-y-4">
+                            <div className="flex justify-between items-start">
+                              <div className="space-y-1">
+                                <h3 className="text-xl font-bold text-foreground">{inst.institutionName}</h3>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1 font-bold text-primary"><Zap className="size-3" /> {productsMap[inst.productId] || inst.productName || inst.productId}</span>
+                                </div>
+                              </div>
+                              <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">Novo Ticket / API</Badge>
+                            </div>
+                            
+                            {/* Resumo da Ficha de Cadastro diretamente no card */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-dashed">
+                              <div className="space-y-1">
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Consultor RTM</p>
+                                <p className="text-xs font-semibold text-foreground flex items-center gap-2"><UserCircle className="size-3 text-primary" /> {client?.consultantName || 'Não informado'}</p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Ordem de Venda</p>
+                                <p className="text-xs font-mono font-bold text-foreground flex items-center gap-2"><Hash className="size-3 text-primary" /> {client?.orderValue || 'Pendente'}</p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Responsável Cliente</p>
+                                <p className="text-xs font-semibold text-foreground flex items-center gap-2"><User className="size-3 text-primary" /> {client?.displayName}</p>
                               </div>
                             </div>
-                            <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">Novo Ticket / API</Badge>
+
+                            <div className="text-[10px] text-muted-foreground font-medium flex items-center gap-2 pt-2">
+                              <Clock className="size-3" /> Recebido em: {new Date(inst.startedAt).toLocaleString()}
+                            </div>
                           </div>
-                          <div className="text-[10px] text-muted-foreground font-medium flex items-center gap-2">
-                            <Clock className="size-3" /> Recebido em: {new Date(inst.startedAt).toLocaleString()}
+                          <div className="bg-muted/10 md:w-64 flex flex-col gap-2 items-center justify-center p-6 border-l border-t md:border-t-0">
+                            <Button variant="outline" className="w-full gap-2 font-bold bg-background" onClick={() => handleViewFicha(inst.clientId)}>
+                              <Search className="size-4" /> Ver Ficha
+                            </Button>
+                            <Button className="w-full gap-2 font-bold shadow-lg" onClick={() => handleAssumeActivity(inst)}>
+                              <UserPlus className="size-4" /> Assumir
+                            </Button>
                           </div>
                         </div>
-                        <div className="bg-muted/10 md:w-48 flex items-center justify-center p-6 border-l border-t md:border-t-0">
-                          <Button className="w-full gap-2 font-bold shadow-lg" onClick={() => handleAssumeActivity(inst)}>
-                            <UserPlus className="size-4" /> Assumir
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                      </CardContent>
+                    </Card>
+                  );
+                })
               ) : (
                 <div className="p-20 text-center border-2 border-dashed rounded-3xl space-y-4 bg-muted/5">
                   <CheckCircle2 className="size-12 mx-auto text-emerald-500/20" />
@@ -408,7 +432,7 @@ export default function OnboardingManagement() {
                       <div className="space-y-1">
                         <h4 className="font-bold text-xl text-foreground">{inst.institutionName}</h4>
                         <p className="text-sm text-muted-foreground flex items-center gap-2">
-                          <Briefcase className="size-3.5" /> Produto: <strong>{productsMap[inst.productId] || inst.productId}</strong>
+                          <Briefcase className="size-3.5" /> Produto: <strong>{productsMap[inst.productId] || inst.productName || inst.productId}</strong>
                         </p>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
@@ -453,7 +477,7 @@ export default function OnboardingManagement() {
                       <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 gap-1.5 px-3 py-1 font-bold">
                         <CheckCircle2 className="size-3.5" /> JORNADA TÉCNICA
                       </Badge>
-                      <h2 className="text-3xl font-bold font-headline text-foreground">{selectedJourneyInstance.institutionName} - {productsMap[selectedJourneyInstance.productId] || selectedJourneyInstance.productId}</h2>
+                      <h2 className="text-3xl font-bold font-headline text-foreground">{selectedJourneyInstance.institutionName} - {productsMap[selectedJourneyInstance.productId] || selectedJourneyInstance.productName || selectedJourneyInstance.productId}</h2>
                       <p className="text-muted-foreground font-medium">Analista Responsável: <span className="text-foreground font-bold">{selectedJourneyInstance.techName}</span></p>
                     </div>
                     <div className="text-right">
