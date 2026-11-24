@@ -14,7 +14,8 @@ export type InstitutionalStatus =
   | 'em_analise_comercial' 
   | 'pendente_informacoes' 
   | 'aprovado_comercialmente' 
-  | 'reprovado';
+  | 'reprovado'
+  | 'ativo';
 
 export type SupportStatus = 
   | 'aguardando_encaminhamento' 
@@ -67,6 +68,9 @@ export interface OnboardingInstance {
   currentStepOrder: number;
   expectedDeliveryDate?: string; // ISO String
   startedAt: string;
+  completedAt?: string;
+  completedBy?: string;
+  completionObservation?: string;
   updatedAt: any;
   institutionName?: string;
   productName?: string;

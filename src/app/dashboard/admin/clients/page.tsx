@@ -39,7 +39,8 @@ import {
   Briefcase,
   Headset,
   CalendarDays,
-  MoreVertical
+  MoreVertical,
+  Flag
 } from "lucide-react";
 import { useState, useMemo, Fragment } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -130,10 +131,10 @@ export default function ClientsAdminPage() {
     const validClientIds = new Set(unifiedInstitutions.map(c => c.id));
     const activeInstances = instances.filter(i => validClientIds.has(i.clientId));
 
-    const awaitingSupportClients = new Set(activeInstances.filter(i => i.supportStatus === 'fila_suporte' || !i.techId).map(i => i.clientId));
-    const inProgressClients = new Set(activeInstances.filter(i => i.operationalStatus === 'em_andamento' || i.operationalStatus === 'em_homologacao').map(i => i.clientId));
-    const withIssuesClients = new Set(activeInstances.filter(i => i.operationalStatus === 'bloqueado' || i.operationalStatus === 'aguardando_cliente').map(i => i.clientId));
-    const completedClients = new Set(activeInstances.filter(i => i.operationalStatus === 'concluido').map(i => i.clientId));
+    const awaitingSupportClients = new Set(activeInstances.filter(i => (i.supportStatus === 'fila_suporte' || !i.techId) && i.status !== 'completed').map(i => i.clientId));
+    const inProgressClients = new Set(activeInstances.filter(i => (i.operationalStatus === 'em_andamento' || i.operationalStatus === 'em_homologacao') && i.status !== 'completed').map(i => i.clientId));
+    const withIssuesClients = new Set(activeInstances.filter(i => (i.operationalStatus === 'bloqueado' || i.operationalStatus === 'aguardando_cliente') && i.status !== 'completed').map(i => i.clientId));
+    const completedClients = new Set(activeInstances.filter(i => i.status === 'completed' || i.operationalStatus === 'concluido').map(i => i.clientId));
 
     return {
       total: unifiedInstitutions.length,
@@ -223,6 +224,7 @@ export default function ClientsAdminPage() {
     try {
       await updateDoc(ref, {
         operationalStatus: newStatus,
+        status: newStatus === 'concluido' ? 'completed' : 'active',
         updatedAt: serverTimestamp()
       });
       toast({ title: "Status Operacional Atualizado" });
@@ -318,7 +320,8 @@ export default function ClientsAdminPage() {
                                 <div className="space-y-1 flex flex-col items-center">
                                   <StatusBadge 
                                     type="operational" 
-                                    status={clientInstances.some(i => !i.techId) ? 'pending' :
+                                    status={clientInstances.every(i => i.status === 'completed') ? 'concluido' :
+                                            clientInstances.some(i => !i.techId) ? 'pending' :
                                             clientInstances.find(i => i.operationalStatus === 'bloqueado') ? 'bloqueado' : 
                                             clientInstances.find(i => i.operationalStatus === 'em_andamento') ? 'em_andamento' : 
                                             clientInstances[0].operationalStatus || 'em_andamento'} 
@@ -377,7 +380,7 @@ export default function ClientsAdminPage() {
                                 {clientInstances.length > 0 ? (
                                   <div className="grid gap-4">
                                     {clientInstances.map((inst) => {
-                                      const isDelayed = inst.expectedDeliveryDate && isAfter(new Date(), parseISO(inst.expectedDeliveryDate)) && inst.operationalStatus !== 'concluido';
+                                      const isDelayed = inst.expectedDeliveryDate && isAfter(new Date(), parseISO(inst.expectedDeliveryDate)) && inst.status !== 'completed';
                                       
                                       return (
                                         <Card key={inst.id} className="border-border bg-white shadow-sm overflow-hidden rounded-sm">
@@ -392,7 +395,7 @@ export default function ClientsAdminPage() {
 
                                             <div className="md:col-span-2 space-y-1">
                                               <p className="text-[9px] font-black uppercase text-muted-foreground">Operacional</p>
-                                              <StatusBadge type="operational" status={!inst.techId ? 'pending' : (inst.operationalStatus || 'em_andamento')} />
+                                              <StatusBadge type="operational" status={inst.status === 'completed' ? 'concluido' : (!inst.techId ? 'pending' : (inst.operationalStatus || 'em_andamento'))} />
                                             </div>
 
                                             <div className="md:col-span-2 space-y-1">
@@ -415,7 +418,7 @@ export default function ClientsAdminPage() {
                                             </div>
 
                                             <div className="md:col-span-3 flex justify-end gap-2">
-                                              {isSuporte && (
+                                              {isSuporte && inst.status !== 'completed' && (
                                                 <>
                                                   <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold rounded-sm" onClick={() => { setTargetInstance(inst); setIsETADialogOpen(true); }}>
                                                     Definir ETA
@@ -424,6 +427,11 @@ export default function ClientsAdminPage() {
                                                     Status
                                                   </Button>
                                                 </>
+                                              )}
+                                              {inst.status === 'completed' && (
+                                                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 rounded-sm">
+                                                  <Flag className="size-3" /> Finalizada
+                                                </Badge>
                                               )}
                                               <Button variant="ghost" size="icon" className="size-8">
                                                 <MoreVertical className="size-4 text-muted-foreground" />
@@ -600,6 +608,7 @@ function StatusBadge({ type, status }: { type: 'institutional' | 'operational', 
       cadastro_recebido: { label: "Recebido", color: "bg-slate-50 text-slate-700 border-slate-200" },
       aguardando_analise_comercial: { label: "Análise Comercial", color: "bg-slate-50 text-amber-700 border-amber-200" },
       aprovado_comercialmente: { label: "Aprovado", color: "bg-slate-50 text-emerald-700 border-emerald-200" },
+      ativo: { label: "Ativo", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
       reprovado: { label: "Reprovado", color: "bg-slate-50 text-red-700 border-red-200" },
       pending: { label: "Pendente", color: "bg-slate-50 text-slate-600 border-slate-200" },
     },
@@ -609,7 +618,7 @@ function StatusBadge({ type, status }: { type: 'institutional' | 'operational', 
       aguardando_cliente: { label: "Pendente Cliente", color: "bg-slate-50 text-amber-700 border-amber-200" },
       bloqueado: { label: "Bloqueado", color: "bg-slate-50 text-red-700 border-red-200" },
       em_homologacao: { label: "Homologação", color: "bg-slate-50 text-purple-700 border-purple-200" },
-      concluido: { label: "Concluído", color: "bg-slate-50 text-emerald-700 border-emerald-200" },
+      concluido: { label: "Concluído", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     }
   };
 

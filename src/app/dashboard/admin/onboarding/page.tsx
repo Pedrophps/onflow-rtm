@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ClipboardList, 
@@ -42,10 +43,11 @@ import {
   MessageSquare,
   UserCircle,
   Hash,
-  Search
+  Search,
+  Flag
 } from "lucide-react";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
-import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, getDocs, orderBy, deleteDoc } from "firebase/firestore";
+import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, getDocs, orderBy, deleteDoc, writeBatch } from "firebase/firestore";
 import { useMemo, useState, useEffect } from "react";
 import { UserProfile, OnboardingInstance, ActivationFlow, Product, FlowStep } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -62,7 +64,7 @@ export default function OnboardingManagement() {
   
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile } = useDoc<UserProfile>(userRef);
-  const isSupport = profile?.adminType === 'suporte';
+  const isSupport = profile?.adminType === 'suporte' || profile?.adminType === 'coordenador_suporte';
   const isAdminUser = profile?.role === 'admin';
 
   const [activeTab, setActiveTab] = useState("available");
@@ -76,6 +78,11 @@ export default function OnboardingManagement() {
   const [isSavingFlow, setIsSavingFlow] = useState(false);
   const [isUpdatingStep, setIsUpdatingStep] = useState(false);
   const [isFetchingFlows, setIsFetchingFlows] = useState(false);
+
+  // Estados para Conclusão
+  const [isCompletionOpen, setIsCompletionOpen] = useState(false);
+  const [completionNotes, setCompletionNotes] = useState("");
+  const [isCompleting, setIsCompleting] = useState(false);
 
   // Estados para Visão de Jornada Integrada
   const [journeyInstanceId, setJourneyInstanceId] = useState<string | null>(null);
@@ -104,7 +111,7 @@ export default function OnboardingManagement() {
   // 2. Buscar Instâncias de Onboarding
   const instancesQuery = useMemo(() => {
     if (!user) return null;
-    return query(collection(db, "onboardingInstances"));
+    return collection(db, "onboardingInstances");
   }, [db, user]);
   const { data: instances, loading: instancesLoading } = useCollection<OnboardingInstance>(instancesQuery);
 
@@ -140,6 +147,77 @@ export default function OnboardingManagement() {
       setActiveTab("my");
     } catch (e) {
       toast({ variant: "destructive", title: "Erro", description: "Falha ao assumir atividade." });
+    }
+  };
+
+  const handleCompleteActivation = async () => {
+    if (!selectedJourneyInstance?.id || !user || !isSupport || isCompleting) return;
+    setIsCompleting(true);
+
+    const batch = writeBatch(db);
+    const instanceRef = doc(db, "onboardingInstances", selectedJourneyInstance.id);
+    const logRef = doc(collection(db, "system_logs"));
+
+    try {
+      // 1. Atualizar a Instância
+      batch.update(instanceRef, {
+        status: 'completed',
+        operationalStatus: 'concluido',
+        completedAt: new Date().toISOString(),
+        completedBy: user.uid,
+        completionObservation: completionNotes,
+        updatedAt: serverTimestamp()
+      });
+
+      // 2. Registrar Log de Auditoria
+      batch.set(logRef, {
+        type: 'success',
+        message: `Ativação Técnica Concluída: ${selectedJourneyInstance.productName || selectedJourneyInstance.productId}`,
+        context: 'onboarding-completion',
+        instanceId: selectedJourneyInstance.id,
+        clientId: selectedJourneyInstance.clientId,
+        institutionName: selectedJourneyInstance.institutionName,
+        userId: user.uid,
+        userName: user.displayName || user.email,
+        timestamp: new Date().toISOString()
+      });
+
+      // 3. Verificar Status Institucional (Logica de Promoção para ATIVO)
+      const otherInstancesQuery = query(
+        collection(db, "onboardingInstances"),
+        where("clientId", "==", selectedJourneyInstance.clientId)
+      );
+      const otherInstancesSnap = await getDocs(otherInstancesQuery);
+      const allInstances = otherInstancesSnap.docs.map(d => d.data() as OnboardingInstance);
+      
+      const pendingInstances = allInstances.filter(i => i.id !== selectedJourneyInstance.id && i.status !== 'completed');
+      
+      // Se não houver mais nenhuma ativação pendente, marcamos o cliente como ATIVO
+      if (pendingInstances.length === 0) {
+        const clientRef = doc(db, "users", selectedJourneyInstance.clientId);
+        batch.update(clientRef, {
+          institutionalStatus: 'ativo',
+          updatedAt: serverTimestamp()
+        });
+      }
+
+      await batch.commit();
+
+      toast({
+        title: "Ativação Concluída",
+        description: `A jornada de ${selectedJourneyInstance.institutionName} foi encerrada com sucesso.`,
+      });
+      
+      setIsCompletionOpen(false);
+      setCompletionNotes("");
+    } catch (e: any) {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: instanceRef.path,
+        operation: 'update',
+        requestResourceData: { status: 'completed' }
+      }));
+    } finally {
+      setIsCompleting(false);
     }
   };
 
@@ -294,6 +372,7 @@ export default function OnboardingManagement() {
 
   const journeyProgress = useMemo(() => {
     if (!journeySteps.length) return 0;
+    if (selectedJourneyInstance?.status === 'completed') return 100;
     const currentOrder = selectedJourneyInstance?.currentStepOrder || 1;
     return Math.min(100, Math.round(((currentOrder - 1) / journeySteps.length) * 100));
   }, [journeySteps, selectedJourneyInstance]);
@@ -345,7 +424,6 @@ export default function OnboardingManagement() {
                               <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">Novo Ticket / API</Badge>
                             </div>
                             
-                            {/* Resumo da Ficha de Cadastro diretamente no card */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-dashed">
                               <div className="space-y-1">
                                 <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Consultor RTM</p>
@@ -462,7 +540,7 @@ export default function OnboardingManagement() {
             {selectedJourneyInstance ? (
               <div className="space-y-8">
                 <div className="bg-card rounded-3xl p-8 shadow-sm border space-y-6 relative overflow-hidden">
-                  {!selectedJourneyInstance?.flowId && (
+                  {!selectedJourneyInstance?.flowId && selectedJourneyInstance.status !== 'completed' && (
                     <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-12 text-center space-y-4">
                       <Settings2 className="size-12 text-amber-500 animate-spin" />
                       <div className="space-y-1">
@@ -474,15 +552,68 @@ export default function OnboardingManagement() {
 
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
                     <div className="space-y-2">
-                      <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 gap-1.5 px-3 py-1 font-bold">
-                        <CheckCircle2 className="size-3.5" /> JORNADA TÉCNICA
+                      <Badge variant="outline" className={cn(
+                        "gap-1.5 px-3 py-1 font-bold",
+                        selectedJourneyInstance.status === 'completed' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-primary/5 text-primary border-primary/20"
+                      )}>
+                        <CheckCircle2 className="size-3.5" /> {selectedJourneyInstance.status === 'completed' ? "JORNADA CONCLUÍDA" : "JORNADA TÉCNICA ATIVA"}
                       </Badge>
                       <h2 className="text-3xl font-bold font-headline text-foreground">{selectedJourneyInstance.institutionName} - {productsMap[selectedJourneyInstance.productId] || selectedJourneyInstance.productName || selectedJourneyInstance.productId}</h2>
                       <p className="text-muted-foreground font-medium">Analista Responsável: <span className="text-foreground font-bold">{selectedJourneyInstance.techName}</span></p>
                     </div>
-                    <div className="text-right">
-                      <span className="text-5xl font-black text-primary">{journeyProgress}%</span>
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Concluído</p>
+                    <div className="text-right flex flex-col items-end gap-4">
+                      {isSupport && selectedJourneyInstance.status !== 'completed' && (
+                        <AlertDialog open={isCompletionOpen} onOpenChange={setIsCompletionOpen}>
+                          <AlertDialogTrigger asChild>
+                            <Button className="bg-emerald-600 hover:bg-emerald-700 font-black gap-2 shadow-lg h-12 px-8 rounded-xl group">
+                              <Flag className="size-4 group-hover:scale-125 transition-transform" />
+                              Concluir Ativação
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-card rounded-3xl border-2">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="text-2xl font-headline flex items-center gap-3">
+                                <CheckCircle2 className="size-7 text-emerald-500" /> Concluir Ativação Técnica?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription className="text-base">
+                                Esta ação encerrará a jornada técnica de <strong>{selectedJourneyInstance.institutionName}</strong> e atualizará seu status na Gestão de Clientes para <strong>Concluída</strong>.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <div className="py-4 space-y-2">
+                              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Observações de Fechamento (Opcional)</Label>
+                              <Textarea 
+                                placeholder="Descreva os resultados finais, evidências coletadas ou observações para o comercial..."
+                                value={completionNotes}
+                                onChange={e => setCompletionNotes(e.target.value)}
+                                className="min-h-[100px] rounded-2xl"
+                              />
+                            </div>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="rounded-xl font-bold">Voltar ao Projeto</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={handleCompleteActivation} 
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black px-8"
+                                disabled={isCompleting}
+                              >
+                                {isCompleting ? <Loader2 className="size-4 animate-spin mr-2" /> : <Zap className="size-4 mr-2" />}
+                                Confirmar Conclusão
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                      
+                      {selectedJourneyInstance.status === 'completed' && (
+                        <div className="bg-emerald-50 border border-emerald-200 p-3 px-6 rounded-2xl flex flex-col items-end shadow-inner">
+                           <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Finalizado em:</p>
+                           <p className="text-sm font-bold text-emerald-900">{selectedJourneyInstance.completedAt ? new Date(selectedJourneyInstance.completedAt).toLocaleDateString() : 'N/A'}</p>
+                        </div>
+                      )}
+
+                      <div className="text-right">
+                        <span className="text-5xl font-black text-primary">{journeyProgress}%</span>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Concluído</p>
+                      </div>
                     </div>
                   </div>
                   <Progress value={journeyProgress} className="h-3 rounded-full" />
@@ -496,8 +627,8 @@ export default function OnboardingManagement() {
                   {journeySteps.length > 0 ? (
                     <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-border">
                       {journeySteps.map((step) => {
-                        const isCompleted = step.order < (selectedJourneyInstance.currentStepOrder || 1);
-                        const isCurrent = step.order === (selectedJourneyInstance.currentStepOrder || 1);
+                        const isCompleted = step.order < (selectedJourneyInstance.currentStepOrder || 1) || selectedJourneyInstance.status === 'completed';
+                        const isCurrent = step.order === (selectedJourneyInstance.currentStepOrder || 1) && selectedJourneyInstance.status !== 'completed';
                         const isExpanded = expandedStepId === step.id;
 
                         return (
@@ -513,7 +644,7 @@ export default function OnboardingManagement() {
                             <Card className={cn(
                               "transition-all duration-300 bg-card",
                               isCurrent ? "ring-2 ring-primary/20 shadow-lg border-primary/40" : 
-                              step.order > (selectedJourneyInstance.currentStepOrder || 1) ? "opacity-60" : "hover:border-primary/30"
+                              (step.order > (selectedJourneyInstance.currentStepOrder || 1) && selectedJourneyInstance.status !== 'completed') ? "opacity-60" : "hover:border-primary/30"
                             )}>
                               <CardHeader className="p-5 flex flex-row items-center justify-between cursor-pointer" onClick={() => setExpandedStepId(isExpanded ? null : step.id!)}>
                                 <div className="flex-1 space-y-1">
@@ -544,7 +675,7 @@ export default function OnboardingManagement() {
                                       <div className="p-4 rounded-xl bg-background border border-border text-sm text-foreground leading-relaxed font-medium">
                                         {step.description}
                                       </div>
-                                      {isCurrent && isSupport && (
+                                      {isCurrent && isSupport && selectedJourneyInstance.status !== 'completed' && (
                                         <div className="flex gap-3 pt-4 border-t">
                                           {step.order > 1 && (
                                             <Button 
@@ -566,7 +697,7 @@ export default function OnboardingManagement() {
                                           </Button>
                                         </div>
                                       )}
-                                      {!isCurrent && isSupport && step.order < (selectedJourneyInstance.currentStepOrder || 1) && (
+                                      {!isCurrent && isSupport && step.order < (selectedJourneyInstance.currentStepOrder || 1) && selectedJourneyInstance.status !== 'completed' && (
                                         <div className="pt-4 border-t">
                                           <Button 
                                             variant="ghost" 
@@ -584,7 +715,7 @@ export default function OnboardingManagement() {
                                         instanceId={selectedJourneyInstance.id!}
                                         stepId={step.id!}
                                         clientId={selectedJourneyInstance.clientId}
-                                        canInteract={isAdminUser}
+                                        canInteract={isAdminUser && selectedJourneyInstance.status !== 'completed'}
                                         userName={profile?.displayName}
                                         userRole={profile?.adminType || 'admin'}
                                       />
