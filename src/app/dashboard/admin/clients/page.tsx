@@ -318,7 +318,8 @@ export default function ClientsAdminPage() {
                                 <div className="space-y-1 flex flex-col items-center">
                                   <StatusBadge 
                                     type="operational" 
-                                    status={clientInstances.find(i => i.operationalStatus === 'bloqueado') ? 'bloqueado' : 
+                                    status={clientInstances.some(i => !i.techId) ? 'pending' :
+                                            clientInstances.find(i => i.operationalStatus === 'bloqueado') ? 'bloqueado' : 
                                             clientInstances.find(i => i.operationalStatus === 'em_andamento') ? 'em_andamento' : 
                                             clientInstances[0].operationalStatus || 'em_andamento'} 
                                   />
@@ -391,7 +392,7 @@ export default function ClientsAdminPage() {
 
                                             <div className="md:col-span-2 space-y-1">
                                               <p className="text-[9px] font-black uppercase text-muted-foreground">Operacional</p>
-                                              <StatusBadge type="operational" status={inst.operationalStatus || 'em_andamento'} />
+                                              <StatusBadge type="operational" status={!inst.techId ? 'pending' : (inst.operationalStatus || 'em_andamento')} />
                                             </div>
 
                                             <div className="md:col-span-2 space-y-1">
@@ -603,6 +604,7 @@ function StatusBadge({ type, status }: { type: 'institutional' | 'operational', 
       pending: { label: "Pendente", color: "bg-slate-50 text-slate-600 border-slate-200" },
     },
     operational: {
+      pending: { label: "Pendente", color: "bg-slate-50 text-amber-700 border-slate-200" },
       em_andamento: { label: "Em Execução", color: "bg-slate-50 text-blue-700 border-slate-200" },
       aguardando_cliente: { label: "Pendente Cliente", color: "bg-slate-50 text-amber-700 border-amber-200" },
       bloqueado: { label: "Bloqueado", color: "bg-slate-50 text-red-700 border-red-200" },
