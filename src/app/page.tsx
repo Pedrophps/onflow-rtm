@@ -130,7 +130,7 @@ export default function Home() {
           <div className="max-w-4xl space-y-10 animate-in fade-in slide-in-from-left duration-1000">
             <h1 className="text-6xl lg:text-8xl font-light tracking-tighter text-slate-900 dark:text-white font-headline leading-[0.9]">
               Somos a <span className="text-primary font-normal">RTM.</span><br />
-              <span className="text-2xl lg:text-4xl opacity-50 block mt-6 font-light tracking-tight">O Hub integrador do mercado financeiro.</span>
+              <span className="text-2xl lg:text-4xl opacity-50 block mt-6 font-light tracking-tight">O Hub <span className="font-bold">integrador</span> do mercado financeiro.</span>
             </h1>
             <p className="text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-2xl font-light italic">
               "Estimular a evolução através do conhecimento." — Nosso propósito em cada conexão.
