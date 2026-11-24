@@ -130,10 +130,13 @@ export default function ClientsAdminPage() {
 
   // Indicadores calculados sobre a base unificada
   const stats = useMemo(() => {
+    // Apenas clientes que aparecem na lista final (unificada)
     const validClientIds = new Set(unifiedInstitutions.map(c => c.id));
     
+    // Ativações válidas (que pertencem a clientes da nossa lista unificada)
     const activeInstances = instances.filter(i => validClientIds.has(i.clientId));
 
+    // Contagem de instituições ÚNICAS em cada estado
     const awaitingSupportClients = new Set(activeInstances.filter(i => i.supportStatus === 'fila_suporte' || !i.techId).map(i => i.clientId));
     const inProgressClients = new Set(activeInstances.filter(i => i.operationalStatus === 'em_andamento' || i.operationalStatus === 'em_homologacao').map(i => i.clientId));
     const withIssuesClients = new Set(activeInstances.filter(i => i.operationalStatus === 'bloqueado' || i.operationalStatus === 'aguardando_cliente').map(i => i.clientId));
@@ -167,6 +170,7 @@ export default function ClientsAdminPage() {
     const instancesRef = collection(db, "onboardingInstances");
 
     try {
+      // Se o cliente existe na coleção, aprova ele se estiver pendente
       if (dbClients.find(c => c.id === selectedClient.id)) {
         await updateDoc(clientRef, {
           status: 'approved',
@@ -317,20 +321,22 @@ export default function ClientsAdminPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-col gap-1.5">
+                            <div className="flex flex-col gap-2">
                               {clientInstances.length > 0 ? (
-                                <>
+                                <div className="space-y-1.5">
                                   <StatusBadge 
                                     type="operational" 
                                     status={clientInstances.find(i => i.operationalStatus === 'bloqueado') ? 'bloqueado' : 
                                             clientInstances.find(i => i.operationalStatus === 'em_andamento') ? 'em_andamento' : 
                                             clientInstances[0].operationalStatus || 'em_andamento'} 
                                   />
-                                  <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-tight text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-sm w-fit border border-border/50">
-                                    <Headset className="size-3 text-primary" />
-                                    {clientInstances.find(i => i.techName)?.techName || "Fila de Espera"}
+                                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 w-fit">
+                                    <Headset className="size-2.5 text-primary" />
+                                    <span className="text-[9px] font-black uppercase text-slate-600">
+                                      {clientInstances.find(i => i.techName)?.techName || "Fila de Espera"}
+                                    </span>
                                   </div>
-                                </>
+                                </div>
                               ) : (
                                 <StatusBadge type="institutional" status={client.institutionalStatus || (client.status === 'approved' ? 'aprovado_comercialmente' : 'cadastro_recebido')} />
                               )}
@@ -598,24 +604,30 @@ function IndicatorCard({ label, value, icon: Icon, color }: any) {
 function StatusBadge({ type, status }: { type: 'institutional' | 'operational', status: string }) {
   const configs: any = {
     institutional: {
-      cadastro_recebido: { label: "Cadastro Recebido", color: "bg-blue-100 text-blue-700 border-blue-200" },
-      aguardando_analise_comercial: { label: "Análise Comercial", color: "bg-amber-100 text-amber-700 border-amber-200" },
-      aprovado_comercialmente: { label: "Aprovado", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-      reprovado: { label: "Reprovado", color: "bg-red-100 text-red-700 border-red-200" },
-      pending: { label: "Pendente", color: "bg-slate-100 text-slate-700 border-slate-200" },
+      cadastro_recebido: { label: "Recebido", color: "bg-blue-50 text-blue-700 border-blue-100" },
+      aguardando_analise_comercial: { label: "Análise Comercial", color: "bg-amber-50 text-amber-700 border-amber-100" },
+      aprovado_comercialmente: { label: "Aprovado", color: "bg-emerald-50 text-emerald-700 border-emerald-100" },
+      reprovado: { label: "Reprovado", color: "bg-red-50 text-red-700 border-red-100" },
+      pending: { label: "Pendente", color: "bg-slate-100 text-slate-600 border-slate-200" },
     },
     operational: {
-      em_andamento: { label: "Em Andamento", color: "bg-blue-100 text-blue-700 border-blue-200" },
-      aguardando_cliente: { label: "Pendente Cliente", color: "bg-amber-100 text-amber-700 border-amber-200" },
-      bloqueado: { label: "Bloqueado", color: "bg-red-100 text-red-700 border-red-200" },
-      em_homologacao: { label: "Homologação", color: "bg-purple-100 text-purple-700 border-purple-200" },
-      concluido: { label: "Concluído", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+      em_andamento: { label: "Em Execução", color: "bg-blue-50 text-blue-700 border-blue-200" },
+      aguardando_cliente: { label: "Pendente Cliente", color: "bg-amber-50 text-amber-700 border-amber-200" },
+      bloqueado: { label: "Bloqueado", color: "bg-red-50 text-red-700 border-red-200" },
+      em_homologacao: { label: "Homologação", color: "bg-purple-50 text-purple-700 border-purple-200" },
+      concluido: { label: "Concluído", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     }
   };
 
-  const config = configs[type][status] || { label: status, color: "bg-slate-100 text-slate-700 border-slate-200" };
+  const config = configs[type][status] || { label: status, color: "bg-slate-50 text-slate-600 border-slate-200" };
   return (
-    <Badge variant="outline" className={cn("text-[9px] uppercase font-black px-2 py-0.5", config.color)}>
+    <Badge 
+      variant="outline" 
+      className={cn(
+        "text-[9px] uppercase font-black px-2.5 py-0.5 rounded-sm tracking-tight border-2 shadow-none", 
+        config.color
+      )}
+    >
       {config.label}
     </Badge>
   );
