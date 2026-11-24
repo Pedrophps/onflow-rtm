@@ -283,7 +283,7 @@ export default function ClientsAdminPage() {
                   <TableRow className="bg-muted/10 hover:bg-muted/10 border-border">
                     <TableHead className="w-12"></TableHead>
                     <TableHead>Instituição / CNPJ</TableHead>
-                    <TableHead>Status Atual</TableHead>
+                    <TableHead className="text-center">Status Atual</TableHead>
                     <TableHead className="text-center">Ativações</TableHead>
                     <TableHead>Responsável Comercial</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
@@ -312,10 +312,10 @@ export default function ClientsAdminPage() {
                               <span className="text-[10px] font-mono text-muted-foreground">{client.cnpj || "CNPJ NÃO VINCULADO"}</span>
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1.5">
+                          <TableCell className="text-center">
+                            <div className="flex flex-col items-center justify-center gap-1.5">
                               {clientInstances.length > 0 ? (
-                                <div className="space-y-1">
+                                <div className="space-y-1 flex flex-col items-center">
                                   <StatusBadge 
                                     type="operational" 
                                     status={clientInstances.find(i => i.operationalStatus === 'bloqueado') ? 'bloqueado' : 
