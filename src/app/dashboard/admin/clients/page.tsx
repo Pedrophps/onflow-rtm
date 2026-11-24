@@ -107,15 +107,20 @@ export default function ClientsAdminPage() {
   }, [db, user]);
   const { data: dbProducts } = useCollection<Product>(productsQuery);
 
-  // Indicadores
+  // Indicadores (Contando Instituições Únicas para cada estado)
   const stats = useMemo(() => {
+    const awaitingSupportClients = new Set(instances.filter(i => i.supportStatus === 'fila_suporte' || !i.techId).map(i => i.clientId));
+    const inProgressClients = new Set(instances.filter(i => i.operationalStatus === 'em_andamento' || i.operationalStatus === 'em_homologacao').map(i => i.clientId));
+    const withIssuesClients = new Set(instances.filter(i => i.operationalStatus === 'bloqueado' || i.operationalStatus === 'aguardando_cliente').map(i => i.clientId));
+    const completedClients = new Set(instances.filter(i => i.operationalStatus === 'concluido').map(i => i.clientId));
+
     return {
       total: clients.length,
       pendingCommercial: clients.filter(c => c.institutionalStatus === 'aguardando_analise_comercial' || c.status === 'pending').length,
-      awaitingSupport: instances.filter(i => i.supportStatus === 'fila_suporte' || !i.techId).length,
-      inProgress: instances.filter(i => i.operationalStatus === 'em_andamento' || i.operationalStatus === 'em_homologacao').length,
-      withIssues: instances.filter(i => i.operationalStatus === 'bloqueado' || i.operationalStatus === 'aguardando_cliente').length,
-      completed: instances.filter(i => i.operationalStatus === 'concluido').length,
+      awaitingSupport: awaitingSupportClients.size,
+      inProgress: inProgressClients.size,
+      withIssues: withIssuesClients.size,
+      completed: completedClients.size,
     };
   }, [clients, instances]);
 
