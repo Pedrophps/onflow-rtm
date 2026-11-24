@@ -42,8 +42,6 @@ import {
 } from "lucide-react";
 import { useState, useMemo, Fragment } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { format, isAfter, parseISO } from "date-fns";
@@ -80,14 +78,14 @@ export default function ClientsAdminPage() {
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<OperationalStatus>("em_andamento");
 
-  // Buscar Clientes (Sincronizado com Onboarding)
+  // Buscar Usuários do tipo Cliente
   const clientsQuery = useMemo(() => {
     if (!user) return null;
     return query(collection(db, "users"), where("role", "==", "client"));
   }, [db, user]);
-  const { data: clients, loading: usersLoading } = useCollection<UserProfile>(clientsQuery);
+  const { data: dbClients, loading: usersLoading } = useCollection<UserProfile>(clientsQuery);
 
-  // Buscar Todas as Instâncias
+  // Buscar Todas as Instâncias de Onboarding
   const instancesQuery = useMemo(() => {
     if (!user) return null;
     return collection(db, "onboardingInstances");
@@ -101,36 +99,67 @@ export default function ClientsAdminPage() {
   }, [db, user]);
   const { data: dbProducts } = useCollection<Product>(productsQuery);
 
-  // Indicadores sincronizados com a lista de clientes visível
-  const stats = useMemo(() => {
-    const validClientIds = new Set(clients.map(c => c.id));
-    const validInstances = instances.filter(i => validClientIds.has(i.clientId));
+  // LÓGICA DE SINCRONIZAÇÃO: Construir a lista unificada de instituições
+  const unifiedInstitutions = useMemo(() => {
+    // Começa com os clientes da coleção users
+    const institutions = [...dbClients];
+    
+    // Identifica IDs de clientes que estão em instâncias mas não na coleção de usuários
+    const userIdsInCollection = new Set(dbClients.map(c => c.id));
+    
+    instances.forEach(inst => {
+      if (!userIdsInCollection.has(inst.clientId)) {
+        // Cria um "objeto fantasma" para instituições que só existem na coleção de instâncias
+        // Isso acontece com automações ou dados importados
+        const alreadyAdded = institutions.find(i => i.id === inst.clientId);
+        if (!alreadyAdded) {
+          institutions.push({
+            id: inst.clientId,
+            institutionName: inst.institutionName || "Instituição s/ Cadastro",
+            displayName: inst.institutionName || "Instituição s/ Cadastro",
+            status: 'approved', // Presumido se já há uma instância
+            role: 'client',
+            email: 'pendente@rtm.net.br',
+            createdAt: inst.startedAt || new Date().toISOString()
+          } as UserProfile);
+        }
+      }
+    });
 
-    const awaitingSupportClients = new Set(validInstances.filter(i => i.supportStatus === 'fila_suporte' || !i.techId).map(i => i.clientId));
-    const inProgressClients = new Set(validInstances.filter(i => i.operationalStatus === 'em_andamento' || i.operationalStatus === 'em_homologacao').map(i => i.clientId));
-    const withIssuesClients = new Set(validInstances.filter(i => i.operationalStatus === 'bloqueado' || i.operationalStatus === 'aguardando_cliente').map(i => i.clientId));
-    const completedClients = new Set(validInstances.filter(i => i.operationalStatus === 'concluido').map(i => i.clientId));
+    return institutions;
+  }, [dbClients, instances]);
+
+  // Indicadores calculados sobre a base unificada
+  const stats = useMemo(() => {
+    const validClientIds = new Set(unifiedInstitutions.map(c => c.id));
+    
+    // Filtra instâncias para considerar apenas as que pertencem à nossa base visível
+    const activeInstances = instances.filter(i => validClientIds.has(i.clientId));
+
+    const awaitingSupportClients = new Set(activeInstances.filter(i => i.supportStatus === 'fila_suporte' || !i.techId).map(i => i.clientId));
+    const inProgressClients = new Set(activeInstances.filter(i => i.operationalStatus === 'em_andamento' || i.operationalStatus === 'em_homologacao').map(i => i.clientId));
+    const withIssuesClients = new Set(activeInstances.filter(i => i.operationalStatus === 'bloqueado' || i.operationalStatus === 'aguardando_cliente').map(i => i.clientId));
+    const completedClients = new Set(activeInstances.filter(i => i.operationalStatus === 'concluido').map(i => i.clientId));
 
     return {
-      total: clients.length,
-      pendingCommercial: clients.filter(c => c.institutionalStatus === 'aguardando_analise_comercial' || c.status === 'pending').length,
+      total: unifiedInstitutions.length,
+      pendingCommercial: unifiedInstitutions.filter(c => c.status === 'pending').length,
       awaitingSupport: awaitingSupportClients.size,
       inProgress: inProgressClients.size,
       withIssues: withIssuesClients.size,
       completed: completedClients.size,
     };
-  }, [clients, instances]);
+  }, [unifiedInstitutions, instances]);
 
-  // Filtro
-  const filteredClients = useMemo(() => {
-    return clients
+  // Filtro de pesquisa
+  const filteredInstitutions = useMemo(() => {
+    return unifiedInstitutions
       .filter(c => 
         (c.institutionName || c.displayName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (c.cnpj || "").includes(searchTerm) ||
-        (c.displayName || "").toLowerCase().includes(searchTerm.toLowerCase())
+        (c.cnpj || "").includes(searchTerm)
       )
       .sort((a, b) => (a.institutionName || a.displayName || "").localeCompare(b.institutionName || b.displayName || ""));
-  }, [clients, searchTerm]);
+  }, [unifiedInstitutions, searchTerm]);
 
   const handleCreateActivation = async () => {
     if (!selectedClient?.id || isSubmitting || selectedProductIds.length === 0) return;
@@ -140,11 +169,14 @@ export default function ClientsAdminPage() {
     const instancesRef = collection(db, "onboardingInstances");
 
     try {
-      await updateDoc(clientRef, {
-        status: 'approved',
-        institutionalStatus: 'aprovado_comercialmente',
-        updatedAt: serverTimestamp()
-      });
+      // Tenta atualizar o perfil se ele existir
+      if (dbClients.find(c => c.id === selectedClient.id)) {
+        await updateDoc(clientRef, {
+          status: 'approved',
+          institutionalStatus: 'aprovado_comercialmente',
+          updatedAt: serverTimestamp()
+        });
+      }
 
       const promises = selectedProductIds.map(pid => {
         const product = dbProducts.find(p => p.id === pid);
@@ -265,7 +297,7 @@ export default function ClientsAdminPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredClients.map((client) => {
+                  {filteredInstitutions.map((client) => {
                     const clientInstances = instances.filter(i => i.clientId === client.id);
                     const isExpanded = expandedInstitution === client.id;
                     
@@ -284,7 +316,7 @@ export default function ClientsAdminPage() {
                           <TableCell>
                             <div className="flex flex-col">
                               <span className="font-bold text-foreground group-hover:text-primary transition-colors">{client.institutionName || client.displayName}</span>
-                              <span className="text-[10px] font-mono text-muted-foreground">{client.cnpj || "N/A"}</span>
+                              <span className="text-[10px] font-mono text-muted-foreground">{client.cnpj || "CNPJ NÃO VINCULADO"}</span>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -340,7 +372,7 @@ export default function ClientsAdminPage() {
                                             <div className="md:col-span-3 space-y-1">
                                               <p className="text-[9px] font-black uppercase text-muted-foreground">Produto</p>
                                               <p className="font-bold text-foreground flex items-center gap-2">
-                                                <Package className="size-3 text-primary" /> {inst.productName}
+                                                <Package className="size-3 text-primary" /> {inst.productName || inst.productId}
                                               </p>
                                               <p className="text-[10px] text-muted-foreground truncate font-mono">ID: {inst.id?.substring(0, 8)}</p>
                                             </div>
@@ -401,7 +433,7 @@ export default function ClientsAdminPage() {
                       </Fragment>
                     );
                   })}
-                  {filteredClients.length === 0 && (
+                  {filteredInstitutions.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-20 text-muted-foreground">Nenhuma instituição encontrada com estes critérios.</TableCell>
                     </TableRow>
