@@ -1,3 +1,4 @@
+
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -109,15 +110,13 @@ export default function ClientsAdminPage() {
     
     instances.forEach(inst => {
       if (!userIdsInCollection.has(inst.clientId)) {
-        // Cria um "objeto fantasma" para instituições que só existem na coleção de instâncias
-        // Isso acontece com automações ou dados importados
         const alreadyAdded = institutions.find(i => i.id === inst.clientId);
         if (!alreadyAdded) {
           institutions.push({
             id: inst.clientId,
             institutionName: inst.institutionName || "Instituição s/ Cadastro",
             displayName: inst.institutionName || "Instituição s/ Cadastro",
-            status: 'approved', // Presumido se já há uma instância
+            status: 'approved',
             role: 'client',
             email: 'pendente@rtm.net.br',
             createdAt: inst.startedAt || new Date().toISOString()
@@ -133,7 +132,6 @@ export default function ClientsAdminPage() {
   const stats = useMemo(() => {
     const validClientIds = new Set(unifiedInstitutions.map(c => c.id));
     
-    // Filtra instâncias para considerar apenas as que pertencem à nossa base visível
     const activeInstances = instances.filter(i => validClientIds.has(i.clientId));
 
     const awaitingSupportClients = new Set(activeInstances.filter(i => i.supportStatus === 'fila_suporte' || !i.techId).map(i => i.clientId));
@@ -169,7 +167,6 @@ export default function ClientsAdminPage() {
     const instancesRef = collection(db, "onboardingInstances");
 
     try {
-      // Tenta atualizar o perfil se ele existir
       if (dbClients.find(c => c.id === selectedClient.id)) {
         await updateDoc(clientRef, {
           status: 'approved',
@@ -320,7 +317,24 @@ export default function ClientsAdminPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <StatusBadge type="institutional" status={client.institutionalStatus || (client.status === 'approved' ? 'aprovado_comercialmente' : 'cadastro_recebido')} />
+                            <div className="flex flex-col gap-1.5">
+                              {clientInstances.length > 0 ? (
+                                <>
+                                  <StatusBadge 
+                                    type="operational" 
+                                    status={clientInstances.find(i => i.operationalStatus === 'bloqueado') ? 'bloqueado' : 
+                                            clientInstances.find(i => i.operationalStatus === 'em_andamento') ? 'em_andamento' : 
+                                            clientInstances[0].operationalStatus || 'em_andamento'} 
+                                  />
+                                  <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-tight text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-sm w-fit border border-border/50">
+                                    <Headset className="size-3 text-primary" />
+                                    {clientInstances.find(i => i.techName)?.techName || "Fila de Espera"}
+                                  </div>
+                                </>
+                              ) : (
+                                <StatusBadge type="institutional" status={client.institutionalStatus || (client.status === 'approved' ? 'aprovado_comercialmente' : 'cadastro_recebido')} />
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-center">
                             <Badge variant="outline" className="rounded-full bg-white border-primary/20 text-primary font-bold">
