@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
@@ -5,7 +6,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 const MIN_RADIUS = 7.5;
 const MAX_RADIUS = 15;
 const DEPTH = 3;
-const NUM_POINTS = 3000; // Ajustado para 3000 conforme solicitado
+const NUM_POINTS = 2500; 
 
 const THEME_COLORS = {
     dark: {
