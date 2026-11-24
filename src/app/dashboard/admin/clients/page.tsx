@@ -1,4 +1,3 @@
-
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -48,7 +47,6 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { format, isAfter, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 export default function ClientsAdminPage() {
   const db = useFirestore();
@@ -82,16 +80,12 @@ export default function ClientsAdminPage() {
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<OperationalStatus>("em_andamento");
 
-  // Buscar Todos os Usuários
-  const usersQuery = useMemo(() => {
+  // Buscar Clientes (Sincronizado com Onboarding)
+  const clientsQuery = useMemo(() => {
     if (!user) return null;
-    return collection(db, "users");
+    return query(collection(db, "users"), where("role", "==", "client"));
   }, [db, user]);
-  const { data: allUsers, loading: usersLoading } = useCollection<UserProfile>(usersQuery);
-
-  const clients = useMemo(() => {
-    return allUsers.filter(u => u.role === 'client');
-  }, [allUsers]);
+  const { data: clients, loading: usersLoading } = useCollection<UserProfile>(clientsQuery);
 
   // Buscar Todas as Instâncias
   const instancesQuery = useMemo(() => {
@@ -107,7 +101,7 @@ export default function ClientsAdminPage() {
   }, [db, user]);
   const { data: dbProducts } = useCollection<Product>(productsQuery);
 
-  // Indicadores sincronizados com a lista de clientes atual
+  // Indicadores sincronizados com a lista de clientes visível
   const stats = useMemo(() => {
     const validClientIds = new Set(clients.map(c => c.id));
     const validInstances = instances.filter(i => validClientIds.has(i.clientId));
@@ -131,11 +125,11 @@ export default function ClientsAdminPage() {
   const filteredClients = useMemo(() => {
     return clients
       .filter(c => 
-        c.institutionName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.cnpj?.includes(searchTerm) ||
-        c.displayName?.toLowerCase().includes(searchTerm.toLowerCase())
+        (c.institutionName || c.displayName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.cnpj || "").includes(searchTerm) ||
+        (c.displayName || "").toLowerCase().includes(searchTerm.toLowerCase())
       )
-      .sort((a, b) => (a.institutionName || "").localeCompare(b.institutionName || ""));
+      .sort((a, b) => (a.institutionName || a.displayName || "").localeCompare(b.institutionName || b.displayName || ""));
   }, [clients, searchTerm]);
 
   const handleCreateActivation = async () => {
@@ -222,7 +216,7 @@ export default function ClientsAdminPage() {
       <div className="space-y-8 pb-20">
         <header className="flex justify-between items-start">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold font-headline text-foreground text-primary">Gestão de Clientes</h1>
+            <h1 className="text-3xl font-bold font-headline text-primary">Gestão de Clientes</h1>
             <p className="text-muted-foreground">Gerencie o acesso institucional e acompanhe o andamento das ativações.</p>
           </div>
           <div className="flex gap-4">
