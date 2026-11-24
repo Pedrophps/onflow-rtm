@@ -82,24 +82,28 @@ export default function ClientsAdminPage() {
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<OperationalStatus>("em_andamento");
 
-  // Buscar Clientes
-  const clientsQuery = useMemo(() => {
+  // Buscar Todos os Usuários (Filtragem em memória para evitar erros de índice/permissão em queries complexas)
+  const usersQuery = useMemo(() => {
     if (!user) return null;
-    return query(collection(db, "users"), where("role", "==", "client"), orderBy("institutionName", "asc"));
+    return collection(db, "users");
   }, [db, user]);
-  const { data: clients, loading: clientsLoading } = useCollection<UserProfile>(clientsQuery);
+  const { data: allUsers, loading: usersLoading } = useCollection<UserProfile>(usersQuery);
+
+  const clients = useMemo(() => {
+    return allUsers.filter(u => u.role === 'client');
+  }, [allUsers]);
 
   // Buscar Todas as Instâncias
   const instancesQuery = useMemo(() => {
     if (!user) return null;
-    return query(collection(db, "onboardingInstances"));
+    return collection(db, "onboardingInstances");
   }, [db, user]);
   const { data: instances, loading: instancesLoading } = useCollection<OnboardingInstance>(instancesQuery);
 
   // Buscar Produtos Reais
   const productsQuery = useMemo(() => {
     if (!user) return null;
-    return query(collection(db, "products"));
+    return collection(db, "products");
   }, [db, user]);
   const { data: dbProducts } = useCollection<Product>(productsQuery);
 
@@ -117,11 +121,13 @@ export default function ClientsAdminPage() {
 
   // Filtro
   const filteredClients = useMemo(() => {
-    return clients.filter(c => 
-      c.institutionName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.cnpj?.includes(searchTerm) ||
-      c.displayName?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return clients
+      .filter(c => 
+        c.institutionName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.cnpj?.includes(searchTerm) ||
+        c.displayName?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .sort((a, b) => (a.institutionName || "").localeCompare(b.institutionName || ""));
   }, [clients, searchTerm]);
 
   const handleCreateActivation = async () => {
@@ -241,7 +247,7 @@ export default function ClientsAdminPage() {
             <CardDescription>Clique em uma instituição para ver detalhes das ativações em curso.</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            {clientsLoading || instancesLoading ? (
+            {usersLoading || instancesLoading ? (
               <div className="flex flex-col items-center justify-center p-20 gap-4">
                 <Loader2 className="animate-spin text-primary size-8" />
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Sincronizando base real...</p>
@@ -283,7 +289,7 @@ export default function ClientsAdminPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <StatusBadge type="institutional" status={client.institutionalStatus || 'cadastro_recebido'} />
+                            <StatusBadge type="institutional" status={client.institutionalStatus || (client.status === 'approved' ? 'aprovado_comercialmente' : 'cadastro_recebido')} />
                           </TableCell>
                           <TableCell className="text-center">
                             <Badge variant="outline" className="rounded-full bg-white border-primary/20 text-primary font-bold">
