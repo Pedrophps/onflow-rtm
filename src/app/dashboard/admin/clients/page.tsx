@@ -41,7 +41,7 @@ import {
   CalendarDays,
   MoreVertical
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -276,7 +276,7 @@ export default function ClientsAdminPage() {
                     const isExpanded = expandedInstitution === client.id;
                     
                     return (
-                      <div key={client.id} className="contents">
+                      <Fragment key={client.id}>
                         <TableRow 
                           className={cn(
                             "cursor-pointer hover:bg-primary/5 transition-colors border-border group",
@@ -404,7 +404,7 @@ export default function ClientsAdminPage() {
                             </TableCell>
                           </TableRow>
                         )}
-                      </div>
+                      </Fragment>
                     );
                   })}
                   {filteredClients.length === 0 && (
