@@ -125,7 +125,7 @@ export default function ClientsAdminPage() {
     return institutions;
   }, [dbClients, instances]);
 
-  // Indicadores calculados sobre a base unificada
+  // Indicadores calculados sobre a base unificada e real
   const stats = useMemo(() => {
     const validClientIds = new Set(unifiedInstitutions.map(c => c.id));
     const activeInstances = instances.filter(i => validClientIds.has(i.clientId));
@@ -603,7 +603,7 @@ function StatusBadge({ type, status }: { type: 'institutional' | 'operational', 
       pending: { label: "Pendente", color: "bg-slate-50 text-slate-600 border-slate-200" },
     },
     operational: {
-      em_andamento: { label: "Em Execução", color: "bg-slate-50 text-blue-700 border-blue-200" },
+      em_andamento: { label: "Em Execução", color: "bg-slate-50 text-blue-700 border-slate-200" },
       aguardando_cliente: { label: "Pendente Cliente", color: "bg-slate-50 text-amber-700 border-amber-200" },
       bloqueado: { label: "Bloqueado", color: "bg-slate-50 text-red-700 border-red-200" },
       em_homologacao: { label: "Homologação", color: "bg-slate-50 text-purple-700 border-purple-200" },
