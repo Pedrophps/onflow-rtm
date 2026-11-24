@@ -102,10 +102,7 @@ export default function ClientsAdminPage() {
 
   // LÓGICA DE SINCRONIZAÇÃO: Construir a lista unificada de instituições
   const unifiedInstitutions = useMemo(() => {
-    // Começa com os clientes da coleção users
     const institutions = [...dbClients];
-    
-    // Identifica IDs de clientes que estão em instâncias mas não na coleção de usuários
     const userIdsInCollection = new Set(dbClients.map(c => c.id));
     
     instances.forEach(inst => {
@@ -130,13 +127,9 @@ export default function ClientsAdminPage() {
 
   // Indicadores calculados sobre a base unificada
   const stats = useMemo(() => {
-    // Apenas clientes que aparecem na lista final (unificada)
     const validClientIds = new Set(unifiedInstitutions.map(c => c.id));
-    
-    // Ativações válidas (que pertencem a clientes da nossa lista unificada)
     const activeInstances = instances.filter(i => validClientIds.has(i.clientId));
 
-    // Contagem de instituições ÚNICAS em cada estado
     const awaitingSupportClients = new Set(activeInstances.filter(i => i.supportStatus === 'fila_suporte' || !i.techId).map(i => i.clientId));
     const inProgressClients = new Set(activeInstances.filter(i => i.operationalStatus === 'em_andamento' || i.operationalStatus === 'em_homologacao').map(i => i.clientId));
     const withIssuesClients = new Set(activeInstances.filter(i => i.operationalStatus === 'bloqueado' || i.operationalStatus === 'aguardando_cliente').map(i => i.clientId));
@@ -170,7 +163,6 @@ export default function ClientsAdminPage() {
     const instancesRef = collection(db, "onboardingInstances");
 
     try {
-      // Se o cliente existe na coleção, aprova ele se estiver pendente
       if (dbClients.find(c => c.id === selectedClient.id)) {
         await updateDoc(clientRef, {
           status: 'approved',
@@ -321,17 +313,17 @@ export default function ClientsAdminPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-col gap-2">
+                            <div className="flex flex-col gap-1.5">
                               {clientInstances.length > 0 ? (
-                                <div className="space-y-1.5">
+                                <div className="space-y-1">
                                   <StatusBadge 
                                     type="operational" 
                                     status={clientInstances.find(i => i.operationalStatus === 'bloqueado') ? 'bloqueado' : 
                                             clientInstances.find(i => i.operationalStatus === 'em_andamento') ? 'em_andamento' : 
                                             clientInstances[0].operationalStatus || 'em_andamento'} 
                                   />
-                                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 w-fit">
-                                    <Headset className="size-2.5 text-primary" />
+                                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-slate-100 border border-slate-200 w-fit">
+                                    <Headset className="size-2.5 text-slate-500" />
                                     <span className="text-[9px] font-black uppercase text-slate-600">
                                       {clientInstances.find(i => i.techName)?.techName || "Fila de Espera"}
                                     </span>
@@ -343,7 +335,7 @@ export default function ClientsAdminPage() {
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
-                            <Badge variant="outline" className="rounded-full bg-white border-primary/20 text-primary font-bold">
+                            <Badge variant="outline" className="rounded-sm bg-white border-border text-foreground font-bold">
                               {clientInstances.length}
                             </Badge>
                           </TableCell>
@@ -387,7 +379,7 @@ export default function ClientsAdminPage() {
                                       const isDelayed = inst.expectedDeliveryDate && isAfter(new Date(), parseISO(inst.expectedDeliveryDate)) && inst.operationalStatus !== 'concluido';
                                       
                                       return (
-                                        <Card key={inst.id} className="border-border bg-white shadow-sm overflow-hidden">
+                                        <Card key={inst.id} className="border-border bg-white shadow-sm overflow-hidden rounded-sm">
                                           <CardContent className="p-4 grid md:grid-cols-12 gap-6 items-center">
                                             <div className="md:col-span-3 space-y-1">
                                               <p className="text-[9px] font-black uppercase text-muted-foreground">Produto</p>
@@ -405,7 +397,7 @@ export default function ClientsAdminPage() {
                                             <div className="md:col-span-2 space-y-1">
                                               <p className="text-[9px] font-black uppercase text-muted-foreground">Analista Suporte</p>
                                               <div className="flex items-center gap-2 text-xs font-bold text-foreground">
-                                                <Headset className="size-3 text-primary" /> {inst.techName || "Fila de Espera"}
+                                                <Headset className="size-3 text-muted-foreground" /> {inst.techName || "Fila de Espera"}
                                               </div>
                                             </div>
 
@@ -417,17 +409,17 @@ export default function ClientsAdminPage() {
                                               )}>
                                                 <CalendarDays className="size-3" />
                                                 {inst.expectedDeliveryDate ? format(parseISO(inst.expectedDeliveryDate), "dd/MM/yyyy") : "Não definida"}
-                                                {isDelayed && <Badge variant="destructive" className="text-[8px] h-4 px-1">ATRASADO</Badge>}
+                                                {isDelayed && <Badge variant="destructive" className="text-[8px] h-4 px-1 rounded-sm">ATRASADO</Badge>}
                                               </div>
                                             </div>
 
                                             <div className="md:col-span-3 flex justify-end gap-2">
                                               {isSuporte && (
                                                 <>
-                                                  <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold" onClick={() => { setTargetInstance(inst); setIsETADialogOpen(true); }}>
+                                                  <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold rounded-sm" onClick={() => { setTargetInstance(inst); setIsETADialogOpen(true); }}>
                                                     Definir ETA
                                                   </Button>
-                                                  <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold" onClick={() => { setTargetInstance(inst); setNewStatus(inst.operationalStatus || 'em_andamento'); setIsStatusDialogOpen(true); }}>
+                                                  <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold rounded-sm" onClick={() => { setTargetInstance(inst); setNewStatus(inst.operationalStatus || 'em_andamento'); setIsStatusDialogOpen(true); }}>
                                                     Status
                                                   </Button>
                                                 </>
@@ -442,7 +434,7 @@ export default function ClientsAdminPage() {
                                     })}
                                   </div>
                                 ) : (
-                                  <div className="p-10 text-center border-2 border-dashed rounded-2xl bg-muted/5">
+                                  <div className="p-10 text-center border-2 border-dashed rounded-sm bg-muted/5">
                                     <p className="text-sm text-muted-foreground italic">Nenhuma ativação técnica iniciada para esta instituição.</p>
                                   </div>
                                 )}
@@ -467,7 +459,7 @@ export default function ClientsAdminPage() {
 
       {/* Dialog: Nova Ativação */}
       <Dialog open={isNewActivationOpen} onOpenChange={setIsNewActivationOpen}>
-        <DialogContent className="max-w-3xl bg-card border-border rounded-3xl p-0 overflow-hidden shadow-2xl">
+        <DialogContent className="max-w-3xl bg-card border-border rounded-xl p-0 overflow-hidden shadow-2xl">
           <DialogHeader className="p-8 bg-slate-950 text-white">
             <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-3">
               <PlusCircle className="size-6 text-primary" /> Vincular Nova Ativação
@@ -485,12 +477,12 @@ export default function ClientsAdminPage() {
                     <div 
                       key={prod.id} 
                       className={cn(
-                        "flex items-center space-x-3 p-4 rounded-2xl border-2 transition-all cursor-pointer hover:border-primary/50",
+                        "flex items-center space-x-3 p-4 rounded-sm border-2 transition-all cursor-pointer hover:border-primary/50",
                         selectedProductIds.includes(prod.id!) ? "border-primary bg-primary/5" : "border-border bg-muted/10"
                       )}
                       onClick={() => setSelectedProductIds(prev => prev.includes(prod.id!) ? prev.filter(id => id !== prod.id) : [...prev, prod.id!])}
                     >
-                      <Checkbox checked={selectedProductIds.includes(prod.id!)} className="rounded-full border-primary" />
+                      <Checkbox checked={selectedProductIds.includes(prod.id!)} className="rounded-sm border-primary" />
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-foreground">{prod.name}</span>
                         <span className="text-[10px] text-muted-foreground mt-1 truncate w-40">{prod.description}</span>
@@ -508,15 +500,15 @@ export default function ClientsAdminPage() {
                   placeholder="Instruções de prioridade, prazos ou particularidades contratuais..."
                   value={commercialNotes}
                   onChange={e => setCommercialNotes(e.target.value)}
-                  className="min-h-[120px] rounded-2xl bg-background border-border"
+                  className="min-h-[120px] rounded-sm bg-background border-border"
                 />
              </div>
           </div>
 
           <DialogFooter className="p-8 bg-muted/10 border-t border-border">
-            <Button variant="outline" onClick={() => setIsNewActivationOpen(false)} className="rounded-xl font-bold px-8">Cancelar</Button>
+            <Button variant="outline" onClick={() => setIsNewActivationOpen(false)} className="rounded-sm font-bold px-8">Cancelar</Button>
             <Button 
-              className="rounded-xl font-bold px-12" 
+              className="rounded-sm font-bold px-12" 
               disabled={selectedProductIds.length === 0 || isSubmitting}
               onClick={handleCreateActivation}
             >
@@ -529,25 +521,25 @@ export default function ClientsAdminPage() {
 
       {/* Dialog: Atualizar ETA */}
       <Dialog open={isETADialogOpen} onOpenChange={setIsETADialogOpen}>
-        <DialogContent className="bg-card">
+        <DialogContent className="bg-card rounded-sm">
           <DialogHeader>
             <DialogTitle>Previsão de Conclusão</DialogTitle>
             <DialogDescription>Defina a data estimada para a entrega final de {targetInstance?.productName}.</DialogDescription>
           </DialogHeader>
           <div className="py-6">
             <Label>Data Estimada</Label>
-            <Input type="date" className="mt-2" value={newETA} onChange={e => setNewETA(e.target.value)} />
+            <Input type="date" className="mt-2 rounded-sm" value={newETA} onChange={e => setNewETA(e.target.value)} />
           </div>
           <DialogFooter>
-             <Button variant="outline" onClick={() => setIsETADialogOpen(false)}>Cancelar</Button>
-             <Button onClick={handleUpdateETA} disabled={!newETA}>Salvar Previsão</Button>
+             <Button variant="outline" className="rounded-sm" onClick={() => setIsETADialogOpen(false)}>Cancelar</Button>
+             <Button className="rounded-sm" onClick={handleUpdateETA} disabled={!newETA}>Salvar Previsão</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Dialog: Status Operacional */}
       <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
-        <DialogContent className="bg-card">
+        <DialogContent className="bg-card rounded-sm">
           <DialogHeader>
             <DialogTitle>Atualizar Estágio Operacional</DialogTitle>
             <DialogDescription>Mude o estado atual do projeto {targetInstance?.productName}.</DialogDescription>
@@ -555,7 +547,7 @@ export default function ClientsAdminPage() {
           <div className="py-6 space-y-4">
             <Label>Novo Status</Label>
             <Select value={newStatus} onValueChange={(val: any) => setNewStatus(val)}>
-              <SelectTrigger className="h-12 bg-background">
+              <SelectTrigger className="h-12 bg-background rounded-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -570,8 +562,8 @@ export default function ClientsAdminPage() {
             </Select>
           </div>
           <DialogFooter>
-             <Button variant="outline" onClick={() => setIsStatusDialogOpen(false)}>Cancelar</Button>
-             <Button onClick={handleUpdateStatus}>Confirmar Alteração</Button>
+             <Button variant="outline" className="rounded-sm" onClick={() => setIsStatusDialogOpen(false)}>Cancelar</Button>
+             <Button className="rounded-sm" onClick={handleUpdateStatus}>Confirmar Alteração</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -581,15 +573,15 @@ export default function ClientsAdminPage() {
 
 function IndicatorCard({ label, value, icon: Icon, color }: any) {
   const colorMap: any = {
-    blue: "border-blue-500/20 bg-blue-500/5 text-blue-600",
-    amber: "border-amber-500/20 bg-amber-500/5 text-amber-600",
-    primary: "border-primary/20 bg-primary/5 text-primary",
-    emerald: "border-emerald-500/20 bg-emerald-500/5 text-emerald-600",
-    red: "border-red-500/20 bg-red-500/5 text-red-600",
-    slate: "border-slate-500/20 bg-slate-500/5 text-slate-600",
+    blue: "border-slate-200 bg-white text-blue-600",
+    amber: "border-slate-200 bg-white text-amber-600",
+    primary: "border-slate-200 bg-white text-primary",
+    emerald: "border-slate-200 bg-white text-emerald-600",
+    red: "border-slate-200 bg-white text-red-600",
+    slate: "border-slate-200 bg-white text-slate-600",
   };
   return (
-    <Card className={cn("p-4 border-2 shadow-none transition-all", colorMap[color])}>
+    <Card className={cn("p-4 border-2 shadow-none transition-all rounded-sm", colorMap[color])}>
       <div className="flex justify-between items-start">
         <div className="space-y-1">
           <p className="text-[10px] font-black uppercase tracking-widest opacity-70 leading-none">{label}</p>
@@ -604,18 +596,18 @@ function IndicatorCard({ label, value, icon: Icon, color }: any) {
 function StatusBadge({ type, status }: { type: 'institutional' | 'operational', status: string }) {
   const configs: any = {
     institutional: {
-      cadastro_recebido: { label: "Recebido", color: "bg-blue-50 text-blue-700 border-blue-100" },
-      aguardando_analise_comercial: { label: "Análise Comercial", color: "bg-amber-50 text-amber-700 border-amber-100" },
-      aprovado_comercialmente: { label: "Aprovado", color: "bg-emerald-50 text-emerald-700 border-emerald-100" },
-      reprovado: { label: "Reprovado", color: "bg-red-50 text-red-700 border-red-100" },
-      pending: { label: "Pendente", color: "bg-slate-100 text-slate-600 border-slate-200" },
+      cadastro_recebido: { label: "Recebido", color: "bg-slate-50 text-slate-700 border-slate-200" },
+      aguardando_analise_comercial: { label: "Análise Comercial", color: "bg-slate-50 text-amber-700 border-amber-200" },
+      aprovado_comercialmente: { label: "Aprovado", color: "bg-slate-50 text-emerald-700 border-emerald-200" },
+      reprovado: { label: "Reprovado", color: "bg-slate-50 text-red-700 border-red-200" },
+      pending: { label: "Pendente", color: "bg-slate-50 text-slate-600 border-slate-200" },
     },
     operational: {
-      em_andamento: { label: "Em Execução", color: "bg-blue-50 text-blue-700 border-blue-200" },
-      aguardando_cliente: { label: "Pendente Cliente", color: "bg-amber-50 text-amber-700 border-amber-200" },
-      bloqueado: { label: "Bloqueado", color: "bg-red-50 text-red-700 border-red-200" },
-      em_homologacao: { label: "Homologação", color: "bg-purple-50 text-purple-700 border-purple-200" },
-      concluido: { label: "Concluído", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+      em_andamento: { label: "Em Execução", color: "bg-slate-50 text-blue-700 border-blue-200" },
+      aguardando_cliente: { label: "Pendente Cliente", color: "bg-slate-50 text-amber-700 border-amber-200" },
+      bloqueado: { label: "Bloqueado", color: "bg-slate-50 text-red-700 border-red-200" },
+      em_homologacao: { label: "Homologação", color: "bg-slate-50 text-purple-700 border-purple-200" },
+      concluido: { label: "Concluído", color: "bg-slate-50 text-emerald-700 border-emerald-200" },
     }
   };
 
