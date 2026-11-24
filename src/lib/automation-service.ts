@@ -71,7 +71,7 @@ export async function processDirectIngestion(
   data: DirectIngestionInput
 ) {
   try {
-    // 1. Camada de Resolução: Busca usuário existente (Pedro ou Instituição xpto)
+    // 1. Camada de Resolução: Busca usuário existente
     const existingUser = await resolveExistingUser(db, data.email, data.institutionName, data.cnpj);
     
     let clientId = "";
@@ -79,7 +79,6 @@ export async function processDirectIngestion(
 
     const userPayload = {
       institutionName: data.institutionName,
-      // Se já existe, mantemos o displayName do cadastro manual do usuário (ex: "Pedro"), a menos que ele esteja vazio
       displayName: (existingUser?.data.displayName) || data.institutionName,
       email: data.email,
       phoneNumber: data.phoneNumber,
@@ -89,24 +88,22 @@ export async function processDirectIngestion(
       cnpj: data.cnpj || "00.000.000/0000-00",
       role: "client" as const,
       status: "approved" as const, 
+      institutionalStatus: "aprovado_comercialmente" as const,
       updatedAt: serverTimestamp()
     };
 
     if (isNewUser) {
-      // Criar novo registro de cliente central
-      const newClientRef = doc(collection(db, "users"));
-      clientId = newClientRef.id;
-      await setDoc(newClientRef, {
+      clientId = doc(collection(db, "users")).id;
+      await setDoc(doc(db, "users", clientId), {
         ...userPayload,
         createdAt: new Date().toISOString()
       });
     } else {
-      // Reutilizar cadastro existente e atualizar informações de contato e venda
       clientId = existingUser.id;
       await setDoc(doc(db, "users", clientId), userPayload, { merge: true });
     }
 
-    // 2. Mapeamento do Produto (Resolução do catálogo)
+    // 2. Mapeamento do Produto
     const productsRef = collection(db, "products");
     const productsSnap = await getDocs(productsRef);
     let resolvedProductId = data.productName;
@@ -125,7 +122,6 @@ export async function processDirectIngestion(
     });
 
     // 3. Criar Instância de Onboarding (Vínculo Incremental)
-    // Permite que o mesmo clientId (Pedro) possua múltiplas instâncias
     const instancesRef = collection(db, "onboardingInstances");
     const newInstance: OnboardingInstance = {
       clientId: clientId,
@@ -133,21 +129,15 @@ export async function processDirectIngestion(
       productId: resolvedProductId,
       productName: resolvedProductName,
       status: 'pending',
+      supportStatus: 'fila_suporte',
+      operationalStatus: 'em_andamento',
       currentStepOrder: 1,
       startedAt: new Date().toISOString(),
       updatedAt: serverTimestamp(),
+      lastNote: data.commercialNotes || "Ingestão via API/ERP concluída."
     };
 
     const docRef = await addDoc(instancesRef, newInstance);
-
-    // 4. Auditoria do processo de resolução
-    await addDoc(collection(db, "system_logs"), {
-      message: `Ingestão ${isNewUser ? 'NOVO CLIENTE' : 'CLIENTE VINCULADO (via ' + existingUser.matchBy + ')'}: ${data.institutionName} | Vínculo: ${resolvedProductName} | Usuário Destino: ${userPayload.displayName}`,
-      type: 'success',
-      timestamp: new Date().toISOString(),
-      userId: 'api-bot',
-      context: 'identity-resolution'
-    });
 
     return {
       instanceId: docRef.id,

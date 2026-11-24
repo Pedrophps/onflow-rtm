@@ -7,12 +7,38 @@ export type ResponsibleRole = 'suporte' | 'comercial' | 'cliente' | 'infraestrut
 export type StepType = 'upload' | 'form';
 export type InstanceStatus = 'pending' | 'active' | 'completed' | 'blocked';
 
+// Novos Tipos para Evolução Funcional
+export type InstitutionalStatus = 
+  | 'cadastro_recebido' 
+  | 'aguardando_analise_comercial' 
+  | 'em_analise_comercial' 
+  | 'pendente_informacoes' 
+  | 'aprovado_comercialmente' 
+  | 'reprovado';
+
+export type SupportStatus = 
+  | 'aguardando_encaminhamento' 
+  | 'fila_suporte' 
+  | 'assumido_suporte' 
+  | 'em_planejamento';
+
+export type OperationalStatus = 
+  | 'em_andamento' 
+  | 'aguardando_cliente' 
+  | 'aguardando_rtm' 
+  | 'aguardando_terceiro' 
+  | 'em_homologacao' 
+  | 'bloqueado' 
+  | 'concluido' 
+  | 'cancelado';
+
 export interface UserProfile {
   id?: string;
   email: string;
   role: UserRole;
   adminType?: AdminType;
   status: UserStatus;
+  institutionalStatus?: InstitutionalStatus;
   displayName: string;
   institutionName?: string;
   cnpj?: string;
@@ -25,6 +51,26 @@ export interface UserProfile {
   createdAt: string;
   approvedAt?: string;
   updatedAt?: any;
+}
+
+export interface OnboardingInstance {
+  id?: string;
+  clientId: string;
+  productId: string;
+  flowId?: string;
+  techId?: string;
+  techName?: string;
+  consultantName?: string;
+  status: InstanceStatus;
+  supportStatus?: SupportStatus;
+  operationalStatus?: OperationalStatus;
+  currentStepOrder: number;
+  expectedDeliveryDate?: string; // ISO String
+  startedAt: string;
+  updatedAt: any;
+  institutionName?: string;
+  productName?: string;
+  lastNote?: string;
 }
 
 export interface OnCallSchedule {
@@ -107,21 +153,6 @@ export interface FlowStep {
   updatedAt: any;
 }
 
-export interface OnboardingInstance {
-  id?: string;
-  clientId: string;
-  productId: string;
-  flowId?: string;
-  techId?: string;
-  techName?: string;
-  status: InstanceStatus;
-  currentStepOrder: number;
-  startedAt: string;
-  updatedAt: any;
-  institutionName?: string;
-  productName?: string;
-}
-
 export interface StepInteraction {
   id?: string;
   instanceId: string;
@@ -131,6 +162,7 @@ export interface StepInteraction {
   userName: string;
   userRole: string;
   message: string;
+  type?: 'internal' | 'client' | 'impediment' | 'status_update';
   fileUrl?: string;
   fileName?: string;
   createdAt: any;
