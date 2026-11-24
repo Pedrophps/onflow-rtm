@@ -124,7 +124,7 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center overflow-hidden pt-20">
+      <section className="relative min-h-screen flex items-center overflow-hidden pt-20 bg-white dark:bg-slate-950">
         <HeroBackground />
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-4xl space-y-10 animate-in fade-in slide-in-from-left duration-1000">

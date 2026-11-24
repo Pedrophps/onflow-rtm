@@ -10,11 +10,11 @@ const NUM_POINTS = 2000;
 const THEME_COLORS = {
     dark: {
         left: "e60000",
-        right: "665f52"
+        right: "475569" // Slate-600 (Cinza neutro)
     },
     light: {
         left: "e60000",
-        right: "ccc2ad"
+        right: "cbd5e1" // Slate-300 (Cinza neutro claro)
     }
 };
 
