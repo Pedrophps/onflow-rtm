@@ -252,7 +252,7 @@ export default function ClientsAdminPage() {
                   <TableRow className="bg-muted/10 hover:bg-muted/10 border-border">
                     <TableHead className="w-12"></TableHead>
                     <TableHead>Instituição / CNPJ</TableHead>
-                    <TableHead>Status Institucional</TableHead>
+                    <TableHead>Status Atual</TableHead>
                     <TableHead className="text-center">Ativações</TableHead>
                     <TableHead>Responsável Comercial</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
