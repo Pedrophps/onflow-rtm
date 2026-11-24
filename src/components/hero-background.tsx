@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 const MIN_RADIUS = 7.5;
 const MAX_RADIUS = 15;
 const DEPTH = 3;
-const NUM_POINTS = 3500; // Aumentado para mais densidade
+const NUM_POINTS = 3000; // Ajustado para 3000 conforme solicitado
 
 const THEME_COLORS = {
     dark: {
@@ -121,7 +121,7 @@ export const HeroBackground = () => {
         handleResize();
 
         const render = () => {
-            rotation += 0.004; // Velocidade aumentada
+            rotation += 0.004;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             const centerX = canvas.width / 2;
@@ -152,8 +152,8 @@ export const HeroBackground = () => {
                 const screenX = centerX + x * scale * perspective;
                 const screenY = centerY + y * scale * perspective;
                 
-                const size = Math.max(1.1, (z + 30) / 10 * perspective); // Pontos maiores
-                const opacity = Math.min(0.9, Math.max(0.2, (z + 30) / 60)); // Mais opaco
+                const size = Math.max(1.1, (z + 30) / 10 * perspective);
+                const opacity = Math.min(0.9, Math.max(0.2, (z + 30) / 60));
 
                 ctx.beginPath();
                 ctx.arc(screenX, screenY, size, 0, Math.PI * 2);
