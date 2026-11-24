@@ -82,7 +82,7 @@ export default function ClientsAdminPage() {
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<OperationalStatus>("em_andamento");
 
-  // Buscar Todos os Usuários (Filtragem em memória para evitar erros de índice/permissão em queries complexas)
+  // Buscar Todos os Usuários
   const usersQuery = useMemo(() => {
     if (!user) return null;
     return collection(db, "users");
@@ -107,12 +107,15 @@ export default function ClientsAdminPage() {
   }, [db, user]);
   const { data: dbProducts } = useCollection<Product>(productsQuery);
 
-  // Indicadores (Contando Instituições Únicas para cada estado)
+  // Indicadores sincronizados com a lista de clientes atual
   const stats = useMemo(() => {
-    const awaitingSupportClients = new Set(instances.filter(i => i.supportStatus === 'fila_suporte' || !i.techId).map(i => i.clientId));
-    const inProgressClients = new Set(instances.filter(i => i.operationalStatus === 'em_andamento' || i.operationalStatus === 'em_homologacao').map(i => i.clientId));
-    const withIssuesClients = new Set(instances.filter(i => i.operationalStatus === 'bloqueado' || i.operationalStatus === 'aguardando_cliente').map(i => i.clientId));
-    const completedClients = new Set(instances.filter(i => i.operationalStatus === 'concluido').map(i => i.clientId));
+    const validClientIds = new Set(clients.map(c => c.id));
+    const validInstances = instances.filter(i => validClientIds.has(i.clientId));
+
+    const awaitingSupportClients = new Set(validInstances.filter(i => i.supportStatus === 'fila_suporte' || !i.techId).map(i => i.clientId));
+    const inProgressClients = new Set(validInstances.filter(i => i.operationalStatus === 'em_andamento' || i.operationalStatus === 'em_homologacao').map(i => i.clientId));
+    const withIssuesClients = new Set(validInstances.filter(i => i.operationalStatus === 'bloqueado' || i.operationalStatus === 'aguardando_cliente').map(i => i.clientId));
+    const completedClients = new Set(validInstances.filter(i => i.operationalStatus === 'concluido').map(i => i.clientId));
 
     return {
       total: clients.length,
@@ -143,14 +146,12 @@ export default function ClientsAdminPage() {
     const instancesRef = collection(db, "onboardingInstances");
 
     try {
-      // 1. Atualizar Perfil do Cliente
       await updateDoc(clientRef, {
         status: 'approved',
         institutionalStatus: 'aprovado_comercialmente',
         updatedAt: serverTimestamp()
       });
 
-      // 2. Criar Novas Instâncias
       const promises = selectedProductIds.map(pid => {
         const product = dbProducts.find(p => p.id === pid);
         return addDoc(instancesRef, {
@@ -221,7 +222,7 @@ export default function ClientsAdminPage() {
       <div className="space-y-8 pb-20">
         <header className="flex justify-between items-start">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold font-headline text-foreground">Gestão de Clientes</h1>
+            <h1 className="text-3xl font-bold font-headline text-foreground text-primary">Gestão de Clientes</h1>
             <p className="text-muted-foreground">Gerencie o acesso institucional e acompanhe o andamento das ativações.</p>
           </div>
           <div className="flex gap-4">
@@ -275,9 +276,8 @@ export default function ClientsAdminPage() {
                     const isExpanded = expandedInstitution === client.id;
                     
                     return (
-                      <>
+                      <div key={client.id} className="contents">
                         <TableRow 
-                          key={client.id} 
                           className={cn(
                             "cursor-pointer hover:bg-primary/5 transition-colors border-border group",
                             isExpanded && "bg-primary/5"
@@ -404,7 +404,7 @@ export default function ClientsAdminPage() {
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </div>
                     );
                   })}
                   {filteredClients.length === 0 && (
