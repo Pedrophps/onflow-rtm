@@ -10,7 +10,7 @@ const NUM_POINTS = 2250;
 const THEME_COLORS = {
     dark: {
         left: "e60000",
-        right: "1e293b" // Slate-800 para casar com o Slate-950 do fundo
+        right: "334155" // Slate-700 para um visual mais suave e menos denso
     },
     light: {
         left: "e60000",
@@ -114,7 +114,6 @@ export const HeroBackground = () => {
         let rotation = 0;
 
         const handleResize = () => {
-            // Usa o tamanho do elemento pai para evitar distorção em layouts de tela dividida
             const parent = canvas.parentElement;
             if (parent) {
                 canvas.width = parent.clientWidth;

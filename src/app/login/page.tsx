@@ -135,7 +135,7 @@ export default function LoginPage() {
         status: 'approved',
         displayName: name || 'Usuário RTM',
         institutionName: institutionName || 'RTM',
-        cnpj: cnpj || '00.00.000/0001-91',
+        cnpj: cnpj || '00.000.000/0001-91',
         createdAt: new Date().toISOString(),
         updatedAt: serverTimestamp()
       };
@@ -224,7 +224,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-background overflow-hidden font-body">
       {/* LADO ESQUERDO: BRANDING & IMMERSION */}
-      <div className="hidden lg:flex relative w-1/2 bg-slate-950 items-center justify-center p-12 overflow-hidden border-r border-white/5">
+      <div className="hidden lg:flex relative w-1/2 bg-slate-900 items-center justify-center p-12 overflow-hidden border-r border-white/5">
         <HeroBackground />
         <div className="relative z-10 space-y-8 max-w-lg">
           <div className="space-y-4">
@@ -234,7 +234,7 @@ export default function LoginPage() {
             <h1 className="text-6xl font-light font-headline text-white tracking-tighter leading-none">
               OnFlow <span className="text-primary font-normal">RTM.</span>
             </h1>
-            <p className="text-xl text-slate-400 font-light leading-relaxed italic">
+            <p className="text-xl text-slate-300 font-light leading-relaxed italic">
               "Orquestrando a infraestrutura e ativação técnica dos serviços críticos do mercado financeiro."
             </p>
           </div>
@@ -252,7 +252,7 @@ export default function LoginPage() {
         </div>
         
         <div className="absolute bottom-12 left-12">
-          <Link href="/" className="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">
+          <Link href="/" className="flex items-center gap-2 text-slate-400 hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">
             <ArrowLeft className="size-4" /> Voltar ao Portal Público
           </Link>
         </div>
