@@ -10,11 +10,11 @@ const NUM_POINTS = 2250;
 const THEME_COLORS = {
     dark: {
         left: "e60000",
-        right: "475569" 
+        right: "1e293b" // Slate-800 para casar com o Slate-950 do fundo
     },
     light: {
         left: "e60000",
-        right: "cbd5e1" 
+        right: "94a3b8" // Slate-400 para suavidade no modo claro
     }
 };
 
@@ -54,7 +54,8 @@ export const HeroBackground = () => {
 
     useEffect(() => {
         const checkTheme = () => {
-            const isDarkMode = document.documentElement.classList.contains('dark');
+            const isDarkMode = document.documentElement.classList.contains('dark') || 
+                               window.location.pathname.includes('/login'); // Login é majoritariamente dark na esquerda
             setIsDark(isDarkMode);
         };
 
@@ -113,8 +114,12 @@ export const HeroBackground = () => {
         let rotation = 0;
 
         const handleResize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            // Usa o tamanho do elemento pai para evitar distorção em layouts de tela dividida
+            const parent = canvas.parentElement;
+            if (parent) {
+                canvas.width = parent.clientWidth;
+                canvas.height = parent.clientHeight;
+            }
         };
 
         window.addEventListener('resize', handleResize);
@@ -176,7 +181,7 @@ export const HeroBackground = () => {
     return (
         <canvas 
             ref={canvasRef} 
-            className="absolute inset-0 w-full h-full pointer-events-none opacity-70 transition-opacity duration-1000"
+            className="absolute inset-0 w-full h-full pointer-events-none opacity-50 transition-opacity duration-1000"
         />
     );
 };
