@@ -40,9 +40,10 @@ import {
   Headset,
   CalendarDays,
   MoreVertical,
-  Flag
+  Flag,
+  UserPlus
 } from "lucide-react";
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo, Fragment, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -68,6 +69,7 @@ export default function ClientsAdminPage() {
   const [selectedClient, setSelectedClient] = useState<UserProfile | null>(null);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [orderValue, setOrderValue] = useState("");
+  const [consultantName, setConsultantName] = useState("");
   const [commercialNotes, setCommercialNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -79,6 +81,13 @@ export default function ClientsAdminPage() {
   // Status Dialog State
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<OperationalStatus>("em_andamento");
+
+  // Pre-fill consultant name when modal opens
+  useEffect(() => {
+    if (isNewActivationOpen && profile?.displayName) {
+      setConsultantName(profile.displayName);
+    }
+  }, [isNewActivationOpen, profile]);
 
   // Buscar Usuários do tipo Cliente
   const clientsQuery = useMemo(() => {
@@ -158,21 +167,31 @@ export default function ClientsAdminPage() {
   }, [unifiedInstitutions, searchTerm]);
 
   const handleCreateActivation = async () => {
-    if (!selectedClient?.id || isSubmitting || selectedProductIds.length === 0) return;
+    if (!selectedClient?.id || isSubmitting || selectedProductIds.length === 0) {
+       toast({ variant: "destructive", title: "Campos obrigatórios", description: "Selecione ao menos um produto." });
+       return;
+    }
+    
+    if (!orderValue || !consultantName) {
+      toast({ variant: "destructive", title: "Dados Comerciais", description: "OV e Consultor são obrigatórios para a ativação." });
+      return;
+    }
+
     setIsSubmitting(true);
     
     const clientRef = doc(db, "users", selectedClient.id);
     const instancesRef = collection(db, "onboardingInstances");
 
     try {
-      // Se for um usuário real (não apenas API), atualiza o perfil
-      if (dbClients.find(c => c.id === selectedClient.id)) {
-        await updateDoc(clientRef, {
-          status: 'approved',
-          institutionalStatus: 'aprovado_comercialmente',
-          updatedAt: serverTimestamp()
-        });
-      }
+      // Atualiza o perfil mestre do cliente com os novos dados de faturamento/comerciais
+      await updateDoc(clientRef, {
+        status: 'approved',
+        institutionalStatus: 'aprovado_comercialmente',
+        orderValue: orderValue,
+        consultantName: consultantName,
+        commercialNotes: commercialNotes,
+        updatedAt: serverTimestamp()
+      });
 
       const promises = selectedProductIds.map(pid => {
         const product = dbProducts.find(p => p.id === pid);
@@ -185,7 +204,7 @@ export default function ClientsAdminPage() {
           supportStatus: 'fila_suporte',
           operationalStatus: 'em_andamento',
           currentStepOrder: 1,
-          consultantName: selectedClient.consultantName || profile?.displayName,
+          consultantName: consultantName,
           startedAt: new Date().toISOString(),
           updatedAt: serverTimestamp(),
           lastNote: commercialNotes || "Nova ativação iniciada via Comercial."
@@ -198,6 +217,8 @@ export default function ClientsAdminPage() {
       setIsNewActivationOpen(false);
       setSelectedClient(null);
       setSelectedProductIds([]);
+      setOrderValue("");
+      setCommercialNotes("");
     } catch (error) {
       toast({ variant: "destructive", title: "Erro na Operação" });
     } finally {
@@ -360,6 +381,7 @@ export default function ClientsAdminPage() {
                                  onClick={(e) => {
                                    e.stopPropagation();
                                    setSelectedClient(client);
+                                   setOrderValue(client.orderValue || "");
                                    setIsNewActivationOpen(true);
                                  }}
                                >
@@ -470,15 +492,42 @@ export default function ClientsAdminPage() {
 
       {/* Dialog: Nova Ativação */}
       <Dialog open={isNewActivationOpen} onOpenChange={setIsNewActivationOpen}>
-        <DialogContent className="max-w-3xl bg-card border-border rounded-xl p-0 overflow-hidden shadow-2xl">
+        <DialogContent className="max-w-4xl bg-card border-border rounded-xl p-0 overflow-hidden shadow-2xl">
           <DialogHeader className="p-8 bg-slate-950 text-white">
             <DialogTitle className="text-2xl font-headline font-bold flex items-center gap-3">
               <PlusCircle className="size-6 text-primary" /> Vincular Nova Ativação
             </DialogTitle>
-            <DialogDescription className="text-slate-400">Inicie um novo projeto técnico para {selectedClient?.institutionName}</DialogDescription>
+            <DialogDescription className="text-slate-400">Configure os parâmetros comerciais e técnicos para {selectedClient?.institutionName}</DialogDescription>
           </DialogHeader>
 
-          <div className="p-8 space-y-8">
+          <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+             {/* SEÇÃO 1: DADOS COMERCIAIS */}
+             <div className="grid md:grid-cols-2 gap-6 p-6 rounded-xl bg-muted/30 border border-border">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <Hash className="size-3 text-primary" /> Ordem de Venda (OV)
+                  </Label>
+                  <Input 
+                    placeholder="Ex: OV-2024-001" 
+                    value={orderValue}
+                    onChange={e => setOrderValue(e.target.value.toUpperCase())}
+                    className="h-12 bg-background border-border rounded-lg font-mono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <UserPlus className="size-3 text-primary" /> Consultor RTM Responsável
+                  </Label>
+                  <Input 
+                    placeholder="Nome do consultor..." 
+                    value={consultantName}
+                    onChange={e => setConsultantName(e.target.value)}
+                    className="h-12 bg-background border-border rounded-lg"
+                  />
+                </div>
+             </div>
+
+             {/* SEÇÃO 2: PRODUTOS */}
              <div className="space-y-4">
                 <Label className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
                   <Zap className="size-4" /> Selecione os Produtos Contratados
@@ -488,8 +537,8 @@ export default function ClientsAdminPage() {
                     <div 
                       key={prod.id} 
                       className={cn(
-                        "flex items-center space-x-3 p-4 rounded-sm border-2 transition-all cursor-pointer hover:border-primary/50",
-                        selectedProductIds.includes(prod.id!) ? "border-primary bg-primary/5" : "border-border bg-muted/10"
+                        "flex items-center space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer hover:border-primary/50",
+                        selectedProductIds.includes(prod.id!) ? "border-primary bg-primary/5" : "border-border bg-card"
                       )}
                       onClick={() => setSelectedProductIds(prev => prev.includes(prod.id!) ? prev.filter(id => id !== prod.id) : [...prev, prod.id!])}
                     >
@@ -503,24 +552,25 @@ export default function ClientsAdminPage() {
                 </div>
              </div>
 
+             {/* SEÇÃO 3: NOTAS */}
              <div className="space-y-4">
                 <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                   <FileText className="size-4 text-primary" /> Notas Comerciais para o Suporte
                 </Label>
                 <Textarea 
-                  placeholder="Instruções de prioridade, prazos ou particularidades contratuais..."
+                  placeholder="Instruções de prioridade, prazos ou particularidades contratuais que o técnico deve saber..."
                   value={commercialNotes}
                   onChange={e => setCommercialNotes(e.target.value)}
-                  className="min-h-[120px] rounded-sm bg-background border-border"
+                  className="min-h-[100px] rounded-lg bg-background border-border"
                 />
              </div>
           </div>
 
           <DialogFooter className="p-8 bg-muted/10 border-t border-border">
-            <Button variant="outline" onClick={() => setIsNewActivationOpen(false)} className="rounded-sm font-bold px-8">Cancelar</Button>
+            <Button variant="outline" onClick={() => setIsNewActivationOpen(false)} className="rounded-xl font-bold px-8">Cancelar</Button>
             <Button 
-              className="rounded-sm font-bold px-12" 
-              disabled={selectedProductIds.length === 0 || isSubmitting}
+              className="rounded-xl font-bold px-12 h-12" 
+              disabled={selectedProductIds.length === 0 || !orderValue || !consultantName || isSubmitting}
               onClick={handleCreateActivation}
             >
               {isSubmitting && <Loader2 className="size-4 animate-spin mr-2" />}
