@@ -10,11 +10,11 @@ const NUM_POINTS = 2250;
 const THEME_COLORS = {
     dark: {
         left: "e60000",
-        right: "334155" // Slate-700 para um visual mais suave e menos denso
+        right: "665f52" // Cinza Escuro RTM conforme Brandbook
     },
     light: {
         left: "e60000",
-        right: "94a3b8" // Slate-400 para suavidade no modo claro
+        right: "ccc2ad" // Cinza Médio RTM conforme Brandbook
     }
 };
 
@@ -55,7 +55,7 @@ export const HeroBackground = () => {
     useEffect(() => {
         const checkTheme = () => {
             const isDarkMode = document.documentElement.classList.contains('dark') || 
-                               window.location.pathname.includes('/login'); // Login é majoritariamente dark na esquerda
+                               window.location.pathname.includes('/login');
             setIsDark(isDarkMode);
         };
 

@@ -135,7 +135,7 @@ export default function LoginPage() {
         status: 'approved',
         displayName: name || 'Usuário RTM',
         institutionName: institutionName || 'RTM',
-        cnpj: cnpj || '00.000.000/0001-91',
+        cnpj: cnpj || '00.00.000/0001-91',
         createdAt: new Date().toISOString(),
         updatedAt: serverTimestamp()
       };
@@ -223,7 +223,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-background overflow-hidden font-body">
-      {/* LADO ESQUERDO: BRANDING & IMMERSION */}
+      {/* LADO ESQUERDO: BRANDING & IMMERSION - Utilizando Cinza Escuro RTM */}
       <div className="hidden lg:flex relative w-1/2 bg-slate-900 items-center justify-center p-12 overflow-hidden border-r border-white/5">
         <HeroBackground />
         <div className="relative z-10 space-y-8 max-w-lg">
