@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -14,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { 
   Mail, 
   Lock, 
@@ -342,7 +342,7 @@ export default function LoginPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-black uppercase text-primary">CNPJ</Label>
-                    <Input placeholder="00.000.000/0000-00" className="h-11 bg-muted/30 rounded-xl font-mono text-xs tracking-tight" value={cnpj} onChange={handleCnpjChange} required />
+                    <Input placeholder="00.00.000/0000-00" className="h-11 bg-muted/30 rounded-xl font-mono text-xs tracking-tight" value={cnpj} onChange={handleCnpjChange} required />
                   </div>
                   <div className="space-y-1.5 col-span-2">
                     <Label className="text-[10px] font-black uppercase">Definir Senha</Label>
