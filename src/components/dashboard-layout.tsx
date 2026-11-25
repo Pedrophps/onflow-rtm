@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -19,7 +18,6 @@ import {
   LayoutDashboard, 
   ClipboardList, 
   Users, 
-  BarChart3, 
   Settings, 
   LogOut,
   ChevronRight,
@@ -96,8 +94,6 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
     if (profile?.adminType === 'suporte' || profile?.adminType === 'coordenador_suporte') {
       items.push({ title: "Sobreaviso", icon: CalendarClock, href: "/dashboard/admin/oncall" });
     }
-
-    items.push({ title: "Relatórios", icon: BarChart3, href: "/dashboard/admin/reports" });
     
     return items;
   }, [role, profile?.adminType]);
