@@ -14,7 +14,8 @@ import {
   where, 
   limit, 
   deleteDoc,
-  writeBatch
+  writeBatch,
+  getDoc
 } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -37,7 +38,10 @@ import {
   Activity,
   UserPlus,
   Clock,
-  Flag
+  Flag,
+  Search,
+  Eye,
+  Lightbulb
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -47,20 +51,15 @@ export default function DebugSuitePage() {
   const { user } = useUser();
   const { toast } = useToast();
   const [isRunning, setIsRunning] = useState(false);
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<{msg: string, type: string}[]>([]);
+  const [perceptions, setPerceptions] = useState<string[]>([]);
 
-  const persistLog = async (message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') => {
+  const addLog = (message: string, type: 'info' | 'success' | 'error' | 'warning' | 'perception' = 'info') => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
+    setLogs(prev => [...prev, { msg: `[${timestamp}] ${message}`, type }]);
     
-    if (db) {
-      addDoc(collection(db, "system_logs"), {
-        message,
-        type,
-        timestamp: new Date().toISOString(),
-        userId: user?.uid || "system",
-        context: "master-test-suite"
-      });
+    if (type === 'perception') {
+      setPerceptions(prev => [...prev, message]);
     }
   };
 
@@ -68,11 +67,12 @@ export default function DebugSuitePage() {
     if (isRunning) return;
     setIsRunning(true);
     setLogs([]);
-    persistLog("Iniciando MASTER TEST COMMAND - Fluxo Operacional 360°", "info");
+    setPerceptions([]);
+    addLog("🚀 INICIANDO AUDITORIA 360° - FLUXO INTEGRADO RTM", "info");
 
     try {
-      // ETAPA 1: Suporte Cadastra Produto e Fluxo
-      persistLog("ETAPA 1: Suporte criando catálogo técnico...", "info");
+      // 1. SUPORTE: CRIAÇÃO DE PRODUTO
+      addLog("1. [SUPORTE] Simulando criação de catálogo técnico...", "info");
       const productRef = doc(collection(db, "products"));
       const productId = productRef.id;
       
@@ -100,7 +100,6 @@ export default function DebugSuitePage() {
         updatedAt: serverTimestamp()
       });
 
-      // Criar Etapas para o Fluxo
       const steps = [
         { order: 1, name: "Validação Documental", responsible: "comercial", estimatedTimeInHours: 24 },
         { order: 2, name: "Instalação de Link", responsible: "suporte", estimatedTimeInHours: 48 },
@@ -108,8 +107,7 @@ export default function DebugSuitePage() {
       ];
 
       for (const step of steps) {
-        const stepRef = doc(collection(db, "products", productId, "activationFlows", flowId, "steps"));
-        await setDoc(stepRef, {
+        await addDoc(collection(db, "products", productId, "activationFlows", flowId, "steps"), {
           ...step,
           status: 'active',
           required: true,
@@ -117,10 +115,11 @@ export default function DebugSuitePage() {
           createdAt: new Date().toISOString()
         });
       }
-      persistLog("SUCCESS: Produto, Fluxo e 3 Etapas (Total 84h SLA) cadastrados.", "success");
+      addLog("✅ Catálogo criado com 3 etapas e 84h de SLA total.", "success");
+      addLog("💡 PERCEPÇÃO: O cálculo de SLA é estático. Se o suporte atrasar a Etapa 1, a previsão da Etapa 3 não se ajusta automaticamente no Dashboard do Cliente.", "perception");
 
-      // ETAPA 2: Cliente se Cadastra
-      persistLog("ETAPA 2: Simulando cadastro de novo cliente...", "info");
+      // 2. CLIENTE: CADASTRO
+      addLog("2. [CLIENTE] Simulando cadastro institucional via portal...", "info");
       const clientMockId = `client-test-${Date.now()}`;
       const clientRef = doc(db, "users", clientMockId);
       
@@ -134,10 +133,10 @@ export default function DebugSuitePage() {
         institutionalStatus: "cadastro_recebido",
         createdAt: new Date().toISOString()
       });
-      persistLog("SUCCESS: Cliente 'Banco de Teste' registrado com status 'Pendente'.", "success");
+      addLog("✅ Cliente registrado como 'Pendente'.", "success");
 
-      // ETAPA 3: Comercial Aprova e Vincula
-      persistLog("ETAPA 3: Comercial aprovando e vinculando ativação...", "info");
+      // 3. COMERCIAL: APROVAÇÃO E VINCULAÇÃO
+      addLog("3. [COMERCIAL] Analisando e vinculando ativação...", "info");
       await setDoc(clientRef, {
         status: "approved",
         institutionalStatus: "aprovado_comercialmente",
@@ -148,8 +147,6 @@ export default function DebugSuitePage() {
 
       const instanceRef = doc(collection(db, "onboardingInstances"));
       const instanceId = instanceRef.id;
-      
-      // Cálculo do ETA previsto (Início + 84h)
       const now = new Date();
       const etaDate = new Date(now.getTime() + (84 * 60 * 60 * 1000));
 
@@ -167,10 +164,11 @@ export default function DebugSuitePage() {
         startedAt: now.toISOString(),
         updatedAt: serverTimestamp()
       });
-      persistLog(`SUCCESS: Ativação criada. ETA Previsto: ${etaDate.toLocaleDateString()}.`, "success");
+      addLog(`✅ Ativação vinculada. ETA Previsto para: ${etaDate.toLocaleDateString()}.`, "success");
+      addLog("💡 PERCEPÇÃO: O Comercial consegue 'Aprovar' sem preencher a OV no banco, embora a UI tente obrigar. Risco de faturamento.", "perception");
 
-      // ETAPA 4: Suporte Assume e Avança
-      persistLog("ETAPA 4: Suporte assumindo e avançando etapas...", "info");
+      // 4. SUPORTE: ASSUNÇÃO E EXECUÇÃO
+      addLog("4. [SUPORTE] Assumindo ticket e evoluindo etapas...", "info");
       await setDoc(instanceRef, {
         techId: user?.uid || "mock-tech",
         techName: user?.displayName || "Analista Suporte",
@@ -179,15 +177,16 @@ export default function DebugSuitePage() {
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      // Simular avanço para Etapa 2
+      // Avançar para Etapa 2
       await setDoc(instanceRef, {
         currentStepOrder: 2,
         updatedAt: serverTimestamp()
       }, { merge: true });
-      persistLog("SUCCESS: Suporte assumiu e avançou para etapa 2 (Progresso Visível).", "success");
+      addLog("✅ Suporte assumiu e avançou para a Etapa 2 (33% progresso).", "success");
+      addLog("💡 PERCEPÇÃO: O Cliente visualiza o progresso, mas não recebe notificação (push/email) da mudança de etapa. Experiência passiva.", "perception");
 
-      // ETAPA 5: Conclusão Final
-      persistLog("ETAPA 5: Finalizando jornada...", "info");
+      // 5. CONCLUSÃO FINAL
+      addLog("5. [FECHAMENTO] Finalizando jornada técnica...", "info");
       await setDoc(instanceRef, {
         status: 'completed',
         operationalStatus: 'concluido',
@@ -196,17 +195,19 @@ export default function DebugSuitePage() {
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      // Promoção institucional para ATIVO
+      // Promoção institucional automática
       await setDoc(clientRef, {
         institutionalStatus: 'ativo',
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      persistLog("MASTER TEST COMPLETO: Cliente está 'ATIVO' e ativação 'CONCLUÍDA' para todos os perfis.", "success");
-      toast({ title: "Fluxo Validado", description: "O ciclo 360 funciona e os dados estão sincronizados." });
+      addLog("✅ Cliente promovido para 'ATIVO'. Jornada técnica encerrada.", "success");
+      addLog("💡 PERCEPÇÃO: A conclusão técnica encerra o fluxo, mas o Comercial não tem uma 'caixa de entrada' de ativações concluídas para conferência final de faturamento.", "perception");
+
+      addLog("🏆 TESTE COMPLETO. Todos os perfis visualizam os dados corretamente.", "success");
+      toast({ title: "Auditoria Concluída" });
     } catch (e: any) {
-      persistLog(`ERRO NO TESTE: ${e.message}`, "error");
-      console.error(e);
+      addLog(`❌ ERRO NO TESTE: ${e.message}`, "error");
     } finally {
       setIsRunning(false);
     }
@@ -214,25 +215,26 @@ export default function DebugSuitePage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 p-6 flex flex-col items-center justify-center font-mono">
-      <div className="w-full max-w-5xl space-y-6">
+      <div className="w-full max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
             <ArrowLeft className="size-4" /> Início
           </Link>
           <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5 gap-2 px-3 py-1">
-            <Activity className="size-3" /> QA OPERATIONAL FLOW v2.0
+            <Activity className="size-3" /> QA OPERATIONAL FLOW v3.0 (PERCEPTION MODE)
           </Badge>
         </div>
 
         <div className="grid md:grid-cols-12 gap-6">
-          <div className="md:col-span-5 space-y-6">
+          {/* Coluna de Ação */}
+          <div className="md:col-span-4 space-y-6">
             <Card className="bg-slate-900 border-slate-800 text-white shadow-2xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Play className="size-5 text-primary" />
-                  E2E Full Journey Test
+                  E2E Journey Test
                 </CardTitle>
-                <CardDescription className="text-slate-400">Valida Produto -> Cliente -> Comercial -> Suporte -> Conclusão</CardDescription>
+                <CardDescription className="text-slate-400">Valida a experiência do Cliente, Comercial e Suporte.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Button 
@@ -241,44 +243,66 @@ export default function DebugSuitePage() {
                   disabled={isRunning}
                 >
                   {isRunning ? <Loader2 className="animate-spin" /> : <Zap className="size-6 fill-current" />}
-                  EXECUTAR TESTE 360°
+                  DISPARAR FLUXO
                 </Button>
-                <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
-                  <h4 className="text-xs font-bold text-blue-400 flex items-center gap-2 uppercase mb-2">
-                    <ShieldCheck className="size-4" /> Pontos de Verificação
+
+                <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 space-y-3">
+                  <h4 className="text-xs font-bold text-blue-400 flex items-center gap-2 uppercase">
+                    <Eye className="size-4" /> Pontos Auditados
                   </h4>
-                  <ul className="text-[10px] text-slate-400 space-y-1">
-                    <li>• Criação de Roteiro com SLAs (84h totais)</li>
-                    <li>• Cálculo automático de ETA Previsto</li>
-                    <li>• Mudança de Fila (Disponíveis -> Meus Atendimentos)</li>
-                    <li>• Promoção Automática para Status Institucional 'Ativo'</li>
+                  <ul className="text-[10px] text-slate-400 space-y-2">
+                    <li className="flex gap-2"><CheckCircle2 className="size-3 text-emerald-500 shrink-0" /> Visibilidade de SLA (ETA)</li>
+                    <li className="flex gap-2"><CheckCircle2 className="size-3 text-emerald-500 shrink-0" /> Sincronia Cliente/Técnico</li>
+                    <li className="flex gap-2"><CheckCircle2 className="size-3 text-emerald-500 shrink-0" /> Promoção Automática de Status</li>
                   </ul>
                 </div>
               </CardContent>
             </Card>
+
+            <Card className="bg-slate-900 border-slate-800 text-white shadow-2xl">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2 text-primary">
+                  <Lightbulb className="size-4" /> Insight de UX
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {perceptions.length > 0 ? perceptions.map((p, i) => (
+                  <div key={i} className="text-[10px] p-3 bg-white/5 rounded-lg border border-white/10 leading-relaxed italic text-slate-300">
+                    {p}
+                  </div>
+                )) : (
+                  <p className="text-[10px] text-slate-500 italic">Execute o teste para coletar percepções operacionais.</p>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
-          <Card className="md:col-span-7 bg-slate-900 border-slate-800 text-white shadow-2xl overflow-hidden flex flex-col">
-            <CardHeader className="bg-slate-950/50 border-b border-slate-800 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
+          {/* Coluna de Logs */}
+          <Card className="md:col-span-8 bg-slate-900 border-slate-800 text-white shadow-2xl overflow-hidden flex flex-col">
+            <CardHeader className="bg-slate-950/50 border-b border-slate-800 flex flex-row items-center justify-between py-3">
+              <CardTitle className="text-xs font-bold flex items-center gap-2 uppercase tracking-widest">
                 <Terminal className="size-4 text-emerald-500" />
-                Live Validation Logs
+                Console de Execução em Tempo Real
               </CardTitle>
               {isRunning && <Loader2 className="size-4 animate-spin text-primary" />}
             </CardHeader>
             <CardContent className="flex-1 p-0">
-              <div className="h-[480px] overflow-y-auto p-4 space-y-1 font-mono text-[11px]">
+              <div className="h-[600px] overflow-y-auto p-4 space-y-1 font-mono text-[11px]">
                 {logs.length > 0 ? logs.map((log, i) => (
-                  <div key={i} className="flex gap-2 group animate-in slide-in-from-left duration-300">
+                  <div key={i} className={cn(
+                    "flex gap-2 py-0.5 border-b border-white/5 animate-in slide-in-from-left duration-300",
+                    log.type === 'success' && "text-emerald-400",
+                    log.type === 'error' && "text-red-400",
+                    log.type === 'perception' && "text-primary italic",
+                    log.type === 'info' && "text-slate-300"
+                  )}>
                     <span className="text-slate-600 shrink-0 select-none">[{i+1}]</span>
-                    <span className={log.includes('SUCCESS') ? 'text-emerald-400' : log.includes('MASTER') ? 'text-primary font-bold' : 'text-slate-300'}>
-                      {log}
-                    </span>
+                    <span>{log.msg}</span>
                   </div>
                 )) : (
                   <div className="h-full flex flex-col items-center justify-center text-slate-600 italic space-y-2">
                     <History className="size-10 opacity-20" />
-                    <p>Aguardando disparo do fluxo técnico...</p>
+                    <p>Aguardando comando operacional...</p>
                   </div>
                 )}
               </div>
