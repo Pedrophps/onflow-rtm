@@ -5,18 +5,18 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { UserProfile, Product, OnboardingInstance, FlowStep } from "@/lib/types";
-import { CheckCircle2, Clock, ShieldAlert, Loader2, Zap, LayoutDashboard, Building2, UserCheck, ArrowRight, Phone, AlertCircle, Save, Info, MessageSquare } from "lucide-react";
+import { CheckCircle2, Clock, ShieldAlert, Loader2, Zap, LayoutDashboard, Building2, UserCheck, ArrowRight, Phone, AlertCircle, Save, Info, MessageSquare, Flag } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
-import { doc, collection, query, where, limit, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, collection, query, where, limit, updateDoc, serverTimestamp, orderBy } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 export default function ClientDashboardPage() {
   const { user } = useUser();
@@ -33,7 +33,7 @@ export default function ClientDashboardPage() {
     user ? query(
       collection(db, "onboardingInstances"),
       where("clientId", "==", user.uid),
-      where("status", "==", "active"),
+      orderBy("updatedAt", "desc"),
       limit(1)
     ) : null, 
   [db, user]);
@@ -64,9 +64,11 @@ export default function ClientDashboardPage() {
   const currentStepOrder = instance?.currentStepOrder || 1;
   const totalSteps = steps.length || 0;
   
-  const progress = totalSteps > 0 
-    ? Math.min(100, Math.round(((currentStepOrder - 1) / totalSteps) * 100)) 
-    : 0;
+  const progress = useMemo(() => {
+    if (instance?.status === 'completed') return 100;
+    if (totalSteps === 0) return 0;
+    return Math.min(100, Math.round(((currentStepOrder - 1) / totalSteps) * 100));
+  }, [instance?.status, totalSteps, currentStepOrder]);
 
   const predictedCompletionDate = useMemo(() => {
     if (!instance?.startedAt || totalSteps === 0) return null;
@@ -194,12 +196,27 @@ export default function ClientDashboardPage() {
           <Card className="md:col-span-8 border-none shadow-xl bg-card overflow-hidden">
             <CardHeader className="bg-muted/50 border-b">
               <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3 text-primary">
-                  <LayoutDashboard className="size-5" />
-                  <CardTitle className="text-lg">Status da Ativação</CardTitle>
+                <div className={cn(
+                  "flex items-center gap-3",
+                  instance?.status === 'completed' ? "text-emerald-600" : "text-primary"
+                )}>
+                  {instance?.status === 'completed' ? <CheckCircle2 className="size-5" /> : <LayoutDashboard className="size-5" />}
+                  <CardTitle className="text-lg">
+                    {instance?.status === 'completed' ? 'Ativação Concluída' : 'Status da Ativação'}
+                  </CardTitle>
                 </div>
                 {instance ? (
-                  <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 uppercase text-[10px]">Ativação em Curso</Badge>
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "uppercase text-[10px] font-black tracking-tight",
+                      instance.status === 'completed' 
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                        : "bg-blue-50 text-blue-700 border-blue-200"
+                    )}
+                  >
+                    {instance.status === 'completed' ? 'Serviço Ativo' : 'Em Curso'}
+                  </Badge>
                 ) : (
                   <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-emerald-200 dark:border-emerald-800 uppercase text-[10px]">Aguardando Suporte</Badge>
                 )}
@@ -217,7 +234,12 @@ export default function ClientDashboardPage() {
                       <div className="flex items-center gap-4">
                         <div className="flex flex-col">
                           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Etapa Atual</p>
-                          <p className="text-sm font-bold text-primary">Etapa {currentStepOrder} de {totalSteps || '...'}</p>
+                          <p className={cn(
+                            "text-sm font-bold",
+                            instance.status === 'completed' ? "text-emerald-600" : "text-primary"
+                          )}>
+                            {instance.status === 'completed' ? 'Processo Finalizado' : `Etapa ${currentStepOrder} de ${totalSteps || '...'}`}
+                          </p>
                         </div>
                         <div className="h-8 w-px bg-border" />
                         <div className="flex flex-col">
@@ -225,29 +247,43 @@ export default function ClientDashboardPage() {
                           <p className="text-sm font-bold text-foreground opacity-80">{instance.techName || "A definir"}</p>
                         </div>
                       </div>
-                      {predictedCompletionDate && (
-                        <div className="flex items-center gap-2 p-2 px-3 bg-muted/30 rounded-lg border w-fit">
-                          <Clock className="size-3.5 text-primary" />
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Conclusão Prevista:</span>
-                          <span className="text-xs font-black text-foreground">{format(predictedCompletionDate, "dd/MM/yyyy")}</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2 p-2 px-3 bg-muted/30 rounded-lg border w-fit">
+                        {instance.status === 'completed' ? (
+                          <>
+                            <Flag className="size-3.5 text-emerald-600" />
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ativado em:</span>
+                            <span className="text-xs font-black text-emerald-700">{instance.completedAt ? format(parseISO(instance.completedAt), "dd/MM/yyyy") : 'N/A'}</span>
+                          </>
+                        ) : predictedCompletionDate && (
+                          <>
+                            <Clock className="size-3.5 text-primary" />
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Conclusão Prevista:</span>
+                            <span className="text-xs font-black text-foreground">{format(predictedCompletionDate, "dd/MM/yyyy")}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right">
-                      <span className="text-6xl font-black text-primary">{progress}%</span>
+                      <span className={cn(
+                        "text-6xl font-black",
+                        instance.status === 'completed' ? "text-emerald-500" : "text-primary"
+                      )}>{progress}%</span>
                       <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Concluído</p>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs font-bold text-muted-foreground uppercase">
                       <span>Progresso Técnico</span>
-                      <span>SLA Médio: {totalSteps * 48}h Estimadas</span>
+                      <span>{instance.status === 'completed' ? 'Entrega Realizada' : `SLA Médio: ${totalSteps * 48}h Estimadas`}</span>
                     </div>
-                    <Progress value={progress} className="h-3 rounded-full" />
+                    <Progress value={progress} className={cn("h-3 rounded-full", instance.status === 'completed' && "[&>div]:bg-emerald-500")} />
                   </div>
-                  <Button asChild className="w-full h-12 rounded-xl font-bold gap-2">
+                  <Button asChild className={cn(
+                    "w-full h-12 rounded-xl font-bold gap-2",
+                    instance.status === 'completed' && "bg-emerald-600 hover:bg-emerald-700"
+                  )}>
                     <Link href="/dashboard/client/activations">
-                      Acessar Detalhes do Onboarding <ArrowRight className="size-4" />
+                      {instance.status === 'completed' ? 'Acessar Histórico de Ativação' : 'Acessar Detalhes do Onboarding'} <ArrowRight className="size-4" />
                     </Link>
                   </Button>
                 </>

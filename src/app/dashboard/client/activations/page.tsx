@@ -1,3 +1,4 @@
+
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -24,7 +25,8 @@ import {
   ShieldCheck,
   FileEdit,
   Settings2,
-  ClipboardList
+  ClipboardList,
+  Flag
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -38,7 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { StepInteractions } from "@/components/step-interactions";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 export default function ActivationsPage() {
   const { user } = useUser();
@@ -124,6 +126,14 @@ export default function ActivationsPage() {
     }
   };
 
+  const currentStepOrder = selectedInstance?.currentStepOrder || 1;
+  
+  const progress = useMemo(() => {
+    if (selectedInstance?.status === 'completed') return 100;
+    if (steps.length === 0) return 0;
+    return Math.min(100, Math.round(((currentStepOrder - 1) / steps.length) * 100));
+  }, [selectedInstance?.status, steps.length, currentStepOrder]);
+
   const predictedCompletionDate = useMemo(() => {
     if (!selectedInstance?.startedAt || steps.length === 0) return null;
     const totalHours = steps.reduce((acc, step) => acc + (Number(step.estimatedTimeInHours) || 0), 0);
@@ -142,9 +152,6 @@ export default function ActivationsPage() {
       </DashboardLayout>
     );
   }
-
-  const currentStepOrder = selectedInstance?.currentStepOrder || 1;
-  const progress = steps.length > 0 ? Math.min(100, (Math.max(0, currentStepOrder - 1) / steps.length) * 100) : 0;
 
   return (
     <DashboardLayout role="client">
@@ -175,27 +182,48 @@ export default function ActivationsPage() {
                   key={inst.id} 
                   className={cn(
                     "cursor-pointer transition-all hover:border-primary group overflow-hidden border-2 bg-card",
-                    selectedInstanceId === inst.id ? "border-primary ring-2 ring-primary/10" : "border-border"
+                    selectedInstanceId === inst.id ? "border-primary ring-2 ring-primary/10" : "border-border",
+                    inst.status === 'completed' && "hover:border-emerald-500/50"
                   )}
                   onClick={() => handleSelectInstance(inst.id!)}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
-                      <div className="size-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                        <Package className="size-6" />
+                      <div className={cn(
+                        "size-12 rounded-2xl flex items-center justify-center transition-colors",
+                        inst.status === 'completed' ? "bg-emerald-500/10 text-emerald-600" : "bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white"
+                      )}>
+                        {inst.status === 'completed' ? <CheckCircle2 className="size-6" /> : <Package className="size-6" />}
                       </div>
-                      <Badge variant={inst.techId ? 'default' : 'secondary'} className="uppercase text-[9px] font-bold">
-                        {inst.techId ? 'Atendimento Iniciado' : 'Fila de Espera'}
+                      <Badge 
+                        variant={inst.status === 'completed' ? 'outline' : (inst.techId ? 'default' : 'secondary')} 
+                        className={cn(
+                          "uppercase text-[9px] font-black tracking-tighter",
+                          inst.status === 'completed' && "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        )}
+                      >
+                        {inst.status === 'completed' ? 'Ativação Concluída' : (inst.techId ? 'Atendimento Iniciado' : 'Fila de Espera')}
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <CardTitle className="text-xl mb-1 truncate">{inst.productName || inst.productId}</CardTitle>
-                      <CardDescription className="text-xs">Iniciado em: {new Date(inst.startedAt).toLocaleDateString()}</CardDescription>
+                      <CardTitle className={cn(
+                        "text-xl mb-1 truncate",
+                        inst.status === 'completed' && "text-emerald-900 dark:text-emerald-100"
+                      )}>{inst.productName || inst.productId}</CardTitle>
+                      <CardDescription className="text-xs">
+                        {inst.status === 'completed' ? (
+                          <span className="flex items-center gap-1 text-emerald-600 font-bold">
+                            <Flag className="size-3" /> Finalizado em: {inst.completedAt ? format(parseISO(inst.completedAt), "dd/MM/yyyy") : 'N/A'}
+                          </span>
+                        ) : (
+                          `Iniciado em: ${new Date(inst.startedAt).toLocaleDateString()}`
+                        )}
+                      </CardDescription>
                     </div>
                     <Button variant="ghost" className="w-full justify-between font-bold text-xs group-hover:text-primary p-0">
-                      Ver Progresso Técnico <ArrowRight className="size-4" />
+                      {inst.status === 'completed' ? 'Ver Detalhes do Fechamento' : 'Ver Progresso Técnico'} <ArrowRight className="size-4" />
                     </Button>
                   </CardContent>
                 </Card>
@@ -224,24 +252,40 @@ export default function ActivationsPage() {
 
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
                     <div className="space-y-2">
-                      <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 gap-1.5 px-3 py-1 font-bold">
-                        <CheckCircle2 className="size-3.5" /> JORNADA ATIVA
+                      <Badge variant="outline" className={cn(
+                        "gap-1.5 px-3 py-1 font-bold",
+                        selectedInstance.status === 'completed' 
+                          ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800" 
+                          : "bg-primary/5 text-primary border-primary/20"
+                      )}>
+                        <CheckCircle2 className="size-3.5" /> {selectedInstance.status === 'completed' ? 'JORNADA CONCLUÍDA' : 'JORNADA ATIVA'}
                       </Badge>
                       <h2 className="text-3xl font-bold font-headline">{product?.name || selectedInstance.productName || selectedInstance.productId}</h2>
                       <p className="text-muted-foreground font-medium">Analista RTM: <span className="text-foreground font-bold">{selectedInstance.techName || 'Pendente'}</span></p>
                     </div>
                     <div className="text-right">
-                      <span className="text-5xl font-black text-primary">{Math.round(progress)}%</span>
+                      <span className={cn(
+                        "text-6xl font-black",
+                        selectedInstance.status === 'completed' ? "text-emerald-500" : "text-primary"
+                      )}>{Math.round(progress)}%</span>
                       <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Concluído</p>
-                      {predictedCompletionDate && (
-                        <div className="mt-2 text-right">
-                          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">conclusão prevista:</p>
-                          <p className="text-xs font-bold text-foreground opacity-80">{format(predictedCompletionDate, "dd/MM/yyyy")}</p>
-                        </div>
-                      )}
+                      
+                      <div className="mt-2 text-right">
+                        {selectedInstance.status === 'completed' ? (
+                          <>
+                            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">Ativado em:</p>
+                            <p className="text-xs font-black text-emerald-700">{selectedInstance.completedAt ? format(parseISO(selectedInstance.completedAt), "dd/MM/yyyy") : 'N/A'}</p>
+                          </>
+                        ) : predictedCompletionDate && (
+                          <>
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">conclusão prevista:</p>
+                            <p className="text-xs font-bold text-foreground opacity-80">{format(predictedCompletionDate, "dd/MM/yyyy")}</p>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <Progress value={progress} className="h-3 rounded-full" />
+                  <Progress value={progress} className={cn("h-3 rounded-full", selectedInstance.status === 'completed' && "[&>div]:bg-emerald-500")} />
                 </div>
 
                 <div className="space-y-6">
@@ -254,9 +298,9 @@ export default function ActivationsPage() {
                   ) : steps.length > 0 ? (
                     <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-border">
                       {steps.map((step) => {
-                        const isCompleted = step.order < currentStepOrder;
-                        const isCurrent = step.order === currentStepOrder;
-                        const isFuture = step.order > currentStepOrder;
+                        const isCompleted = step.order < currentStepOrder || selectedInstance.status === 'completed';
+                        const isCurrent = step.order === currentStepOrder && selectedInstance.status !== 'completed';
+                        const isFuture = step.order > currentStepOrder && selectedInstance.status !== 'completed';
                         const isExpanded = expandedStage === step.id;
 
                         return (
@@ -331,7 +375,7 @@ export default function ActivationsPage() {
                                         instanceId={selectedInstance.id!}
                                         stepId={step.id!}
                                         clientId={selectedInstance.clientId}
-                                        canInteract={(isCurrent || isCompleted) && step.responsible === 'cliente'}
+                                        canInteract={(isCurrent || (isCompleted && selectedInstance.status !== 'completed')) && step.responsible === 'cliente'}
                                         userName={profile?.displayName}
                                         userRole="cliente"
                                       />
