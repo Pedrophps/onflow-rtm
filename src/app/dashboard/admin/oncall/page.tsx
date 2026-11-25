@@ -44,7 +44,7 @@ export default function OnCallPage() {
   const { toast } = useToast();
   
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
-  const { data: profile } = useDoc<UserProfile>(userRef);
+  const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
   const isCoordinator = profile?.adminType === 'coordenador_suporte';
   const isSupport = profile?.adminType === 'suporte' || isCoordinator;
 
@@ -69,18 +69,30 @@ export default function OnCallPage() {
     scheduleId: ""
   });
 
-  // Data Fetching
-  const usersQuery = useMemo(() => query(collection(db, "users"), where("role", "==", "admin")), [db]);
+  // Data Fetching - Consultas guardadas por permissão isSupport para evitar erros de Security Rules
+  const usersQuery = useMemo(() => {
+    if (!isSupport) return null;
+    return query(collection(db, "users"), where("role", "==", "admin"));
+  }, [db, isSupport]);
   const { data: adminUsers } = useCollection<UserProfile>(usersQuery);
   const supportStaff = useMemo(() => adminUsers.filter(u => u.adminType === 'suporte' || u.adminType === 'coordenador_suporte'), [adminUsers]);
 
-  const schedulesQuery = useMemo(() => query(collection(db, "onCallSchedules"), orderBy("startAt", "desc")), [db]);
+  const schedulesQuery = useMemo(() => {
+    if (!isSupport) return null;
+    return query(collection(db, "onCallSchedules"), orderBy("startAt", "desc"));
+  }, [db, isSupport]);
   const { data: allSchedules, loading: loadingSchedules } = useCollection<OnCallSchedule>(schedulesQuery);
 
-  const checkinsQuery = useMemo(() => query(collection(db, "onCallCheckins")), [db]);
+  const checkinsQuery = useMemo(() => {
+    if (!isSupport) return null;
+    return query(collection(db, "onCallCheckins"));
+  }, [db, isSupport]);
   const { data: allCheckins } = useCollection<OnCallCheckin>(checkinsQuery);
 
-  const notificationsQuery = useMemo(() => query(collection(db, "onCallNotifications"), orderBy("sentAt", "desc")), [db]);
+  const notificationsQuery = useMemo(() => {
+    if (!isSupport) return null;
+    return query(collection(db, "onCallNotifications"), orderBy("sentAt", "desc"));
+  }, [db, isSupport]);
   const { data: allNotifications, loading: loadingTriggers } = useCollection<OnCallNotification>(notificationsQuery);
 
   // Computed Data
@@ -206,6 +218,10 @@ export default function OnCallPage() {
       toast({ variant: "destructive", title: "Erro na atualização" });
     }
   };
+
+  if (profileLoading) {
+    return <DashboardLayout role="admin"><div className="flex justify-center p-20"><Loader2 className="animate-spin text-primary" /></div></DashboardLayout>;
+  }
 
   if (!isSupport) {
     return <DashboardLayout role="admin"><div className="p-20 text-center">Acesso restrito ao time de Suporte.</div></DashboardLayout>;

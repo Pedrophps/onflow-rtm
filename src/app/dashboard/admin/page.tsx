@@ -50,6 +50,7 @@ export default function AdminPage() {
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
   const currentView = profile?.adminType || searchParams.get('view');
+  const isSupportView = currentView === 'suporte' || currentView === 'coordenador_suporte';
 
   // Busca de Dados Reais para o Compilado
   const { data: allClients, loading: clientsLoading } = useCollection<UserProfile>(
@@ -60,9 +61,13 @@ export default function AdminPage() {
     collection(db, "onboardingInstances")
   );
 
-  const { data: allSchedules } = useCollection<OnCallSchedule>(
-    collection(db, "onCallSchedules")
-  );
+  // Consulta guardada: só busca escalas se for visão de suporte para evitar Permission Denied
+  const schedulesQuery = useMemo(() => {
+    if (!isSupportView) return null;
+    return collection(db, "onCallSchedules");
+  }, [db, isSupportView]);
+
+  const { data: allSchedules } = useCollection<OnCallSchedule>(schedulesQuery);
 
   useEffect(() => {
     if (!userLoading && !profileLoading) {
@@ -201,41 +206,43 @@ export default function AdminPage() {
 
           {/* Coluna 2: Informação Dinâmica */}
           <div className="md:col-span-5 space-y-6">
-            {/* Widget Sobreaviso */}
-            <Card className="bg-slate-900 text-white border-none shadow-xl overflow-hidden relative group">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <Badge className="bg-white/20 text-white border-none text-[8px] uppercase font-black">Escala 24h</Badge>
-                  <CalendarClock className="size-4 text-primary animate-pulse" />
-                </div>
-                <CardTitle className="text-lg font-headline">Sobreaviso RTM</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {activeTech ? (
-                  <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
-                    <div className="size-12 rounded-full bg-primary flex items-center justify-center font-black text-lg">
-                      {activeTech.userName.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-xs font-black uppercase text-primary tracking-widest">Analista no Turno</p>
-                      <p className="text-lg font-bold">{activeTech.userName}</p>
-                      <p className="text-[10px] text-slate-400 font-mono">Turno até: {format(new Date(activeTech.endAt), "HH:mm")}</p>
-                    </div>
+            {/* Widget Sobreaviso: Visível apenas para suporte */}
+            {isSupportView && (
+              <Card className="bg-slate-900 text-white border-none shadow-xl overflow-hidden relative group">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <Badge className="bg-white/20 text-white border-none text-[8px] uppercase font-black">Escala 24h</Badge>
+                    <CalendarClock className="size-4 text-primary animate-pulse" />
                   </div>
-                ) : (
-                  <div className="p-6 text-center border border-dashed border-white/20 rounded-2xl">
-                    <p className="text-sm text-slate-400">Nenhum técnico em escala ativa agora.</p>
-                  </div>
-                )}
-                <button 
-                  onClick={() => router.push('/dashboard/admin/oncall')}
-                  className="w-full py-3 bg-white text-slate-900 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-colors"
-                >
-                  Ver Escala Completa
-                </button>
-              </CardContent>
-              <div className="absolute -bottom-6 -right-6 size-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all"></div>
-            </Card>
+                  <CardTitle className="text-lg font-headline">Sobreaviso RTM</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {activeTech ? (
+                    <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
+                      <div className="size-12 rounded-full bg-primary flex items-center justify-center font-black text-lg">
+                        {activeTech.userName.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-xs font-black uppercase text-primary tracking-widest">Analista no Turno</p>
+                        <p className="text-lg font-bold">{activeTech.userName}</p>
+                        <p className="text-[10px] text-slate-400 font-mono">Turno até: {format(new Date(activeTech.endAt), "HH:mm")}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center border border-dashed border-white/20 rounded-2xl">
+                      <p className="text-sm text-slate-400">Nenhum técnico em escala ativa agora.</p>
+                    </div>
+                  )}
+                  <button 
+                    onClick={() => router.push('/dashboard/admin/oncall')}
+                    className="w-full py-3 bg-white text-slate-900 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                  >
+                    Ver Escala Completa
+                  </button>
+                </CardContent>
+                <div className="absolute -bottom-6 -right-6 size-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all"></div>
+              </Card>
+            )}
 
             {/* Widget Status Institucional */}
             <Card className="border-border bg-card shadow-sm">
