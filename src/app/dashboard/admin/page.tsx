@@ -49,8 +49,9 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  const currentView = profile?.adminType || searchParams.get('view');
-  const isSupportView = currentView === 'suporte' || currentView === 'coordenador_suporte';
+  const isMaster = user?.email === 'admin@admin.com';
+  const currentView = isMaster ? 'coordenador_suporte' : (profile?.adminType || searchParams.get('view'));
+  const isSupportView = currentView === 'suporte' || currentView === 'coordenador_suporte' || isMaster;
 
   // Busca de Dados Reais para o Compilado
   const { data: allClients, loading: clientsLoading } = useCollection<UserProfile>(
@@ -75,11 +76,11 @@ export default function AdminPage() {
         router.push('/login');
         return;
       }
-      if (!profile?.adminType && !searchParams.get('view')) {
+      if (!isMaster && !profile?.adminType && !searchParams.get('view')) {
         router.push('/dashboard/admin/select-profile');
       }
     }
-  }, [profile, profileLoading, user, userLoading, router, searchParams]);
+  }, [profile, profileLoading, user, userLoading, router, searchParams, isMaster]);
 
   // Cálculos do Compilado
   const stats = useMemo(() => {
@@ -129,7 +130,7 @@ export default function AdminPage() {
             <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest">
               {currentView === 'suporte' ? (
                 <><Headset className="size-3" /><span>Operação: Suporte Técnico</span></>
-              ) : currentView === 'coordenador_suporte' ? (
+              ) : currentView === 'coordenador_suporte' || isMaster ? (
                 <><ShieldCheck className="size-3" /><span>Gestão: Coordenação Master</span></>
               ) : (
                 <><Briefcase className="size-3" /><span>Negócios: Gestão Comercial</span></>

@@ -58,9 +58,10 @@ export default function ClientsAdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
   
-  const currentView = profile?.adminType || searchParams.get('view');
+  const isMaster = user?.email === 'admin@admin.com';
+  const currentView = isMaster ? 'coordenador_suporte' : (profile?.adminType || searchParams.get('view'));
   const isComercial = currentView === 'comercial';
-  const isSuporte = currentView === 'suporte' || profile?.adminType === 'coordenador_suporte';
+  const isSuporte = currentView === 'suporte' || currentView === 'coordenador_suporte' || isMaster;
 
   // State
   const [searchTerm, setSearchTerm] = useState("");
@@ -84,30 +85,30 @@ export default function ClientsAdminPage() {
 
   // Pre-fill consultant name when modal opens
   useEffect(() => {
-    if (isNewActivationOpen && profile?.displayName) {
-      setConsultantName(profile.displayName);
+    if (isNewActivationOpen && (profile?.displayName || isMaster)) {
+      setConsultantName(isMaster ? 'COORDENADOR MASTER' : (profile?.displayName || ''));
     }
-  }, [isNewActivationOpen, profile]);
+  }, [isNewActivationOpen, profile, isMaster]);
 
   // Buscar Usuários do tipo Cliente
   const clientsQuery = useMemo(() => {
-    if (!user || profileLoading) return null;
+    if (!user || (profileLoading && !isMaster)) return null;
     return query(collection(db, "users"), where("role", "==", "client"));
-  }, [db, user, profileLoading]);
+  }, [db, user, profileLoading, isMaster]);
   const { data: dbClients, loading: usersLoading } = useCollection<UserProfile>(clientsQuery);
 
   // Buscar Todas as Instâncias de Onboarding
   const instancesQuery = useMemo(() => {
-    if (!user || profileLoading) return null;
+    if (!user || (profileLoading && !isMaster)) return null;
     return collection(db, "onboardingInstances");
-  }, [db, user, profileLoading]);
+  }, [db, user, profileLoading, isMaster]);
   const { data: instances, loading: instancesLoading } = useCollection<OnboardingInstance>(instancesQuery);
 
   // Buscar Produtos Reais
   const productsQuery = useMemo(() => {
-    if (!user || profileLoading) return null;
+    if (!user || (profileLoading && !isMaster)) return null;
     return collection(db, "products");
-  }, [db, user, profileLoading]);
+  }, [db, user, profileLoading, isMaster]);
   const { data: dbProducts } = useCollection<Product>(productsQuery);
 
   // LÓGICA DE SINCRONIZAÇÃO: Construir a lista unificada de instituições
@@ -297,7 +298,7 @@ export default function ClientsAdminPage() {
             <CardDescription>Clique em uma instituição para ver detalhes das ativações em curso.</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            {usersLoading || instancesLoading || profileLoading ? (
+            {usersLoading || instancesLoading || (profileLoading && !isMaster) ? (
               <div className="flex flex-col items-center justify-center p-20 gap-4">
                 <Loader2 className="animate-spin text-primary size-8" />
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Sincronizando base real...</p>

@@ -64,8 +64,10 @@ export default function OnboardingManagement() {
   
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile } = useDoc<UserProfile>(userRef);
-  const isSupport = profile?.adminType === 'suporte' || profile?.adminType === 'coordenador_suporte';
-  const isAdminUser = profile?.role === 'admin';
+  
+  const isMaster = user?.email === 'admin@admin.com';
+  const isSupport = profile?.adminType === 'suporte' || profile?.adminType === 'coordenador_suporte' || isMaster;
+  const isAdminUser = profile?.role === 'admin' || isMaster;
 
   const [activeTab, setActiveTab] = useState("available");
   const [selectedClientForFicha, setSelectedClientForFicha] = useState<UserProfile | null>(null);
@@ -724,7 +726,7 @@ export default function OnboardingManagement() {
                                         stepId={step.id!}
                                         clientId={selectedJourneyInstance.clientId}
                                         canInteract={isAdminUser && selectedJourneyInstance.status !== 'completed'}
-                                        userName={profile?.displayName}
+                                        userName={profile?.displayName || 'Analista RTM'}
                                         userRole={profile?.adminType || 'admin'}
                                       />
                                     </div>
