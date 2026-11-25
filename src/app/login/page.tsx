@@ -228,9 +228,6 @@ export default function LoginPage() {
         <HeroBackground />
         <div className="relative z-10 space-y-8 max-w-lg">
           <div className="space-y-4">
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 px-4 py-1 uppercase font-bold tracking-[0.2em] text-[10px]">
-              Missão Crítica
-            </Badge>
             <h1 className="text-6xl font-light font-headline text-white tracking-tighter leading-none">
               OnFlow <span className="text-primary font-normal">RTM.</span>
             </h1>
