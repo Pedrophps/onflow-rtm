@@ -49,9 +49,33 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  const isMaster = useMemo(() => user?.email?.toLowerCase().trim() === 'admin@admin.com', [user]);
+  const isMaster = useMemo(() => {
+    const email = user?.email?.toLowerCase().trim();
+    return email === 'admin@admin.com';
+  }, [user]);
+
   const currentView = isMaster ? 'coordenador_suporte' : (profile?.adminType || searchParams.get('view'));
   const isSupportView = currentView === 'suporte' || currentView === 'coordenador_suporte' || isMaster;
+
+  // Redirecionamento blindado contra flickering
+  useEffect(() => {
+    if (userLoading) return;
+
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+    
+    // Coordenador Master nunca deve ser redirecionado para a seleção
+    if (isMaster) return;
+
+    // Se o perfil carregou e não tem adminType, precisa selecionar perfil
+    if (!profileLoading) {
+      if (!profile?.adminType && !searchParams.get('view')) {
+        router.replace('/dashboard/admin/select-profile');
+      }
+    }
+  }, [profile, profileLoading, user, userLoading, router, searchParams, isMaster]);
 
   // Busca de Dados Reais para o Compilado
   const { data: allClients, loading: clientsLoading } = useCollection<UserProfile>(
@@ -68,24 +92,6 @@ export default function AdminPage() {
   }, [db, isSupportView]);
 
   const { data: allSchedules } = useCollection<OnCallSchedule>(schedulesQuery);
-
-  // Redirecionamento blindado contra flickering
-  useEffect(() => {
-    if (!userLoading && !profileLoading) {
-      if (!user) {
-        router.replace('/login');
-        return;
-      }
-      
-      // Coordenador Master nunca deve ser redirecionado para a seleção
-      if (isMaster) return;
-
-      // Se não tiver adminType, precisa selecionar perfil
-      if (!profile?.adminType && !searchParams.get('view')) {
-        router.replace('/dashboard/admin/select-profile');
-      }
-    }
-  }, [profile, profileLoading, user, userLoading, router, searchParams, isMaster]);
 
   // Cálculos do Compilado
   const stats = useMemo(() => {
@@ -117,8 +123,8 @@ export default function AdminPage() {
     { name: 'Bloqueado', value: stats.alerts, color: '#ef4444' },
   ];
 
-  // Mostra loader se estiver validando para evitar flickering
-  if (userLoading || profileLoading || (!isMaster && !profile?.adminType && !searchParams.get('view'))) {
+  // Loader inteligente: Master não espera o carregamento do perfil para ver a página (bypass flicker)
+  if (userLoading || (profileLoading && !isMaster)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4">
         <Loader2 className="size-12 animate-spin text-primary" />
@@ -149,7 +155,6 @@ export default function AdminPage() {
           </div>
         </header>
 
-        {/* Linha 1: Indicadores Mestre */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <SummaryCard 
             label="Base de Clientes" 
@@ -183,7 +188,6 @@ export default function AdminPage() {
         </div>
 
         <div className="grid md:grid-cols-12 gap-8">
-          {/* Coluna 1: Gráfico de Composição */}
           <Card className="md:col-span-7 bg-card border-border shadow-sm overflow-hidden">
             <CardHeader className="bg-muted/30 border-b">
               <div className="flex items-center gap-2">
@@ -211,9 +215,7 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
-          {/* Coluna 2: Informação Dinâmica */}
           <div className="md:col-span-5 space-y-6">
-            {/* Widget Sobreaviso: Visível para suporte e master */}
             {isSupportView && (
               <Card className="bg-slate-900 text-white border-none shadow-xl overflow-hidden relative group">
                 <CardHeader className="pb-2">
@@ -251,7 +253,6 @@ export default function AdminPage() {
               </Card>
             )}
 
-            {/* Widget Status Institucional */}
             <Card className="border-border bg-card shadow-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">

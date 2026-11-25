@@ -26,19 +26,20 @@ export default function SelectProfilePage() {
   const normalizeEmail = (val: string) => (val || "").trim().toLowerCase();
   const isMaster = useMemo(() => user && normalizeEmail(user.email || "") === 'admin@admin.com', [user]);
 
-  // Redirecionamento reativo e estável
+  // Redirecionamento reativo e estável: Se já tem adminType ou é Master em processo de atualização, vai pro dashboard
   useEffect(() => {
-    if (!userLoading && !profileLoading && profile?.adminType && !isUpdating) {
-      router.replace(`/dashboard/admin`);
-    }
-  }, [profile, profileLoading, userLoading, router, isUpdating]);
+    if (userLoading || profileLoading) return;
 
-  // Auto-configuração para o Master caso ele caia aqui
-  useEffect(() => {
-    if (!userLoading && !profileLoading && isMaster && !profile?.adminType && !isUpdating) {
-      handleSelect('suporte');
+    if (profile?.adminType) {
+      router.replace(`/dashboard/admin`);
+      return;
     }
-  }, [userLoading, profileLoading, isMaster, profile?.adminType]);
+
+    // Auto-configuração para o Master: cria o perfil mas deixa o useEffect reativo lidar com o redirecionamento
+    if (isMaster && !profile?.adminType && !isUpdating) {
+      handleSelect('suporte'); // Master entra como Suporte por padrão
+    }
+  }, [profile, profileLoading, userLoading, user, isMaster, isUpdating, router]);
 
   const handleSelect = async (adminType: 'suporte' | 'comercial') => {
     if (!user || isUpdating) return;
@@ -58,7 +59,6 @@ export default function SelectProfilePage() {
     
     try {
       await setDoc(userDocRef, updateData, { merge: true });
-      // Deixamos o useEffect acima lidar com o redirecionamento após a atualização do perfil no Firestore
     } catch (error: any) {
       setIsUpdating(false);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -69,7 +69,7 @@ export default function SelectProfilePage() {
     }
   };
 
-  // Enquanto estiver carregando ou se for Master (que será redirecionado), mostra loader full screen
+  // Loader full screen durante transições críticas
   if (userLoading || profileLoading || isUpdating || (isMaster && !profile?.adminType)) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
