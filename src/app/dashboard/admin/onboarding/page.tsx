@@ -47,7 +47,7 @@ import {
   Flag
 } from "lucide-react";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
-import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, getDocs, orderBy, deleteDoc, writeBatch } from "firebase/firestore";
+import { collection, query, where, doc, updateDoc, serverTimestamp, addDoc, getDocs, orderBy, deleteDoc, writeBatch, getDoc } from "firebase/firestore";
 import { useMemo, useState, useEffect } from "react";
 import { UserProfile, OnboardingInstance, ActivationFlow, Product, FlowStep } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -192,7 +192,6 @@ export default function OnboardingManagement() {
       
       const pendingInstances = allInstances.filter(i => i.id !== selectedJourneyInstance.id && i.status !== 'completed');
       
-      // Se não houver mais nenhuma ativação pendente, marcamos o cliente como ATIVO
       if (pendingInstances.length === 0) {
         const clientRef = doc(db, "users", selectedJourneyInstance.clientId);
         batch.update(clientRef, {
@@ -350,11 +349,20 @@ export default function OnboardingManagement() {
     }
   };
 
-  const handleViewFicha = (clientId: string) => {
+  const handleViewFicha = async (clientId: string) => {
     const client = allClients.find(c => c.id === clientId);
     if (client) {
       setSelectedClientForFicha(client);
       setIsFichaOpen(true);
+    } else {
+      // Caso seja cliente ingerido via API sem UserProfile completo
+      const snap = await getDoc(doc(db, "users", clientId));
+      if (snap.exists()) {
+        setSelectedClientForFicha({ id: snap.id, ...snap.data() } as UserProfile);
+        setIsFichaOpen(true);
+      } else {
+        toast({ variant: "destructive", title: "Ficha Indisponível", description: "Dados mestre não encontrados no Firestore." });
+      }
     }
   };
 
@@ -435,7 +443,7 @@ export default function OnboardingManagement() {
                               </div>
                               <div className="space-y-1">
                                 <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Responsável Cliente</p>
-                                <p className="text-xs font-semibold text-foreground flex items-center gap-2"><User className="size-3 text-primary" /> {client?.displayName}</p>
+                                <p className="text-xs font-semibold text-foreground flex items-center gap-2"><User className="size-3 text-primary" /> {client?.displayName || 'A definir'}</p>
                               </div>
                             </div>
 
@@ -793,7 +801,7 @@ export default function OnboardingManagement() {
               </div>
               <div className="space-y-1">
                 <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5"><UserCircle className="size-3" /> Responsável do Cliente</Label>
-                <p className="font-bold text-foreground">{selectedClientForFicha?.displayName}</p>
+                <p className="font-bold text-foreground">{selectedClientForFicha?.displayName || 'Pendente primeiro login'}</p>
               </div>
               <div className="space-y-1">
                 <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1.5"><Mail className="size-3" /> E-mail de Contato</Label>

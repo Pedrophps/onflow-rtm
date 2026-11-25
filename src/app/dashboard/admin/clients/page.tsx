@@ -106,6 +106,7 @@ export default function ClientsAdminPage() {
     const institutions = [...dbClients];
     const userIdsInCollection = new Set(dbClients.map(c => c.id));
     
+    // Adicionar instituições que existem em onboardingInstances mas não em users (Ingestão API)
     instances.forEach(inst => {
       if (!userIdsInCollection.has(inst.clientId)) {
         const alreadyAdded = institutions.find(i => i.id === inst.clientId);
@@ -164,6 +165,7 @@ export default function ClientsAdminPage() {
     const instancesRef = collection(db, "onboardingInstances");
 
     try {
+      // Se for um usuário real (não apenas API), atualiza o perfil
       if (dbClients.find(c => c.id === selectedClient.id)) {
         await updateDoc(clientRef, {
           status: 'approved',
@@ -615,7 +617,7 @@ function StatusBadge({ type, status }: { type: 'institutional' | 'operational', 
     operational: {
       pending: { label: "Pendente", color: "bg-slate-50 text-amber-700 border-slate-200" },
       em_andamento: { label: "Em Execução", color: "bg-slate-50 text-blue-700 border-slate-200" },
-      aguardando_cliente: { label: "Pendente Cliente", color: "bg-slate-50 text-amber-700 border-amber-200" },
+      aguardando_cliente: { label: "Pendente Cliente", color: "bg-slate-50 text-amber-700 border-slate-200" },
       bloqueado: { label: "Bloqueado", color: "bg-slate-50 text-red-700 border-red-200" },
       em_homologacao: { label: "Homologação", color: "bg-slate-50 text-purple-700 border-purple-200" },
       concluido: { label: "Concluído", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
