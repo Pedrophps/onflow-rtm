@@ -26,7 +26,7 @@ export default function SelectProfilePage() {
   const normalizeEmail = (val: string) => (val || "").trim().toLowerCase();
   const isMaster = useMemo(() => user && normalizeEmail(user.email || "") === 'admin@admin.com', [user]);
 
-  // Redirecionamento Reativo e Blindado
+  // Redirecionamento Reativo Blindado contra loops
   useEffect(() => {
     if (userLoading || profileLoading) return;
 
@@ -35,15 +35,10 @@ export default function SelectProfilePage() {
       return;
     }
 
-    // Master: Redireciona IMEDIATAMENTE para o Dashboard
-    if (isMaster) {
-      router.replace('/dashboard/admin');
-      return;
-    }
-
-    // Se já tem um perfil definido, não deveria estar nesta tela
-    if (profile?.adminType) {
-      router.replace(`/dashboard/admin`);
+    // Se já é Master ou já tem perfil definido, redireciona para o Dashboard incluindo redundância view=...
+    if (isMaster || profile?.adminType) {
+      const targetView = profile?.adminType || (isMaster ? 'coordenador_suporte' : '');
+      router.replace(`/dashboard/admin${targetView ? `?view=${targetView}` : ''}`);
       return;
     }
   }, [profile, profileLoading, userLoading, user, isMaster, router]);
@@ -55,15 +50,15 @@ export default function SelectProfilePage() {
     const userDocRef = doc(db, 'users', user.uid);
     const updateData = { 
       adminType: adminType,
-      role: 'admin',
-      status: 'approved',
+      role: 'admin' as const,
+      status: 'approved' as const,
       email: normalizeEmail(user.email || ""),
       updatedAt: serverTimestamp()
     };
     
     try {
       await setDoc(userDocRef, updateData, { merge: true });
-      // O useEffect reativo cuidará do redirecionamento após o snapshot atualizar
+      // O useEffect reativo cuidará do redirecionamento com o novo snapshot
     } catch (error: any) {
       setIsUpdating(false);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -75,7 +70,7 @@ export default function SelectProfilePage() {
   };
 
   // Loader full screen durante transições críticas
-  if (userLoading || profileLoading || isMaster || isUpdating) {
+  if (userLoading || profileLoading || isMaster || isUpdating || profile?.adminType) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <div className="relative">

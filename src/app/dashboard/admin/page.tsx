@@ -52,13 +52,18 @@ export default function AdminPage() {
   const normalizeEmail = (val: string) => (val || "").trim().toLowerCase();
   
   const isMaster = useMemo(() => {
-    return normalizeEmail(user?.email || "") === 'admin@admin.com';
+    return user && normalizeEmail(user.email || "") === 'admin@admin.com';
   }, [user]);
 
-  const currentView = isMaster ? 'coordenador_suporte' : (profile?.adminType || searchParams.get('view'));
-  const isSupportView = currentView === 'suporte' || currentView === 'coordenador_suporte' || isMaster;
+  // Determina a visão atual: Prioridade 1: Master, Prioridade 2: Perfil no Firestore, Prioridade 3: Parametro de URL (reduncância anti-loop)
+  const currentView = useMemo(() => {
+    if (isMaster) return 'coordenador_suporte';
+    return profile?.adminType || searchParams.get('view');
+  }, [isMaster, profile, searchParams]);
 
-  // Redirecionamento blindado contra flickering
+  const isSupportView = currentView === 'suporte' || currentView === 'coordenador_suporte';
+
+  // Redirecionamento blindado contra loops para Admins padrão
   useEffect(() => {
     if (userLoading || profileLoading) return;
 
@@ -67,16 +72,23 @@ export default function AdminPage() {
       return;
     }
     
-    // Coordenador Master nunca deve ser redirecionado para a seleção
+    // Coordenador Master nunca deve ser redirecionado
     if (isMaster) return;
 
-    // Se o perfil carregou e não tem adminType, precisa selecionar perfil
-    if (!profile?.adminType && !searchParams.get('view')) {
+    // Se o perfil carregou, o usuário é admin, mas não tem adminType DEFINIDO e não tem view param, vai para seleção
+    // O view param aqui é a chave que quebra o loop caso o Firestore demore a atualizar o snapshot
+    if (profile && profile.role === 'admin' && !profile.adminType && !searchParams.get('view')) {
       router.replace('/dashboard/admin/select-profile');
+      return;
+    }
+
+    // Caso um cliente tente acessar a área admin
+    if (profile && profile.role === 'client') {
+      router.replace('/dashboard/client');
     }
   }, [profile, profileLoading, user, userLoading, router, searchParams, isMaster]);
 
-  // Busca de Dados Reais para o Compilado
+  // Busca de Dados Reais
   const { data: allClients, loading: clientsLoading } = useCollection<UserProfile>(
     query(collection(db, "users"), where("role", "==", "client"))
   );
@@ -122,8 +134,8 @@ export default function AdminPage() {
     { name: 'Bloqueado', value: stats.alerts, color: '#ef4444' },
   ];
 
-  // Loader inteligente: Master não espera o carregamento do perfil para ver a página (bypass flicker)
-  if (userLoading || (profileLoading && !isMaster)) {
+  // Loader inteligente
+  if (userLoading || (profileLoading && !isMaster) || !currentView) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4">
         <Loader2 className="size-12 animate-spin text-primary" />
@@ -141,7 +153,7 @@ export default function AdminPage() {
             <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest">
               {currentView === 'suporte' ? (
                 <><Headset className="size-3" /><span>Operação: Suporte Técnico</span></>
-              ) : currentView === 'coordenador_suporte' || isMaster ? (
+              ) : currentView === 'coordenador_suporte' ? (
                 <><ShieldCheck className="size-3" /><span>Gestão: Coordenação Master</span></>
               ) : (
                 <><Briefcase className="size-3" /><span>Negócios: Gestão Comercial</span></>
