@@ -26,18 +26,22 @@ export default function SelectProfilePage() {
   const normalizeEmail = (val: string) => (val || "").trim().toLowerCase();
   const isMaster = useMemo(() => user && normalizeEmail(user.email || "") === 'admin@admin.com', [user]);
 
-  // Redirecionamento reativo e estável: Se já tem adminType ou é Master em processo de atualização, vai pro dashboard
+  // Redirecionamento Reativo e Incontestável
   useEffect(() => {
     if (userLoading || profileLoading) return;
+
+    // Master: Redireciona IMEDIATAMENTE. O Dashboard cuidará do resto.
+    if (isMaster) {
+      if (!profile?.adminType && !isUpdating) {
+        handleSelect('suporte'); // Garante o suporte em background
+      }
+      router.replace('/dashboard/admin');
+      return;
+    }
 
     if (profile?.adminType) {
       router.replace(`/dashboard/admin`);
       return;
-    }
-
-    // Auto-configuração para o Master: cria o perfil mas deixa o useEffect reativo lidar com o redirecionamento
-    if (isMaster && !profile?.adminType && !isUpdating) {
-      handleSelect('suporte'); // Master entra como Suporte por padrão
     }
   }, [profile, profileLoading, userLoading, user, isMaster, isUpdating, router]);
 
@@ -52,13 +56,14 @@ export default function SelectProfilePage() {
       adminType: finalAdminType,
       role: 'admin',
       status: 'approved',
-      email: user.email,
+      email: normalizeEmail(user.email || ""),
       displayName: isMaster ? 'COORDENADOR MASTER' : (user.displayName || 'Administrador RTM'),
       updatedAt: serverTimestamp()
     };
     
     try {
       await setDoc(userDocRef, updateData, { merge: true });
+      // Após o sucesso, o useEffect reativo fará o router.replace
     } catch (error: any) {
       setIsUpdating(false);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -70,7 +75,7 @@ export default function SelectProfilePage() {
   };
 
   // Loader full screen durante transições críticas
-  if (userLoading || profileLoading || isUpdating || (isMaster && !profile?.adminType)) {
+  if (userLoading || profileLoading || (isMaster && !profile?.adminType) || isUpdating) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <div className="relative">
@@ -79,7 +84,7 @@ export default function SelectProfilePage() {
              <div className="size-2 bg-primary rounded-full animate-pulse" />
            </div>
         </div>
-        <p className="text-muted-foreground font-bold text-xs uppercase tracking-[0.2em] animate-pulse">Validando Credenciais RTM...</p>
+        <p className="text-muted-foreground font-bold text-xs uppercase tracking-[0.2em] animate-pulse">Sincronizando Identidade RTM...</p>
       </div>
     );
   }

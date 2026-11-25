@@ -58,13 +58,6 @@ export default function LoginPage() {
   const normalizeEmail = (val: string) => (val || "").trim().toLowerCase();
   const normalizeInstitution = (val: string) => (val || "").trim().toUpperCase();
 
-  const checkCoordinatorCriteria = (emailVal: string, instVal: string, cnpjVal: string) => {
-    return (
-      normalizeEmail(emailVal) === 'admin@admin.com' &&
-      (normalizeInstitution(instVal) === 'RTM' || normalizeInstitution(instVal) === 'COORDENADOR MASTER')
-    );
-  };
-
   const isAdminEmail = useCallback((emailStr: string | null | undefined) => {
     if (!emailStr) return false;
     const lowerEmail = emailStr.toLowerCase().trim();
@@ -86,16 +79,18 @@ export default function LoginPage() {
   };
 
   const fastRedirect = useCallback(async (userUid: string, userEmail: string | null) => {
-    const userSnap = await getDoc(doc(db, 'users', userUid));
-    const userData = userSnap.data();
-    
-    const isRtm = isAdminEmail(userEmail);
-    const isCoordinator = userData?.adminType === 'coordenador_suporte';
+    const email = (userEmail || "").toLowerCase().trim();
+    const isMaster = email === 'admin@admin.com';
 
-    if (isCoordinator) {
-      router.push('/dashboard/admin?view=suporte');
+    // Master vai direto SEMPRE
+    if (isMaster) {
+      router.push('/dashboard/admin');
       return;
     }
+
+    const userSnap = await getDoc(doc(db, 'users', userUid));
+    const userData = userSnap.data();
+    const isRtm = isAdminEmail(email);
 
     if (isRtm || userData?.role === 'admin') {
       if (!userData?.adminType) {
@@ -123,14 +118,15 @@ export default function LoginPage() {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(result.user, { displayName: name || 'Usuário RTM' });
 
-      const isCoordinator = checkCoordinatorCriteria(email, institutionName, cnpj);
+      const emailNorm = normalizeEmail(email);
+      const isMaster = emailNorm === 'admin@admin.com';
       const isRtm = isAdminEmail(email);
-      const role = (isRtm || isCoordinator) ? 'admin' : 'client';
+      const role = (isRtm || isMaster) ? 'admin' : 'client';
       
       const userRef = doc(db, 'users', result.user.uid);
 
       const payload: any = {
-        email,
+        email: emailNorm,
         role,
         status: 'approved',
         displayName: name || 'Usuário RTM',
@@ -140,7 +136,7 @@ export default function LoginPage() {
         updatedAt: serverTimestamp()
       };
 
-      if (isCoordinator) {
+      if (isMaster) {
         payload.adminType = 'coordenador_suporte';
       }
 
@@ -163,30 +159,44 @@ export default function LoginPage() {
 
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
+      const emailNorm = normalizeEmail(email);
+      const isMaster = emailNorm === 'admin@admin.com';
+      
+      if (isMaster) {
+        // Garante que o Master sempre tenha o doc correto
+        await setDoc(doc(db, 'users', result.user.uid), {
+          role: 'admin',
+          adminType: 'coordenador_suporte',
+          status: 'approved',
+          email: emailNorm,
+          displayName: 'COORDENADOR MASTER',
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        router.push('/dashboard/admin');
+        return;
+      }
+
       const userSnap = await getDoc(doc(db, 'users', result.user.uid));
       const userData = userSnap.data();
-      const isRtm = isAdminEmail(email);
+      const isRtm = isAdminEmail(emailNorm);
 
       if (isRtm) {
-        const isCoordinator = checkCoordinatorCriteria(email, userData?.institutionName || '', userData?.cnpj || '');
         const updatePayload: any = {
           role: 'admin',
           status: 'approved',
           updatedAt: serverTimestamp(),
           displayName: userData?.displayName || auth.currentUser?.displayName || 'Analista RTM',
-          email: email
+          email: emailNorm
         };
 
-        if (isCoordinator) {
-          updatePayload.adminType = 'coordenador_suporte';
-        } else if (userData?.adminType) {
+        if (userData?.adminType) {
           updatePayload.adminType = userData.adminType;
         }
 
         await setDoc(doc(db, 'users', result.user.uid), updatePayload, { merge: true });
       } else if (!userData && !isRtm) {
         await setDoc(doc(db, 'users', result.user.uid), {
-          email: email,
+          email: emailNorm,
           role: 'client',
           status: 'pending',
           displayName: auth.currentUser?.displayName || 'Cliente RTM',
@@ -223,7 +233,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-background overflow-hidden font-body">
-      {/* LADO ESQUERDO: BRANDING & IMMERSION */}
       <div className="hidden lg:flex relative w-1/2 bg-slate-900 items-center justify-center p-12 overflow-hidden border-r border-white/5">
         <HeroBackground />
         <div className="relative z-10 space-y-8 max-w-lg">
@@ -255,7 +264,6 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* LADO DIREITO: ACTION & FORM */}
       <div className="flex-1 flex items-center justify-center p-8 bg-white dark:bg-slate-900 relative">
         <div className="lg:hidden absolute top-8 left-8">
            <Link href="/" className="text-primary"><ArrowLeft className="size-6" /></Link>
@@ -351,7 +359,6 @@ export default function LoginPage() {
             </TabsContent>
           </Tabs>
 
-          {/* CONSOLE DE DESENVOLVEDOR (QUICK ACCESS) */}
           <Collapsible open={isConsoleOpen} onOpenChange={setIsConsoleOpen} className="pt-6 border-t border-border">
             <div className="flex items-center justify-between">
                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-50">Ambientes de Homologação</p>
