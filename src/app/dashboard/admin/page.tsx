@@ -49,7 +49,7 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  const isMaster = user?.email === 'admin@admin.com';
+  const isMaster = useMemo(() => user?.email?.toLowerCase().trim() === 'admin@admin.com', [user]);
   const currentView = isMaster ? 'coordenador_suporte' : (profile?.adminType || searchParams.get('view'));
   const isSupportView = currentView === 'suporte' || currentView === 'coordenador_suporte' || isMaster;
 
@@ -62,7 +62,6 @@ export default function AdminPage() {
     collection(db, "onboardingInstances")
   );
 
-  // Consulta guardada: só busca escalas se for visão de suporte para evitar Permission Denied
   const schedulesQuery = useMemo(() => {
     if (!isSupportView) return null;
     return collection(db, "onCallSchedules");
@@ -70,14 +69,17 @@ export default function AdminPage() {
 
   const { data: allSchedules } = useCollection<OnCallSchedule>(schedulesQuery);
 
+  // Redirecionamento estável
   useEffect(() => {
     if (!userLoading && !profileLoading) {
       if (!user) {
-        router.push('/login');
+        router.replace('/login');
         return;
       }
+      
+      // Se não for master e não tiver adminType, precisa selecionar perfil
       if (!isMaster && !profile?.adminType && !searchParams.get('view')) {
-        router.push('/dashboard/admin/select-profile');
+        router.replace('/dashboard/admin/select-profile');
       }
     }
   }, [profile, profileLoading, user, userLoading, router, searchParams, isMaster]);
@@ -112,11 +114,12 @@ export default function AdminPage() {
     { name: 'Bloqueado', value: stats.alerts, color: '#ef4444' },
   ];
 
-  if (userLoading || profileLoading || clientsLoading || instancesLoading) {
+  // Mostra loader se estiver validando o redirecionamento para evitar flickering
+  if (userLoading || profileLoading || (!isMaster && !profile?.adminType && !searchParams.get('view'))) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4">
-        <Loader2 className="size-8 animate-spin text-primary" />
-        <p className="text-muted-foreground font-bold text-xs uppercase tracking-widest">Sincronizando Centro de Comando...</p>
+        <Loader2 className="size-10 animate-spin text-primary" />
+        <p className="text-muted-foreground font-bold text-xs uppercase tracking-widest animate-pulse">Sincronizando Centro de Comando...</p>
       </div>
     );
   }

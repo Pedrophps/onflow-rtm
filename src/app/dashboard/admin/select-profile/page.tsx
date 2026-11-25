@@ -4,7 +4,7 @@
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Headset, Briefcase, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
+import { Headset, Briefcase, ArrowRight, Loader2 } from 'lucide-react';
 import { useUser, useFirestore, useDoc } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function SelectProfilePage() {
   const router = useRouter();
   const db = useFirestore();
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -24,21 +24,27 @@ export default function SelectProfilePage() {
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
   const normalizeEmail = (val: string) => (val || "").trim().toLowerCase();
+  const isMaster = useMemo(() => user && normalizeEmail(user.email || "") === 'admin@admin.com', [user]);
 
+  // Redirecionamento reativo e estável
   useEffect(() => {
-    if (!profileLoading && profile?.adminType && !isUpdating) {
+    if (!userLoading && !profileLoading && profile?.adminType && !isUpdating) {
       router.replace(`/dashboard/admin`);
     }
-  }, [profile, profileLoading, router, isUpdating]);
+  }, [profile, profileLoading, userLoading, router, isUpdating]);
+
+  // Auto-configuração para o Master caso ele caia aqui
+  useEffect(() => {
+    if (!userLoading && !profileLoading && isMaster && !profile?.adminType && !isUpdating) {
+      handleSelect('suporte');
+    }
+  }, [userLoading, profileLoading, isMaster, profile?.adminType]);
 
   const handleSelect = async (adminType: 'suporte' | 'comercial') => {
     if (!user || isUpdating) return;
     setIsUpdating(true);
 
     const userDocRef = doc(db, 'users', user.uid);
-    
-    // Simplificado e Infalível: admin@admin.com é SEMPRE Coordenador Master
-    const isMaster = normalizeEmail(user.email || "") === 'admin@admin.com';
     const finalAdminType = isMaster ? 'coordenador_suporte' : adminType;
 
     const updateData = { 
@@ -52,11 +58,7 @@ export default function SelectProfilePage() {
     
     try {
       await setDoc(userDocRef, updateData, { merge: true });
-      toast({
-        title: "Ambiente Ativado",
-        description: `Perfil de ${finalAdminType.replace('_', ' ')} configurado com sucesso.`,
-      });
-      router.replace(`/dashboard/admin`);
+      // Deixamos o useEffect acima lidar com o redirecionamento após a atualização do perfil no Firestore
     } catch (error: any) {
       setIsUpdating(false);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -67,11 +69,17 @@ export default function SelectProfilePage() {
     }
   };
 
-  if (profileLoading) {
+  // Enquanto estiver carregando ou se for Master (que será redirecionado), mostra loader full screen
+  if (userLoading || profileLoading || isUpdating || (isMaster && !profile?.adminType)) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
-        <Loader2 className="size-10 animate-spin text-primary" />
-        <p className="text-muted-foreground font-medium">Validando credenciais RTM...</p>
+        <div className="relative">
+           <Loader2 className="size-12 animate-spin text-primary" />
+           <div className="absolute inset-0 flex items-center justify-center">
+             <div className="size-2 bg-primary rounded-full animate-pulse" />
+           </div>
+        </div>
+        <p className="text-muted-foreground font-bold text-xs uppercase tracking-[0.2em] animate-pulse">Validando Credenciais RTM...</p>
       </div>
     );
   }
@@ -88,10 +96,10 @@ export default function SelectProfilePage() {
 
         <div className="grid md:grid-cols-2 gap-8">
           <Card 
-            className="group hover:border-primary transition-all cursor-pointer border-2 shadow-sm hover:shadow-xl bg-card"
+            className="group hover:border-primary transition-all cursor-pointer border-2 shadow-sm hover:shadow-xl bg-card overflow-hidden"
             onClick={() => handleSelect('suporte')}
           >
-            <CardHeader className="pt-10 text-center">
+            <CardHeader className="pt-10 text-center relative">
               <div className="size-20 rounded-2xl bg-primary/5 group-hover:bg-primary group-hover:text-white transition-colors flex items-center justify-center text-primary mx-auto mb-6">
                 <Headset className="size-10" />
               </div>
@@ -106,7 +114,7 @@ export default function SelectProfilePage() {
           </Card>
 
           <Card 
-            className="group hover:border-secondary transition-all cursor-pointer border-2 shadow-sm hover:shadow-xl bg-card"
+            className="group hover:border-secondary transition-all cursor-pointer border-2 shadow-sm hover:shadow-xl bg-card overflow-hidden"
             onClick={() => handleSelect('comercial')}
           >
             <CardHeader className="pt-10 text-center">
