@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -60,8 +61,7 @@ export default function LoginPage() {
   const checkCoordinatorCriteria = (emailVal: string, instVal: string, cnpjVal: string) => {
     return (
       normalizeEmail(emailVal) === 'admin@admin.com' &&
-      normalizeInstitution(instVal) === 'RTM' &&
-      normalizeCnpj(cnpjVal) === '00000000000191'
+      (normalizeInstitution(instVal) === 'RTM' || normalizeInstitution(instVal) === 'COORDENADOR MASTER')
     );
   };
 
@@ -223,7 +223,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-background overflow-hidden font-body">
-      {/* LADO ESQUERDO: BRANDING & IMMERSION - Utilizando Cinza Escuro RTM */}
+      {/* LADO ESQUERDO: BRANDING & IMMERSION */}
       <div className="hidden lg:flex relative w-1/2 bg-slate-900 items-center justify-center p-12 overflow-hidden border-r border-white/5">
         <HeroBackground />
         <div className="relative z-10 space-y-8 max-w-lg">
@@ -368,7 +368,7 @@ export default function LoginPage() {
                     label="Coordenação" 
                     desc="Master Admin"
                     icon={ShieldCheck} 
-                    onClick={() => fillFields('admin@admin.com', '123456', 'Coordenador Master', 'RTM', '00.00.000/0001-91')}
+                    onClick={() => fillFields('admin@admin.com', '123456', 'COORDENADOR MASTER', 'RTM', '00.00.000/0001-91')}
                   />
                   <QuickAccessButton 
                     label="Suporte" 

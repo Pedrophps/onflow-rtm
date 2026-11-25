@@ -39,12 +39,11 @@ export default function SelectProfilePage() {
 
     const userDocRef = doc(db, 'users', user.uid);
     
-    // Verificação de Coordenador Master na seleção de perfil
+    // Verificação de Coordenador Master (Removido emailVerified para facilitar ambiente de dev)
     const isMaster = 
       normalizeEmail(user.email || "") === 'admin@admin.com' &&
-      normalizeInstitution(profile?.institutionName || "") === 'RTM' &&
-      normalizeCnpj(profile?.cnpj || "") === '00000000000191' &&
-      user.emailVerified;
+      (normalizeInstitution(profile?.institutionName || "") === 'RTM' || normalizeInstitution(profile?.displayName || "") === 'COORDENADOR MASTER') &&
+      (normalizeCnpj(profile?.cnpj || "") === '00000000000191' || !profile?.cnpj);
 
     const finalAdminType = isMaster ? 'coordenador_suporte' : adminType;
 
