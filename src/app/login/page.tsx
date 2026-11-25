@@ -82,26 +82,22 @@ export default function LoginPage() {
     const email = (userEmail || "").toLowerCase().trim();
     const isMaster = email === 'admin@admin.com';
 
-    // Master vai direto SEMPRE
-    if (isMaster) {
+    // Master ou RTM Admin vai para o Dashboard (que cuidará do resto)
+    if (isMaster || email.endsWith('@rtm.net.br')) {
       router.push('/dashboard/admin');
       return;
     }
 
+    // Outros usuários
     const userSnap = await getDoc(doc(db, 'users', userUid));
     const userData = userSnap.data();
-    const isRtm = isAdminEmail(email);
 
-    if (isRtm || userData?.role === 'admin') {
-      if (!userData?.adminType) {
-        router.push('/dashboard/admin/select-profile');
-      } else {
-        router.push('/dashboard/admin');
-      }
+    if (userData?.role === 'admin') {
+      router.push('/dashboard/admin');
     } else {
       router.push('/dashboard/client');
     }
-  }, [router, db, isAdminEmail]);
+  }, [router, db]);
 
   useEffect(() => {
     if (currentUser && !authLoading) {
@@ -163,7 +159,6 @@ export default function LoginPage() {
       const isMaster = emailNorm === 'admin@admin.com';
       
       if (isMaster) {
-        // Garante que o Master sempre tenha o doc correto
         await setDoc(doc(db, 'users', result.user.uid), {
           role: 'admin',
           adminType: 'coordenador_suporte',
@@ -181,19 +176,13 @@ export default function LoginPage() {
       const isRtm = isAdminEmail(emailNorm);
 
       if (isRtm) {
-        const updatePayload: any = {
+        await setDoc(doc(db, 'users', result.user.uid), {
           role: 'admin',
           status: 'approved',
           updatedAt: serverTimestamp(),
-          displayName: userData?.displayName || auth.currentUser?.displayName || 'Analista RTM',
           email: emailNorm
-        };
-
-        if (userData?.adminType) {
-          updatePayload.adminType = userData.adminType;
-        }
-
-        await setDoc(doc(db, 'users', result.user.uid), updatePayload, { merge: true });
+        }, { merge: true });
+        router.push('/dashboard/admin');
       } else if (!userData && !isRtm) {
         await setDoc(doc(db, 'users', result.user.uid), {
           email: emailNorm,
@@ -204,6 +193,9 @@ export default function LoginPage() {
           createdAt: new Date().toISOString(),
           updatedAt: serverTimestamp()
         });
+        router.push('/dashboard/client');
+      } else {
+        fastRedirect(result.user.uid, emailNorm);
       }
     } catch (error: any) {
       setLoading(false);

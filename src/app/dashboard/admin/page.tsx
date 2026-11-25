@@ -49,9 +49,10 @@ export default function AdminPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
+  const normalizeEmail = (val: string) => (val || "").trim().toLowerCase();
+  
   const isMaster = useMemo(() => {
-    const email = user?.email?.toLowerCase().trim();
-    return email === 'admin@admin.com';
+    return normalizeEmail(user?.email || "") === 'admin@admin.com';
   }, [user]);
 
   const currentView = isMaster ? 'coordenador_suporte' : (profile?.adminType || searchParams.get('view'));
@@ -59,7 +60,7 @@ export default function AdminPage() {
 
   // Redirecionamento blindado contra flickering
   useEffect(() => {
-    if (userLoading) return;
+    if (userLoading || profileLoading) return;
 
     if (!user) {
       router.replace('/login');
@@ -70,10 +71,8 @@ export default function AdminPage() {
     if (isMaster) return;
 
     // Se o perfil carregou e não tem adminType, precisa selecionar perfil
-    if (!profileLoading) {
-      if (!profile?.adminType && !searchParams.get('view')) {
-        router.replace('/dashboard/admin/select-profile');
-      }
+    if (!profile?.adminType && !searchParams.get('view')) {
+      router.replace('/dashboard/admin/select-profile');
     }
   }, [profile, profileLoading, user, userLoading, router, searchParams, isMaster]);
 

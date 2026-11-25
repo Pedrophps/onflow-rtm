@@ -26,44 +26,44 @@ export default function SelectProfilePage() {
   const normalizeEmail = (val: string) => (val || "").trim().toLowerCase();
   const isMaster = useMemo(() => user && normalizeEmail(user.email || "") === 'admin@admin.com', [user]);
 
-  // Redirecionamento Reativo e Incontestável
+  // Redirecionamento Reativo e Blindado
   useEffect(() => {
     if (userLoading || profileLoading) return;
 
-    // Master: Redireciona IMEDIATAMENTE. O Dashboard cuidará do resto.
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+
+    // Master: Redireciona IMEDIATAMENTE para o Dashboard
     if (isMaster) {
-      if (!profile?.adminType && !isUpdating) {
-        handleSelect('suporte'); // Garante o suporte em background
-      }
       router.replace('/dashboard/admin');
       return;
     }
 
+    // Se já tem um perfil definido, não deveria estar nesta tela
     if (profile?.adminType) {
       router.replace(`/dashboard/admin`);
       return;
     }
-  }, [profile, profileLoading, userLoading, user, isMaster, isUpdating, router]);
+  }, [profile, profileLoading, userLoading, user, isMaster, router]);
 
   const handleSelect = async (adminType: 'suporte' | 'comercial') => {
     if (!user || isUpdating) return;
     setIsUpdating(true);
 
     const userDocRef = doc(db, 'users', user.uid);
-    const finalAdminType = isMaster ? 'coordenador_suporte' : adminType;
-
     const updateData = { 
-      adminType: finalAdminType,
+      adminType: adminType,
       role: 'admin',
       status: 'approved',
       email: normalizeEmail(user.email || ""),
-      displayName: isMaster ? 'COORDENADOR MASTER' : (user.displayName || 'Administrador RTM'),
       updatedAt: serverTimestamp()
     };
     
     try {
       await setDoc(userDocRef, updateData, { merge: true });
-      // Após o sucesso, o useEffect reativo fará o router.replace
+      // O useEffect reativo cuidará do redirecionamento após o snapshot atualizar
     } catch (error: any) {
       setIsUpdating(false);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -75,7 +75,7 @@ export default function SelectProfilePage() {
   };
 
   // Loader full screen durante transições críticas
-  if (userLoading || profileLoading || (isMaster && !profile?.adminType) || isUpdating) {
+  if (userLoading || profileLoading || isMaster || isUpdating) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <div className="relative">
