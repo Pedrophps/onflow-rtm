@@ -1,3 +1,4 @@
+
 'use client';
 
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -9,7 +10,8 @@ import {
   AlertCircle,
   Headset,
   Briefcase,
-  Loader2
+  Loader2,
+  ShieldCheck
 } from "lucide-react";
 import { 
   BarChart, 
@@ -53,7 +55,7 @@ export default function AdminPage() {
         return;
       }
       
-      // Se for admin mas não tiver tipo definido (exceto se vier com view forçado por param)
+      // Se for admin mas não tiver tipo definido (excepto se vier com view forçado por param)
       if (!profile?.adminType && !searchParams.get('view')) {
         router.push('/dashboard/admin/select-profile');
       }
@@ -149,5 +151,3 @@ export default function AdminPage() {
     </DashboardLayout>
   );
 }
-
-import { ShieldCheck } from "lucide-react";

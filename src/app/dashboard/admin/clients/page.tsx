@@ -55,7 +55,7 @@ export default function ClientsAdminPage() {
   const searchParams = useSearchParams();
   
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
-  const { data: profile } = useDoc<UserProfile>(userRef);
+  const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
   
   const currentView = profile?.adminType || searchParams.get('view');
   const isComercial = currentView === 'comercial';
@@ -82,23 +82,23 @@ export default function ClientsAdminPage() {
 
   // Buscar Usuários do tipo Cliente
   const clientsQuery = useMemo(() => {
-    if (!user) return null;
+    if (!user || profileLoading) return null;
     return query(collection(db, "users"), where("role", "==", "client"));
-  }, [db, user]);
+  }, [db, user, profileLoading]);
   const { data: dbClients, loading: usersLoading } = useCollection<UserProfile>(clientsQuery);
 
   // Buscar Todas as Instâncias de Onboarding
   const instancesQuery = useMemo(() => {
-    if (!user) return null;
+    if (!user || profileLoading) return null;
     return collection(db, "onboardingInstances");
-  }, [db, user]);
+  }, [db, user, profileLoading]);
   const { data: instances, loading: instancesLoading } = useCollection<OnboardingInstance>(instancesQuery);
 
   // Buscar Produtos Reais
   const productsQuery = useMemo(() => {
-    if (!user) return null;
+    if (!user || profileLoading) return null;
     return collection(db, "products");
-  }, [db, user]);
+  }, [db, user, profileLoading]);
   const { data: dbProducts } = useCollection<Product>(productsQuery);
 
   // LÓGICA DE SINCRONIZAÇÃO: Construir a lista unificada de instituições
@@ -274,7 +274,7 @@ export default function ClientsAdminPage() {
             <CardDescription>Clique em uma instituição para ver detalhes das ativações em curso.</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            {usersLoading || instancesLoading ? (
+            {usersLoading || instancesLoading || profileLoading ? (
               <div className="flex flex-col items-center justify-center p-20 gap-4">
                 <Loader2 className="animate-spin text-primary size-8" />
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Sincronizando base real...</p>

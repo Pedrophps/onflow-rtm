@@ -3,27 +3,37 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Recupera os dados do usuário de forma segura
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
+    // Verifica se o documento do usuário existe para evitar erros de referência nula
+    function hasProfile() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
     function isAdmin() {
-      return request.auth != null && getUserData().role == 'admin';
+      return request.auth != null && hasProfile() && getUserData().role == 'admin';
     }
 
     function isSupportUser() {
-      let data = getUserData();
-      return request.auth != null && data.role == 'admin' && (data.adminType == 'suporte' || data.adminType == 'coordenador_suporte');
+      return request.auth != null && hasProfile() && getUserData().role == 'admin' && 
+             (getUserData().adminType == 'suporte' || getUserData().adminType == 'coordenador_suporte');
     }
 
     function isSupportCoordinator() {
-      let data = getUserData();
-      return request.auth != null && data.role == 'admin' && data.adminType == 'coordenador_suporte';
+      return request.auth != null && hasProfile() && getUserData().role == 'admin' && 
+             getUserData().adminType == 'coordenador_suporte';
     }
 
     match /users/{userId} {
+      // Permite leitura para qualquer logado (necessário para o Comercial ver perfis de clientes)
       allow read: if request.auth != null;
+      // Permite criação no signup
       allow create: if request.auth != null;
+      // Protege campos sensíveis: apenas Admin ou o próprio dono podem editar, 
+      // mas apenas Admin pode mudar role/adminType/status
       allow update: if request.auth != null && (request.auth.uid == userId || isAdmin()) 
                     && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'adminType', 'status']) || isAdmin());
     }
@@ -45,6 +55,7 @@ service cloud.firestore {
     }
 
     match /products/{productId} {
+      // Aberto para leitura para permitir vinculação comercial, escrita restrita ao suporte
       allow read: if request.auth != null;
       allow write: if isSupportUser();
       
@@ -60,11 +71,15 @@ service cloud.firestore {
     }
 
     match /onboardingInstances/{instanceId} {
-      allow read, write: if request.auth != null;
+      // Qualquer admin ou o cliente dono podem ver/interagir
+      allow read: if request.auth != null && (isAdmin() || resource.data.clientId == request.auth.uid);
+      allow write: if request.auth != null && (isAdmin() || (hasProfile() && getUserData().role == 'client' && request.resource.data.clientId == request.auth.uid));
     }
 
     match /interactions/{interactionId} {
-      allow read, write: if request.auth != null;
+      // Isolamento de dados: Só vê quem faz parte da instância ou é Admin
+      allow read: if request.auth != null && (isAdmin() || resource.data.clientId == request.auth.uid);
+      allow create: if request.auth != null;
     }
 
     match /system_logs/{logId} {
