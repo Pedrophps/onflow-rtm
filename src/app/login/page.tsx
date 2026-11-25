@@ -13,7 +13,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Mail, 
@@ -26,10 +25,16 @@ import {
   EyeOff, 
   ArrowLeft,
   Briefcase,
-  User
+  User,
+  ChevronRight,
+  Terminal,
+  Cpu
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { HeroBackground } from '@/components/hero-background';
+import { cn } from '@/lib/utils';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -40,6 +45,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
   const [showPassword, setShowPassword] = useState(false);
+  const [isConsoleOpen, setIsConsoleOpen] = useState(false);
   
   const [cnpj, setCnpj] = useState('');
   const [institutionName, setInstitutionName] = useState('');
@@ -129,7 +135,7 @@ export default function LoginPage() {
         status: 'approved',
         displayName: name || 'Usuário RTM',
         institutionName: institutionName || 'RTM',
-        cnpj: cnpj || '00.000.000/0001-91',
+        cnpj: cnpj || '00.00.000/0001-91',
         createdAt: new Date().toISOString(),
         updatedAt: serverTimestamp()
       };
@@ -179,7 +185,6 @@ export default function LoginPage() {
 
         await setDoc(doc(db, 'users', result.user.uid), updatePayload, { merge: true });
       } else if (!userData && !isRtm) {
-        // Fluxo para cliente que existe no auth mas não no firestore (raro)
         await setDoc(doc(db, 'users', result.user.uid), {
           email: email,
           role: 'client',
@@ -211,54 +216,95 @@ export default function LoginPage() {
   if (authLoading && !currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="animate-spin text-primary size-6" />
+        <Loader2 className="animate-spin text-primary size-8" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6 relative">
-      <div className="absolute top-8 left-8">
-        <Button variant="ghost" asChild className="gap-2 font-bold text-xs uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
-          <Link href="/">
-            <ArrowLeft className="size-4" />
-            Voltar
+    <div className="min-h-screen flex flex-col lg:flex-row bg-background overflow-hidden font-body">
+      {/* LADO ESQUERDO: BRANDING & IMMERSION */}
+      <div className="hidden lg:flex relative w-1/2 bg-slate-950 items-center justify-center p-12 overflow-hidden border-r border-white/5">
+        <HeroBackground />
+        <div className="relative z-10 space-y-8 max-w-lg">
+          <div className="space-y-4">
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 px-4 py-1 uppercase font-bold tracking-[0.2em] text-[10px]">
+              Missão Crítica
+            </Badge>
+            <h1 className="text-6xl font-light font-headline text-white tracking-tighter leading-none">
+              OnFlow <span className="text-primary font-normal">RTM.</span>
+            </h1>
+            <p className="text-xl text-slate-400 font-light leading-relaxed italic">
+              "Orquestrando a infraestrutura e ativação técnica dos serviços críticos do mercado financeiro."
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-6 pt-12 border-t border-white/10">
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary">Inteligência</p>
+              <p className="text-sm text-slate-300 font-medium">Processos guiados por IA e fluxos determinísticos.</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary">Certeza</p>
+              <p className="text-sm text-slate-300 font-medium">Segurança absoluta e conformidade regulatória.</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="absolute bottom-12 left-12">
+          <Link href="/" className="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest">
+            <ArrowLeft className="size-4" /> Voltar ao Portal Público
           </Link>
-        </Button>
+        </div>
       </div>
 
-      <div className="w-full max-w-md space-y-8 relative z-10">
-        <div className="text-center space-y-3">
-          <h1 className="text-5xl font-light font-headline text-primary tracking-tighter">OnFlow</h1>
-          <p className="text-muted-foreground font-bold uppercase tracking-[0.3em] text-[10px] opacity-60">Identificar • Entender • Conhecer</p>
+      {/* LADO DIREITO: ACTION & FORM */}
+      <div className="flex-1 flex items-center justify-center p-8 bg-white dark:bg-slate-900 relative">
+        <div className="lg:hidden absolute top-8 left-8">
+           <Link href="/" className="text-primary"><ArrowLeft className="size-6" /></Link>
         </div>
 
-        <Card className="border border-border shadow-sm bg-card text-card-foreground overflow-hidden rounded-lg">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <CardHeader className="pb-0 pt-6 px-6">
-              <TabsList className="grid w-full grid-cols-2 bg-muted p-1 rounded-md">
-                <TabsTrigger value="login" className="rounded-sm text-xs font-bold uppercase tracking-widest py-2">Entrar</TabsTrigger>
-                <TabsTrigger value="signup" className="rounded-sm text-xs font-bold uppercase tracking-widest py-2">Cadastrar</TabsTrigger>
-              </TabsList>
-            </CardHeader>
-            <TabsContent value="login">
-              <form onSubmit={handleEmailLogin}>
-                <CardContent className="space-y-6 pt-8 pb-8 px-8">
+        <div className="w-full max-w-md space-y-10 animate-in fade-in slide-in-from-right-4 duration-700">
+          <div className="text-center lg:text-left space-y-3">
+             <div className="lg:hidden">
+               <h1 className="text-4xl font-light font-headline text-primary tracking-tighter">OnFlow</h1>
+               <p className="text-muted-foreground font-bold uppercase tracking-[0.3em] text-[10px] opacity-60">HUB INTEGRADOR RTM</p>
+             </div>
+             <h2 className="text-2xl font-bold text-foreground">Acesse sua conta</h2>
+             <p className="text-sm text-muted-foreground font-medium">Selecione o modo de acesso para continuar.</p>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+            <TabsList className="grid w-full grid-cols-2 bg-muted p-1 h-12 rounded-xl">
+              <TabsTrigger value="login" className="rounded-lg text-xs font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Acesso</TabsTrigger>
+              <TabsTrigger value="signup" className="rounded-lg text-xs font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm">Novo Cliente</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="login" className="space-y-6 animate-in fade-in duration-300">
+              <form onSubmit={handleEmailLogin} className="space-y-6">
+                <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">E-mail Corporativo</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 size-4 text-muted-foreground opacity-50" />
-                      <Input type="email" placeholder="seu@rtm.net.br" className="pl-10 h-12 bg-background border-border focus:border-primary/50 focus:ring-0" required value={email} onChange={e => setEmail(e.target.value)} />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">E-mail Corporativo</Label>
+                    <div className="relative group">
+                      <Mail className="absolute left-3 top-3.5 size-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                      <Input 
+                        type="email" 
+                        placeholder="nome@rtm.net.br" 
+                        className="pl-10 h-12 bg-muted/30 border-border focus:border-primary/50 focus:ring-4 focus:ring-primary/5 rounded-xl font-medium transition-all" 
+                        required 
+                        value={email} 
+                        onChange={e => setEmail(e.target.value)} 
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Senha de Acesso</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 size-4 text-muted-foreground opacity-50" />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Chave de Segurança</Label>
+                    <div className="relative group">
+                      <Lock className="absolute left-3 top-3.5 size-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                       <Input 
                         type={showPassword ? "text" : "password"} 
                         placeholder="••••••••" 
-                        className="pl-10 pr-10 h-12 bg-background border-border focus:border-primary/50 focus:ring-0" 
+                        className="pl-10 pr-10 h-12 bg-muted/30 border-border focus:border-primary/50 focus:ring-4 focus:ring-primary/5 rounded-xl font-medium transition-all" 
                         required 
                         value={password} 
                         onChange={e => setPassword(e.target.value)} 
@@ -266,116 +312,113 @@ export default function LoginPage() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3 text-muted-foreground hover:text-primary transition-colors"
+                        className="absolute right-3 top-3.5 text-muted-foreground hover:text-primary transition-colors"
                       >
                         {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                       </button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full font-bold h-14 text-xs uppercase tracking-widest" disabled={loading}>
-                    {loading ? <Loader2 className="animate-spin mr-2 size-4" /> : "Acessar Portal OnFlow"}
-                  </Button>
-                </CardContent>
+                </div>
+                <Button type="submit" className="w-full h-14 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all" disabled={loading}>
+                  {loading ? <Loader2 className="animate-spin mr-2 size-4" /> : <>Entrar no Ecossistema <ChevronRight className="size-4 ml-2" /></>}
+                </Button>
               </form>
             </TabsContent>
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp}>
-                <CardContent className="space-y-4 pt-6 pb-8 px-8">
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Nome do Colaborador</Label>
-                    <Input placeholder="Nome Completo" className="h-11 bg-background" required value={name} onChange={e => setName(e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">E-mail Corporativo</Label>
-                    <Input type="email" placeholder="seu@rtm.net.br" className="h-11 bg-background" required value={email} onChange={e => setEmail(e.target.value)} />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Razão Social / Instituição</Label>
-                      <div className="relative">
-                        <Building2 className="absolute left-3 top-3 size-4 text-muted-foreground opacity-50" />
-                        <Input 
-                          placeholder="Ex: Banco Delta S.A." 
-                          className="pl-10 h-11 bg-background"
-                          value={institutionName} 
-                          onChange={e => setInstitutionName(e.target.value)} 
-                          required 
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">CNPJ</Label>
-                      <Input 
-                        placeholder="00.000.000/0000-00" 
-                        className="h-11 bg-background font-mono text-xs"
-                        value={cnpj} 
-                        onChange={handleCnpjChange} 
-                        required 
-                      />
-                    </div>
-                  </div>
 
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Definir Senha</Label>
-                    <div className="relative">
-                      <Input 
-                        type={showPassword ? "text" : "password"} 
-                        placeholder="Mínimo 6 caracteres" 
-                        className="h-11 bg-background"
-                        required 
-                        value={password} 
-                        onChange={e => setPassword(e.target.value)} 
-                      />
-                    </div>
+            <TabsContent value="signup" className="space-y-5 animate-in fade-in duration-300">
+              <form onSubmit={handleSignUp} className="space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5 col-span-2">
+                    <Label className="text-[10px] font-black uppercase">Responsável Técnico</Label>
+                    <Input placeholder="Nome Completo" className="h-11 bg-muted/30 rounded-xl" required value={name} onChange={e => setName(e.target.value)} />
                   </div>
-                  <Button type="submit" className="w-full font-bold h-14 mt-4 text-xs uppercase tracking-widest" disabled={loading}>Criar Minha Conta</Button>
-                </CardContent>
+                  <div className="space-y-1.5 col-span-2">
+                    <Label className="text-[10px] font-black uppercase">E-mail Institucional</Label>
+                    <Input type="email" placeholder="usuario@empresa.com.br" className="h-11 bg-muted/30 rounded-xl" required value={email} onChange={e => setEmail(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black uppercase">Razão Social</Label>
+                    <Input placeholder="Banco X S.A." className="h-11 bg-muted/30 rounded-xl" value={institutionName} onChange={e => setInstitutionName(e.target.value)} required />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black uppercase text-primary">CNPJ</Label>
+                    <Input placeholder="00.000.000/0000-00" className="h-11 bg-muted/30 rounded-xl font-mono text-xs tracking-tight" value={cnpj} onChange={handleCnpjChange} required />
+                  </div>
+                  <div className="space-y-1.5 col-span-2">
+                    <Label className="text-[10px] font-black uppercase">Definir Senha</Label>
+                    <Input type="password" placeholder="Mínimo 6 caracteres" className="h-11 bg-muted/30 rounded-xl" required value={password} onChange={e => setPassword(e.target.value)} />
+                  </div>
+                </div>
+                <Button type="submit" className="w-full h-14 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg" disabled={loading}>Solicitar Credenciamento</Button>
               </form>
             </TabsContent>
           </Tabs>
 
-          <div className="p-6 bg-muted border-t border-border space-y-4">
-            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em] text-center opacity-70">Contas Master e Teste</p>
-            <div className="grid grid-cols-2 gap-3">
-              <QuickAccessButton 
-                label="Coordenação" 
-                icon={ShieldCheck} 
-                onClick={() => fillFields('admin@admin.com', '123456', 'Coordenador Master', 'RTM', '00.000.000/0001-91')}
-              />
-              <QuickAccessButton 
-                label="Suporte" 
-                icon={Headset} 
-                onClick={() => fillFields('suporte@rtm.net.br', '123456', 'Analista Suporte', 'RTM', '00.000.000/0001-91')}
-              />
-              <QuickAccessButton 
-                label="Comercial" 
-                icon={Briefcase} 
-                onClick={() => fillFields('comercial@rtm.net.br', '123456', 'Gestor Comercial', 'RTM', '00.000.000/0001-91')}
-              />
-              <QuickAccessButton 
-                label="Cliente" 
-                icon={User} 
-                onClick={() => fillFields('cliente@cliente.com.br', '123456', 'Pedro Oliveira', 'BANCO DELTA S.A.', '11.222.333/0001-44')}
-              />
+          {/* CONSOLE DE DESENVOLVEDOR (QUICK ACCESS) */}
+          <Collapsible open={isConsoleOpen} onOpenChange={setIsConsoleOpen} className="pt-6 border-t border-border">
+            <div className="flex items-center justify-between">
+               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-50">Ambientes de Homologação</p>
+               <CollapsibleTrigger asChild>
+                 <Button variant="ghost" size="sm" className="h-8 rounded-lg gap-2 text-[10px] font-black uppercase">
+                   <Terminal className="size-3" /> {isConsoleOpen ? 'Fechar Console' : 'Abrir Console'}
+                 </Button>
+               </CollapsibleTrigger>
             </div>
-          </div>
-        </Card>
+            
+            <CollapsibleContent className="space-y-4 pt-4 animate-in slide-in-from-top-2 duration-300">
+               <div className="grid grid-cols-2 gap-3">
+                 <QuickAccessButton 
+                    label="Coordenação" 
+                    desc="Master Admin"
+                    icon={ShieldCheck} 
+                    onClick={() => fillFields('admin@admin.com', '123456', 'Coordenador Master', 'RTM', '00.00.000/0001-91')}
+                  />
+                  <QuickAccessButton 
+                    label="Suporte" 
+                    desc="Analista N2"
+                    icon={Headset} 
+                    onClick={() => fillFields('suporte@rtm.net.br', '123456', 'Analista Suporte', 'RTM', '00.00.000/0001-91')}
+                  />
+                  <QuickAccessButton 
+                    label="Comercial" 
+                    desc="Gestão OnFlow"
+                    icon={Briefcase} 
+                    onClick={() => fillFields('comercial@rtm.net.br', '123456', 'Gestor Comercial', 'RTM', '00.00.000/0001-91')}
+                  />
+                  <QuickAccessButton 
+                    label="Cliente" 
+                    desc="Instituição Financeira"
+                    icon={User} 
+                    onClick={() => fillFields('cliente@cliente.com.br', '123456', 'Pedro Oliveira', 'BANCO DELTA S.A.', '11.222.333/0001-44')}
+                  />
+               </div>
+               <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-xl border border-dashed text-[9px] text-muted-foreground">
+                  <Cpu className="size-3 text-primary" />
+                  <span>SISTEMA EM MODO TESTE: Credenciais pré-carregadas para auditoria visual.</span>
+               </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
       </div>
     </div>
   );
 }
 
-function QuickAccessButton({ label, icon: Icon, onClick }: any) {
+function QuickAccessButton({ label, desc, icon: Icon, onClick }: any) {
   return (
     <Button 
       variant="outline" 
       size="sm" 
-      className="text-[9px] font-bold uppercase tracking-widest h-auto py-3 flex-col gap-2 border-border bg-background hover:bg-muted transition-colors"
+      className="text-left justify-start h-auto py-3 px-4 flex items-center gap-3 border-border bg-background hover:bg-primary/5 hover:border-primary/30 transition-all rounded-xl group"
       onClick={onClick}
     >
-      <Icon className="size-3.5 text-muted-foreground opacity-60" />
-      {label}
+      <div className="size-8 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+        <Icon className="size-4 text-muted-foreground group-hover:text-primary opacity-60 group-hover:opacity-100" />
+      </div>
+      <div className="flex flex-col overflow-hidden">
+        <span className="text-[10px] font-black uppercase tracking-tight text-foreground">{label}</span>
+        <span className="text-[8px] text-muted-foreground truncate">{desc}</span>
+      </div>
     </Button>
   );
 }
