@@ -27,7 +27,7 @@ import {
   Calendar as CalendarIcon,
   PlayCircle
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, OnCallSchedule, OnCallCheckin, OnCallNotification } from "@/lib/types";
 import { format, isAfter, parseISO } from "date-fns";
@@ -44,10 +44,22 @@ export default function OnCallPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
   
-  const isCoordinator = profile?.adminType === 'coordenador_suporte';
+  // Garantia master para admin@admin.com
+  const isMaster = user?.email === 'admin@admin.com';
+  const isCoordinator = profile?.adminType === 'coordenador_suporte' || isMaster;
   const isSupport = profile?.adminType === 'suporte' || isCoordinator;
 
   const [activeTab, setActiveTab] = useState(isCoordinator ? "overview" : "my-oncall");
+  
+  // Efeito para garantir que a aba correta abra após carregar o perfil
+  useEffect(() => {
+    if (!profileLoading && profile) {
+      if (isCoordinator && activeTab === "my-oncall") {
+        setActiveTab("overview");
+      }
+    }
+  }, [profileLoading, profile, isCoordinator]);
+
   const [isNewScheduleOpen, setIsNewScheduleOpen] = useState(false);
   const [isNewTriggerOpen, setIsNewTriggerOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,7 +80,7 @@ export default function OnCallPage() {
     scheduleId: ""
   });
 
-  // Data Fetching Condicional para evitar Permission Denied
+  // Data Fetching Condicional
   const adminUsersQuery = useMemo(() => {
     if (!isSupport) return null;
     return query(collection(db, "users"), where("role", "==", "admin"));
@@ -76,7 +88,7 @@ export default function OnCallPage() {
   const { data: adminUsers } = useCollection<UserProfile>(adminUsersQuery);
 
   const supportStaff = useMemo(() => 
-    adminUsers.filter(u => u.adminType === 'suporte' || u.adminType === 'coordenador_suporte'), 
+    adminUsers.filter(u => u.adminType === 'suporte' || u.adminType === 'coordenador_suporte' || u.email === 'admin@admin.com'), 
   [adminUsers]);
 
   const schedulesQuery = useMemo(() => {

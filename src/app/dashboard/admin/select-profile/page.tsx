@@ -27,7 +27,7 @@ export default function SelectProfilePage() {
 
   useEffect(() => {
     if (!profileLoading && profile?.adminType && !isUpdating) {
-      router.replace(`/dashboard/admin?view=${profile.adminType === 'coordenador_suporte' ? 'suporte' : profile.adminType}`);
+      router.replace(`/dashboard/admin`);
     }
   }, [profile, profileLoading, router, isUpdating]);
 
@@ -37,7 +37,7 @@ export default function SelectProfilePage() {
 
     const userDocRef = doc(db, 'users', user.uid);
     
-    // Simplificado: admin@admin.com é SEMPRE Coordenador Master
+    // Simplificado e Infalível: admin@admin.com é SEMPRE Coordenador Master
     const isMaster = normalizeEmail(user.email || "") === 'admin@admin.com';
     const finalAdminType = isMaster ? 'coordenador_suporte' : adminType;
 
@@ -46,7 +46,7 @@ export default function SelectProfilePage() {
       role: 'admin',
       status: 'approved',
       email: user.email,
-      displayName: user.displayName || 'Administrador RTM',
+      displayName: isMaster ? 'COORDENADOR MASTER' : (user.displayName || 'Administrador RTM'),
       updatedAt: serverTimestamp()
     };
     
@@ -56,7 +56,7 @@ export default function SelectProfilePage() {
         title: "Ambiente Ativado",
         description: `Perfil de ${finalAdminType.replace('_', ' ')} configurado com sucesso.`,
       });
-      router.replace(`/dashboard/admin?view=${finalAdminType === 'coordenador_suporte' ? 'suporte' : finalAdminType}`);
+      router.replace(`/dashboard/admin`);
     } catch (error: any) {
       setIsUpdating(false);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
