@@ -23,9 +23,7 @@ export default function SelectProfilePage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
 
-  const normalizeCnpj = (val: string) => (val || "").replace(/\D/g, "");
   const normalizeEmail = (val: string) => (val || "").trim().toLowerCase();
-  const normalizeInstitution = (val: string) => (val || "").trim().toUpperCase();
 
   useEffect(() => {
     if (!profileLoading && profile?.adminType && !isUpdating) {
@@ -39,12 +37,8 @@ export default function SelectProfilePage() {
 
     const userDocRef = doc(db, 'users', user.uid);
     
-    // Verificação de Coordenador Master (Removido emailVerified para facilitar ambiente de dev)
-    const isMaster = 
-      normalizeEmail(user.email || "") === 'admin@admin.com' &&
-      (normalizeInstitution(profile?.institutionName || "") === 'RTM' || normalizeInstitution(profile?.displayName || "") === 'COORDENADOR MASTER') &&
-      (normalizeCnpj(profile?.cnpj || "") === '00000000000191' || !profile?.cnpj);
-
+    // Simplificado: admin@admin.com é SEMPRE Coordenador Master
+    const isMaster = normalizeEmail(user.email || "") === 'admin@admin.com';
     const finalAdminType = isMaster ? 'coordenador_suporte' : adminType;
 
     const updateData = { 
