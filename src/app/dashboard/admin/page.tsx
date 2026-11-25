@@ -69,7 +69,7 @@ export default function AdminPage() {
 
   const { data: allSchedules } = useCollection<OnCallSchedule>(schedulesQuery);
 
-  // Redirecionamento estável
+  // Redirecionamento blindado contra flickering
   useEffect(() => {
     if (!userLoading && !profileLoading) {
       if (!user) {
@@ -77,8 +77,11 @@ export default function AdminPage() {
         return;
       }
       
-      // Se não for master e não tiver adminType, precisa selecionar perfil
-      if (!isMaster && !profile?.adminType && !searchParams.get('view')) {
+      // Coordenador Master nunca deve ser redirecionado para a seleção
+      if (isMaster) return;
+
+      // Se não tiver adminType, precisa selecionar perfil
+      if (!profile?.adminType && !searchParams.get('view')) {
         router.replace('/dashboard/admin/select-profile');
       }
     }
@@ -114,12 +117,12 @@ export default function AdminPage() {
     { name: 'Bloqueado', value: stats.alerts, color: '#ef4444' },
   ];
 
-  // Mostra loader se estiver validando o redirecionamento para evitar flickering
+  // Mostra loader se estiver validando para evitar flickering
   if (userLoading || profileLoading || (!isMaster && !profile?.adminType && !searchParams.get('view'))) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4">
-        <Loader2 className="size-10 animate-spin text-primary" />
-        <p className="text-muted-foreground font-bold text-xs uppercase tracking-widest animate-pulse">Sincronizando Centro de Comando...</p>
+        <Loader2 className="size-12 animate-spin text-primary" />
+        <p className="text-muted-foreground font-bold text-xs uppercase tracking-[0.3em] animate-pulse">Sincronizando OnFlow...</p>
       </div>
     );
   }
@@ -210,7 +213,7 @@ export default function AdminPage() {
 
           {/* Coluna 2: Informação Dinâmica */}
           <div className="md:col-span-5 space-y-6">
-            {/* Widget Sobreaviso: Visível apenas para suporte */}
+            {/* Widget Sobreaviso: Visível para suporte e master */}
             {isSupportView && (
               <Card className="bg-slate-900 text-white border-none shadow-xl overflow-hidden relative group">
                 <CardHeader className="pb-2">

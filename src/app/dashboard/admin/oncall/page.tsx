@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
 import { 
   CalendarClock, 
   Users, 
@@ -25,12 +26,13 @@ import {
   PhoneCall, 
   ShieldCheck, 
   Calendar as CalendarIcon,
-  PlayCircle
+  PlayCircle,
+  ChevronRight
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, OnCallSchedule, OnCallCheckin, OnCallNotification } from "@/lib/types";
-import { format, isAfter, parseISO } from "date-fns";
+import { format, isAfter, parseISO, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -44,11 +46,12 @@ export default function OnCallPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
   
-  const isMaster = user?.email === 'admin@admin.com';
+  const isMaster = user?.email?.toLowerCase().trim() === 'admin@admin.com';
   const isCoordinator = profile?.adminType === 'coordenador_suporte' || isMaster;
-  const isSupport = profile?.adminType === 'suporte' || isCoordinator;
+  const isSupport = profile?.adminType === 'suporte' || isCoordinator || isMaster;
 
   const [activeTab, setActiveTab] = useState("overview");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   
   const [isNewScheduleOpen, setIsNewScheduleOpen] = useState(false);
   const [isNewTriggerOpen, setIsNewTriggerOpen] = useState(false);
@@ -107,9 +110,14 @@ export default function OnCallPage() {
     return allSchedules.find(s => s.status === 'active' && s.startAt <= now && s.endAt >= now);
   }, [allSchedules]);
 
+  const daySchedules = useMemo(() => {
+    if (!selectedDate) return [];
+    return allSchedules.filter(s => isSameDay(parseISO(s.startAt), selectedDate));
+  }, [allSchedules, selectedDate]);
+
   const stats = useMemo(() => {
-    const now = new Date().toISOString();
-    const todaySchedules = allSchedules.filter(s => s.startAt.split('T')[0] === now.split('T')[0]);
+    const nowStr = new Date().toISOString().split('T')[0];
+    const todaySchedules = allSchedules.filter(s => s.startAt.split('T')[0] === nowStr);
     const confirmedCount = todaySchedules.filter(s => allCheckins.some(c => c.scheduleId === s.id && c.status === 'confirmed')).length;
     
     return {
@@ -289,6 +297,71 @@ export default function OnCallPage() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="calendar" className="space-y-6 animate-in fade-in duration-500">
+            <div className="grid md:grid-cols-12 gap-8">
+              <Card className="md:col-span-4 bg-card border-border shadow-sm p-4 h-fit">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  className="rounded-md border-none"
+                  locale={ptBR}
+                />
+              </Card>
+              <Card className="md:col-span-8 bg-card border-border shadow-sm overflow-hidden">
+                <CardHeader className="bg-muted/30 border-b">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+                      <Clock className="size-4 text-primary" /> 
+                      Escalas: {selectedDate ? format(selectedDate, "dd 'de' MMMM", { locale: ptBR }) : "Selecione uma data"}
+                    </CardTitle>
+                    <Badge variant="outline" className="bg-white border-border text-[9px] font-black">{daySchedules.length} Turnos</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {daySchedules.length > 0 ? (
+                    <div className="divide-y divide-border">
+                      {daySchedules.map(s => (
+                        <div key={s.id} className="p-6 flex items-center justify-between hover:bg-primary/5 transition-all group">
+                          <div className="flex items-center gap-5">
+                            <div className="size-12 rounded-xl bg-muted group-hover:bg-primary/10 flex items-center justify-center text-muted-foreground group-hover:text-primary font-black transition-colors">
+                              {s.userName.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-bold text-foreground group-hover:text-primary transition-colors">{s.userName}</p>
+                              <div className="flex items-center gap-3 mt-1">
+                                <span className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                                  <Clock className="size-3" /> {format(parseISO(s.startAt), "HH:mm")} - {format(parseISO(s.endAt), "HH:mm")}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                             {allCheckins.some(c => c.scheduleId === s.id && c.status === 'confirmed') ? (
+                               <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 rounded-sm">
+                                 <CheckCircle2 className="size-3" /> Confirmado
+                               </Badge>
+                             ) : (
+                               <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 gap-1.5 rounded-sm">
+                                 <AlertTriangle className="size-3" /> Pendente
+                               </Badge>
+                             )}
+                             <ChevronRight className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-24 text-center space-y-3">
+                      <CalendarIcon className="size-10 mx-auto text-muted-foreground/20" />
+                      <p className="text-sm text-muted-foreground font-medium italic">Nenhuma escala programada para esta data.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           <TabsContent value="my-oncall" className="space-y-8 animate-in slide-in-from-right duration-500">
              {mySchedules.length > 0 ? (
                <div className="grid md:grid-cols-2 gap-8">
@@ -324,16 +397,6 @@ export default function OnCallPage() {
                  <p className="text-muted-foreground font-medium">Você não possui escalas agendadas.</p>
                </div>
              )}
-          </TabsContent>
-
-          <TabsContent value="calendar">
-            <Card className="bg-card border-border shadow-sm overflow-hidden">
-               <CardContent className="p-20 text-center">
-                 <CalendarIcon className="size-12 mx-auto text-muted-foreground/30 mb-4" />
-                 <p className="font-bold">Módulo de Calendário</p>
-                 <p className="text-sm text-muted-foreground">A visualização mensal das escalas está disponível para toda a equipe técnica.</p>
-               </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
