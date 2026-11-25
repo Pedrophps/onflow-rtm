@@ -55,7 +55,6 @@ export default function AdminPage() {
     return user && normalizeEmail(user.email || "") === 'admin@admin.com';
   }, [user]);
 
-  // Determina a visão atual: Prioridade 1: Master, Prioridade 2: Perfil no Firestore, Prioridade 3: Parametro de URL (reduncância anti-loop)
   const currentView = useMemo(() => {
     if (isMaster) return 'coordenador_suporte';
     return profile?.adminType || searchParams.get('view');
@@ -63,48 +62,41 @@ export default function AdminPage() {
 
   const isSupportView = currentView === 'suporte' || currentView === 'coordenador_suporte';
 
-  // Redirecionamento blindado contra loops para Admins padrão
   useEffect(() => {
     if (userLoading || profileLoading) return;
-
     if (!user) {
       router.replace('/login');
       return;
     }
-    
-    // Coordenador Master nunca deve ser redirecionado
     if (isMaster) return;
-
-    // Se o perfil carregou, o usuário é admin, mas não tem adminType DEFINIDO e não tem view param, vai para seleção
-    // O view param aqui é a chave que quebra o loop caso o Firestore demore a atualizar o snapshot
     if (profile && profile.role === 'admin' && !profile.adminType && !searchParams.get('view')) {
       router.replace('/dashboard/admin/select-profile');
       return;
     }
-
-    // Caso um cliente tente acessar a área admin
     if (profile && profile.role === 'client') {
       router.replace('/dashboard/client');
     }
   }, [profile, profileLoading, user, userLoading, router, searchParams, isMaster]);
 
-  // Busca de Dados Reais
-  const { data: allClients, loading: clientsLoading } = useCollection<UserProfile>(
-    query(collection(db, "users"), where("role", "==", "client"))
-  );
+  // Busca de Dados Reais com Guardas de Autenticação
+  const clientsQuery = useMemo(() => {
+    if (!user) return null;
+    return query(collection(db, "users"), where("role", "==", "client"));
+  }, [db, user]);
+  const { data: allClients, loading: clientsLoading } = useCollection<UserProfile>(clientsQuery);
 
-  const { data: allInstances, loading: instancesLoading } = useCollection<OnboardingInstance>(
-    collection(db, "onboardingInstances")
-  );
+  const instancesQuery = useMemo(() => {
+    if (!user) return null;
+    return collection(db, "onboardingInstances");
+  }, [db, user]);
+  const { data: allInstances, loading: instancesLoading } = useCollection<OnboardingInstance>(instancesQuery);
 
   const schedulesQuery = useMemo(() => {
-    if (!isSupportView) return null;
+    if (!user || !isSupportView) return null;
     return collection(db, "onCallSchedules");
-  }, [db, isSupportView]);
-
+  }, [db, user, isSupportView]);
   const { data: allSchedules } = useCollection<OnCallSchedule>(schedulesQuery);
 
-  // Cálculos do Compilado
   const stats = useMemo(() => {
     const pendingComm = allClients.filter(c => c.status === 'pending').length;
     const activeActivations = allInstances.filter(i => i.status === 'active').length;
@@ -123,6 +115,7 @@ export default function AdminPage() {
   }, [allClients, allInstances]);
 
   const activeTech = useMemo(() => {
+    if (!allSchedules.length) return null;
     const now = new Date().toISOString();
     return allSchedules.find(s => s.status === 'active' && s.startAt <= now && s.endAt >= now);
   }, [allSchedules]);
@@ -134,8 +127,7 @@ export default function AdminPage() {
     { name: 'Bloqueado', value: stats.alerts, color: '#ef4444' },
   ];
 
-  // Loader inteligente
-  if (userLoading || (profileLoading && !isMaster) || !currentView) {
+  if (userLoading || (profileLoading && !isMaster) || !currentView || !user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4">
         <Loader2 className="size-12 animate-spin text-primary" />

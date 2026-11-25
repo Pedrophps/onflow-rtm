@@ -73,11 +73,11 @@ export default function OnCallPage() {
     scheduleId: ""
   });
 
-  // Data Fetching Condicional
+  // Data Fetching Condicional e Protegida
   const adminUsersQuery = useMemo(() => {
-    if (!isSupport) return null;
+    if (!user || !isSupport) return null;
     return query(collection(db, "users"), where("role", "==", "admin"));
-  }, [db, isSupport]);
+  }, [db, user, isSupport]);
   const { data: adminUsers } = useCollection<UserProfile>(adminUsersQuery);
 
   const supportStaff = useMemo(() => 
@@ -85,21 +85,21 @@ export default function OnCallPage() {
   [adminUsers]);
 
   const schedulesQuery = useMemo(() => {
-    if (!isSupport) return null;
+    if (!user || !isSupport) return null;
     return query(collection(db, "onCallSchedules"), orderBy("startAt", "desc"));
-  }, [db, isSupport]);
+  }, [db, user, isSupport]);
   const { data: allSchedules } = useCollection<OnCallSchedule>(schedulesQuery);
 
   const checkinsQuery = useMemo(() => {
-    if (!isSupport) return null;
+    if (!user || !isSupport) return null;
     return query(collection(db, "onCallCheckins"));
-  }, [db, isSupport]);
+  }, [db, user, isSupport]);
   const { data: allCheckins } = useCollection<OnCallCheckin>(checkinsQuery);
 
   const notificationsQuery = useMemo(() => {
-    if (!isSupport) return null;
+    if (!user || !isSupport) return null;
     return query(collection(db, "onCallNotifications"), orderBy("sentAt", "desc"));
-  }, [db, isSupport]);
+  }, [db, user, isSupport]);
   const { data: allNotifications } = useCollection<OnCallNotification>(notificationsQuery);
 
   // Computed Data
@@ -216,7 +216,7 @@ export default function OnCallPage() {
       .finally(() => setIsSubmitting(false));
   };
 
-  if (profileLoading) {
+  if (profileLoading || !user) {
     return <DashboardLayout role="admin"><div className="flex justify-center p-20"><Loader2 className="animate-spin text-primary" /></div></DashboardLayout>;
   }
 
