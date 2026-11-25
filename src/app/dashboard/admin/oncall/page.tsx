@@ -44,22 +44,12 @@ export default function OnCallPage() {
   const userRef = useMemo(() => (user ? doc(db, "users", user.uid) : null), [user, db]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userRef);
   
-  // Garantia master para admin@admin.com
   const isMaster = user?.email === 'admin@admin.com';
   const isCoordinator = profile?.adminType === 'coordenador_suporte' || isMaster;
   const isSupport = profile?.adminType === 'suporte' || isCoordinator;
 
-  const [activeTab, setActiveTab] = useState(isCoordinator ? "overview" : "my-oncall");
+  const [activeTab, setActiveTab] = useState("overview");
   
-  // Efeito para garantir que a aba correta abra após carregar o perfil
-  useEffect(() => {
-    if (!profileLoading && profile) {
-      if (isCoordinator && activeTab === "my-oncall") {
-        setActiveTab("overview");
-      }
-    }
-  }, [profileLoading, profile, isCoordinator]);
-
   const [isNewScheduleOpen, setIsNewScheduleOpen] = useState(false);
   const [isNewTriggerOpen, setIsNewTriggerOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -111,7 +101,6 @@ export default function OnCallPage() {
 
   // Computed Data
   const mySchedules = useMemo(() => allSchedules.filter(s => s.userId === user?.uid), [allSchedules, user]);
-  const myNotifications = useMemo(() => allNotifications.filter(n => n.userId === user?.uid), [allNotifications, user]);
 
   const activeScheduleNow = useMemo(() => {
     const now = new Date().toISOString();
@@ -219,23 +208,6 @@ export default function OnCallPage() {
       .finally(() => setIsSubmitting(false));
   };
 
-  const handleUpdateTriggerStatus = (notificationId: string, newState: string) => {
-    const ref = doc(db, "onCallNotifications", notificationId);
-    const updateData: any = { status: newState };
-    if (newState === 'received') updateData.receivedAt = new Date().toISOString();
-    if (newState === 'started') updateData.startedAt = new Date().toISOString();
-    if (newState === 'finished') updateData.finishedAt = new Date().toISOString();
-
-    updateDoc(ref, updateData)
-      .catch(async (error) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: ref.path,
-          operation: 'update',
-          requestResourceData: updateData
-        } satisfies SecurityRuleContext));
-      });
-  };
-
   if (profileLoading) {
     return <DashboardLayout role="admin"><div className="flex justify-center p-20"><Loader2 className="animate-spin text-primary" /></div></DashboardLayout>;
   }
@@ -268,9 +240,9 @@ export default function OnCallPage() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-muted p-1 h-12 rounded-xl">
-            {isCoordinator && <TabsTrigger value="overview" className="rounded-lg px-6 gap-2">Visão Geral</TabsTrigger>}
+            <TabsTrigger value="overview" className="rounded-lg px-6 gap-2">Visão Geral</TabsTrigger>
             <TabsTrigger value="calendar" className="rounded-lg px-6 gap-2">Calendário</TabsTrigger>
-            {!isCoordinator && <TabsTrigger value="my-oncall" className="rounded-lg px-6 gap-2">Meu Sobreaviso</TabsTrigger>}
+            <TabsTrigger value="my-oncall" className="rounded-lg px-6 gap-2">Meu Turno</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-8 animate-in fade-in duration-500">
@@ -359,7 +331,7 @@ export default function OnCallPage() {
                <CardContent className="p-20 text-center">
                  <CalendarIcon className="size-12 mx-auto text-muted-foreground/30 mb-4" />
                  <p className="font-bold">Módulo de Calendário</p>
-                 <p className="text-sm text-muted-foreground">A visualização mensal está disponível para coordenadores.</p>
+                 <p className="text-sm text-muted-foreground">A visualização mensal das escalas está disponível para toda a equipe técnica.</p>
                </CardContent>
             </Card>
           </TabsContent>
