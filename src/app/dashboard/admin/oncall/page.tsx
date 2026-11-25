@@ -37,6 +37,8 @@ import { UserProfile, OnCallSchedule, OnCallCheckin, OnCallNotification } from "
 import { format, isAfter, isBefore, parseISO, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export default function OnCallPage() {
   const db = useFirestore();
@@ -69,7 +71,7 @@ export default function OnCallPage() {
     scheduleId: ""
   });
 
-  // Data Fetching - Consultas guardadas por permissão isSupport para evitar erros de Security Rules
+  // Data Fetching
   const usersQuery = useMemo(() => {
     if (!isSupport) return null;
     return query(collection(db, "users"), where("role", "==", "admin"));
@@ -81,7 +83,7 @@ export default function OnCallPage() {
     if (!isSupport) return null;
     return query(collection(db, "onCallSchedules"), orderBy("startAt", "desc"));
   }, [db, isSupport]);
-  const { data: allSchedules, loading: loadingSchedules } = useCollection<OnCallSchedule>(schedulesQuery);
+  const { data: allSchedules } = useCollection<OnCallSchedule>(schedulesQuery);
 
   const checkinsQuery = useMemo(() => {
     if (!isSupport) return null;
@@ -93,7 +95,7 @@ export default function OnCallPage() {
     if (!isSupport) return null;
     return query(collection(db, "onCallNotifications"), orderBy("sentAt", "desc"));
   }, [db, isSupport]);
-  const { data: allNotifications, loading: loadingTriggers } = useCollection<OnCallNotification>(notificationsQuery);
+  const { data: allNotifications } = useCollection<OnCallNotification>(notificationsQuery);
 
   // Computed Data
   const mySchedules = useMemo(() => allSchedules.filter(s => s.userId === user?.uid), [allSchedules, user]);
@@ -123,100 +125,119 @@ export default function OnCallPage() {
   }, [allSchedules, allCheckins, allNotifications]);
 
   // Handlers
-  const handleCreateSchedule = async () => {
+  const handleCreateSchedule = () => {
     if (!isCoordinator || isSubmitting) return;
     setIsSubmitting(true);
 
     const staff = supportStaff.find(u => u.id === newSchedule.userId);
-    if (!staff) return;
-
-    // Conflito
-    const hasConflict = allSchedules.some(s => 
-      s.userId === newSchedule.userId && 
-      s.status !== 'cancelled' &&
-      ((newSchedule.startAt >= s.startAt && newSchedule.startAt <= s.endAt) ||
-       (newSchedule.endAt >= s.startAt && newSchedule.endAt <= s.endAt))
-    );
-
-    if (hasConflict) {
-      toast({ variant: "destructive", title: "Conflito de Horário", description: "Este colaborador já possui escala no período selecionado." });
+    if (!staff) {
       setIsSubmitting(false);
       return;
     }
 
-    try {
-      await addDoc(collection(db, "onCallSchedules"), {
-        ...newSchedule,
-        userName: staff.displayName,
-        status: 'active',
-        createdBy: user?.uid,
-        createdAt: new Date().toISOString()
-      });
+    const scheduleData = {
+      ...newSchedule,
+      userName: staff.displayName,
+      status: 'active',
+      createdBy: user?.uid,
+      createdAt: new Date().toISOString(),
+      updatedAt: serverTimestamp()
+    };
 
-      toast({ title: "Escala Criada", description: `Escala para ${staff.displayName} cadastrada com sucesso.` });
-      setIsNewScheduleOpen(false);
-      setNewSchedule({ userId: "", startAt: "", endAt: "", observations: "" });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Erro", description: "Falha ao salvar escala." });
-    } finally {
-      setIsSubmitting(false);
-    }
+    addDoc(collection(db, "onCallSchedules"), scheduleData)
+      .then(() => {
+        toast({ title: "Escala Criada", description: `Escala para ${staff.displayName} cadastrada com sucesso.` });
+        setIsNewScheduleOpen(false);
+        setNewSchedule({ userId: "", startAt: "", endAt: "", observations: "" });
+      })
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'onCallSchedules',
+          operation: 'create',
+          requestResourceData: scheduleData
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => setIsSubmitting(false));
   };
 
-  const handleConfirmAvailability = async (scheduleId: string) => {
+  const handleConfirmAvailability = (scheduleId: string) => {
     if (!user) return;
-    try {
-      await addDoc(collection(db, "onCallCheckins"), {
-        scheduleId,
-        userId: user.uid,
-        confirmedAt: new Date().toISOString(),
-        status: 'confirmed'
+    const checkinData = {
+      scheduleId,
+      userId: user.uid,
+      confirmedAt: new Date().toISOString(),
+      status: 'confirmed'
+    };
+
+    addDoc(collection(db, "onCallCheckins"), checkinData)
+      .then(() => {
+        toast({ title: "Disponibilidade Confirmada", description: "Você está pronto para receber acionamentos." });
+      })
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'onCallCheckins',
+          operation: 'create',
+          requestResourceData: checkinData
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
       });
-      toast({ title: "Disponibilidade Confirmada", description: "Você está pronto para receber acionamentos." });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Erro no Check-in" });
-    }
   };
 
-  const handleCreateTrigger = async () => {
+  const handleCreateTrigger = () => {
     if (!isCoordinator || isSubmitting) return;
     setIsSubmitting(true);
 
     const schedule = allSchedules.find(s => s.id === newTrigger.scheduleId);
-    if (!schedule) return;
-
-    try {
-      await addDoc(collection(db, "onCallNotifications"), {
-        ...newTrigger,
-        userId: schedule.userId,
-        status: 'sent',
-        sentAt: new Date().toISOString(),
-        requestedBy: user?.displayName || user?.email
-      });
-
-      toast({ title: "Colaborador Acionado", description: `Um chamado crítico foi enviado para ${schedule.userName}.` });
-      setIsNewTriggerOpen(false);
-      setNewTrigger({ userId: "", reason: "", priority: "medium", description: "", scheduleId: "" });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Erro no Acionamento" });
-    } finally {
+    if (!schedule) {
       setIsSubmitting(false);
+      return;
     }
+
+    const triggerData = {
+      ...newTrigger,
+      userId: schedule.userId,
+      status: 'sent',
+      sentAt: new Date().toISOString(),
+      requestedBy: user?.displayName || user?.email
+    };
+
+    addDoc(collection(db, "onCallNotifications"), triggerData)
+      .then(() => {
+        toast({ title: "Colaborador Acionado", description: `Um chamado crítico foi enviado para ${schedule.userName}.` });
+        setIsNewTriggerOpen(false);
+        setNewTrigger({ userId: "", reason: "", priority: "medium", description: "", scheduleId: "" });
+      })
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'onCallNotifications',
+          operation: 'create',
+          requestResourceData: triggerData
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => setIsSubmitting(false));
   };
 
-  const handleUpdateTriggerStatus = async (notificationId: string, newStatus: string) => {
+  const handleUpdateTriggerStatus = (notificationId: string, newState: string) => {
     const ref = doc(db, "onCallNotifications", notificationId);
-    const updateData: any = { status: newStatus };
-    if (newStatus === 'received') updateData.receivedAt = new Date().toISOString();
-    if (newStatus === 'started') updateData.startedAt = new Date().toISOString();
-    if (newStatus === 'finished') updateData.finishedAt = new Date().toISOString();
+    const updateData: any = { status: newState };
+    if (newState === 'received') updateData.receivedAt = new Date().toISOString();
+    if (newState === 'started') updateData.startedAt = new Date().toISOString();
+    if (newState === 'finished') updateData.finishedAt = new Date().toISOString();
 
-    try {
-      await updateDoc(ref, updateData);
-      toast({ title: "Status Atualizado", description: `Acionamento movido para ${newStatus}.` });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Erro na atualização" });
-    }
+    updateDoc(ref, updateData)
+      .then(() => {
+        toast({ title: "Status Atualizado", description: `Acionamento movido para ${newState}.` });
+      })
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: ref.path,
+          operation: 'update',
+          requestResourceData: updateData
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   if (profileLoading) {
@@ -259,7 +280,6 @@ export default function OnCallPage() {
                 <Badge className="ml-1 size-5 p-0 flex items-center justify-center bg-primary">{myNotifications.filter(n => n.status !== 'finished').length}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="history" className="rounded-lg px-6 gap-2">Histórico</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-8 animate-in fade-in duration-500">
@@ -337,7 +357,6 @@ export default function OnCallPage() {
           <TabsContent value="my-oncall" className="space-y-8 animate-in slide-in-from-right duration-500">
              {mySchedules.length > 0 ? (
                <div className="grid md:grid-cols-2 gap-8">
-                 {/* Card Próximo Sobreaviso */}
                  {mySchedules.find(s => s.status === 'active' && isAfter(parseISO(s.endAt), new Date())) && (
                    <Card className="border-2 border-primary/20 shadow-xl overflow-hidden bg-card">
                      <CardHeader className="bg-primary/5 border-b border-primary/10">
@@ -374,7 +393,6 @@ export default function OnCallPage() {
                    </Card>
                  )}
 
-                 {/* Meus Acionamentos Ativos */}
                  <div className="space-y-6">
                     <h3 className="text-lg font-bold flex items-center gap-2"><Zap className="size-5 text-primary" /> Acionamentos Pendentes</h3>
                     {myNotifications.filter(n => n.status !== 'finished').map(trigger => (
@@ -424,10 +442,6 @@ export default function OnCallPage() {
                     <CardTitle className="text-lg">Agenda de Equipe</CardTitle>
                     <CardDescription>Escalonamento mensal de suporte RTM.</CardDescription>
                  </div>
-                 <div className="flex gap-2">
-                    <Badge variant="outline" className="bg-white border-emerald-200 text-emerald-700 gap-1.5"><div className="size-2 rounded-full bg-emerald-500" /> Confirmado</Badge>
-                    <Badge variant="outline" className="bg-white border-amber-200 text-amber-700 gap-1.5"><div className="size-2 rounded-full bg-amber-500" /> Pendente</Badge>
-                 </div>
                </CardHeader>
                <CardContent className="p-0">
                   <div className="grid grid-cols-7 border-b">
@@ -436,9 +450,8 @@ export default function OnCallPage() {
                     ))}
                   </div>
                   <div className="grid grid-cols-7 h-[600px] overflow-y-auto">
-                     {/* Simulação de Grid de Calendário Simplificada para MVP */}
                      {Array.from({ length: 35 }).map((_, i) => {
-                       const day = i - 2; // Ajuste para começar o mês
+                       const day = i - 2;
                        const isToday = day === new Date().getDate();
                        const daySchedules = allSchedules.filter(s => {
                          const d = new Date(s.startAt).getDate();
@@ -470,7 +483,6 @@ export default function OnCallPage() {
              <Card>
                <CardHeader>
                  <CardTitle>Log de Acionamentos</CardTitle>
-                 <CardDescription>Histórico de chamados e tempos de resposta.</CardDescription>
                </CardHeader>
                <CardContent>
                  <div className="space-y-4">
@@ -493,7 +505,6 @@ export default function OnCallPage() {
                         </div>
                         <div className="text-right">
                            <Badge variant={trigger.status === 'finished' ? 'secondary' : 'default'} className="uppercase text-[9px] font-black">{trigger.status}</Badge>
-                           <p className="text-[10px] font-bold text-muted-foreground mt-2">Prioridade: {trigger.priority}</p>
                         </div>
                       </div>
                     ))}
@@ -505,7 +516,6 @@ export default function OnCallPage() {
         </Tabs>
       </div>
 
-      {/* Dialogs */}
       <Dialog open={isNewScheduleOpen} onOpenChange={setIsNewScheduleOpen}>
         <DialogContent className="max-w-2xl bg-card border-border rounded-3xl p-0 overflow-hidden shadow-2xl">
           <DialogHeader className="p-8 bg-slate-950 text-white">
