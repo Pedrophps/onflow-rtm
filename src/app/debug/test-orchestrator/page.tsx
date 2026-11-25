@@ -18,7 +18,8 @@ import {
   ChevronRight,
   ClipboardList,
   Fingerprint,
-  Zap
+  Zap,
+  Briefcase
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -59,9 +60,9 @@ export default function TestOrchestratorPage() {
               <ArrowLeft className="size-3" /> VOLTAR AO INÍCIO
             </Link>
             <h1 className="text-3xl font-bold flex items-center gap-3 text-white">
-              <Beaker className="size-8 text-primary" /> OnFlow Tester <span className="text-slate-700 text-sm font-normal">v2.0.0</span>
+              <Beaker className="size-8 text-primary" /> OnFlow Tester <span className="text-slate-700 text-sm font-normal">v3.0.0</span>
             </h1>
-            <p className="text-slate-400 text-sm">Orquestrador de validação de Fluxos de Cadastro e Resolução de Identidade.</p>
+            <p className="text-slate-400 text-sm">Orquestrador de validação de Fluxos, Identidade e Operações Comerciais.</p>
           </div>
           <Button 
             onClick={runAllTests} 
@@ -74,7 +75,7 @@ export default function TestOrchestratorPage() {
         </div>
 
         {results.length > 0 && (
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-4 animate-in fade-in zoom-in duration-500">
              <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 text-center">
                 <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Testes Totais</p>
                 <p className="text-2xl font-black">{stats.total}</p>
@@ -95,39 +96,48 @@ export default function TestOrchestratorPage() {
             <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-4">Pipeline de Execução</h2>
             
             <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-              {results.map((test) => (
-                <Card 
-                  key={test.id} 
-                  className={cn(
-                    "bg-slate-900/30 border-slate-800 cursor-pointer hover:border-primary/50 transition-all overflow-hidden",
-                    selectedTest === test.id && "border-primary bg-primary/5"
-                  )}
-                  onClick={() => setSelectedTest(test.id)}
-                >
-                  <CardContent className="p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "size-8 rounded-lg flex items-center justify-center",
-                        test.status === 'success' ? "bg-emerald-500/10 text-emerald-400" : 
-                        test.status === 'failed' ? "bg-red-500/10 text-red-400" : "bg-slate-800 text-slate-500"
-                      )}>
-                        {test.status === 'success' ? <CheckCircle2 className="size-4" /> : 
-                         test.status === 'failed' ? <XCircle className="size-4" /> : <Loader2 className="size-4 animate-spin" />}
+              {results.map((test) => {
+                const getIcon = () => {
+                   if (test.id.startsWith('t12') || test.id.startsWith('t13') || test.id.startsWith('t14') || test.id.startsWith('t15')) return <Briefcase className="size-3" />;
+                   if (test.id.startsWith('t6')) return <Fingerprint className="size-3" />;
+                   return <ClipboardList className="size-3" />;
+                };
+
+                return (
+                  <Card 
+                    key={test.id} 
+                    className={cn(
+                      "bg-slate-900/30 border-slate-800 cursor-pointer hover:border-primary/50 transition-all overflow-hidden",
+                      selectedTest === test.id && "border-primary bg-primary/5"
+                    )}
+                    onClick={() => setSelectedTest(test.id)}
+                  >
+                    <CardContent className="p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "size-8 rounded-lg flex items-center justify-center",
+                          test.status === 'success' ? "bg-emerald-500/10 text-emerald-400" : 
+                          test.status === 'failed' ? "bg-red-500/10 text-red-400" : "bg-slate-800 text-slate-500"
+                        )}>
+                          {test.status === 'success' ? <CheckCircle2 className="size-4" /> : 
+                           test.status === 'failed' ? <XCircle className="size-4" /> : <Loader2 className="size-4 animate-spin" />}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-200">{test.name}</p>
+                          <p className="text-[8px] text-slate-500 uppercase font-black flex items-center gap-1">
+                             {getIcon()}
+                             {test.id.startsWith('t12') ? 'Comercial' : test.id.startsWith('t6') ? 'Identidade' : 'Cadastro'}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs font-bold text-slate-200">{test.name}</p>
-                        <p className="text-[8px] text-slate-500 uppercase font-black">
-                           {test.id.startsWith('t1') || test.id.startsWith('t6') ? 'Identidade' : 'Cadastro'}
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronRight className={cn("size-3 text-slate-700", selectedTest === test.id && "text-primary")} />
-                  </CardContent>
-                </Card>
-              ))}
+                      <ChevronRight className={cn("size-3 text-slate-700", selectedTest === test.id && "text-primary")} />
+                    </CardContent>
+                  </Card>
+                );
+              })}
               {isRunning && results.length === 0 && (
                 <div className="space-y-4">
-                   {[1,2,3,4,5,6].map(i => (
+                   {[1,2,3,4,5,6,7,8].map(i => (
                      <div key={i} className="h-14 bg-slate-900/20 border border-slate-800/50 rounded-xl animate-pulse" />
                    ))}
                 </div>
@@ -166,9 +176,12 @@ export default function TestOrchestratorPage() {
                       )}
                     </>
                   ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-600 italic space-y-3 opacity-30">
-                      <Zap className="size-12" />
-                      <p className="text-sm">Selecione um processo para depuração detalhada.</p>
+                    <div className="h-full flex flex-col items-center justify-center text-center p-12 text-slate-600 italic space-y-4">
+                      <Zap className="size-16 opacity-10" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-bold text-slate-500">Aguardando Execução</p>
+                        <p className="text-xs max-w-xs">A bateria de testes validará persistência real no Firestore e travas de segurança RBAC.</p>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -179,18 +192,18 @@ export default function TestOrchestratorPage() {
               <div className="p-5 bg-slate-900/40 border border-slate-800 rounded-3xl flex gap-3 items-start">
                  <ShieldCheck className="size-5 text-primary shrink-0" />
                  <div className="space-y-1">
-                   <p className="text-[10px] font-bold text-slate-200 uppercase tracking-tighter">Security Sandbox</p>
+                   <p className="text-[10px] font-bold text-slate-200 uppercase tracking-tighter">Security Rules</p>
                    <p className="text-[9px] text-slate-500 leading-tight">
-                     Dados temporários são purgados via <code className="bg-slate-800 px-1 rounded">deleteDoc</code> após cada cenário.
+                     Os testes de restrição comercial validam as regras de segurança do servidor, não apenas da interface.
                    </p>
                  </div>
               </div>
               <div className="p-5 bg-slate-900/40 border border-slate-800 rounded-3xl flex gap-3 items-start">
-                 <Fingerprint className="size-5 text-emerald-500 shrink-0" />
+                 <Briefcase className="size-5 text-emerald-500 shrink-0" />
                  <div className="space-y-1">
-                   <p className="text-[10px] font-bold text-slate-200 uppercase tracking-tighter">Identity Resolver</p>
+                   <p className="text-[10px] font-bold text-slate-200 uppercase tracking-tighter">Commercial Ops</p>
                    <p className="text-[9px] text-slate-500 leading-tight">
-                     Validação do mecanismo de cascata: E-mail &gt; CNPJ &gt; Nome.
+                     Validação de aprovação, registro de OV e vinculação incremental de produtos.
                    </p>
                  </div>
               </div>
